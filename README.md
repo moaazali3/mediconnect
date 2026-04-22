@@ -1,22 +1,27 @@
-# 🏥 Mediconnect
+# 🏥 Mediconnect (Mobile App)
 
-A comprehensive healthcare mobile application designed to bridge the gap between patients and doctors, making healthcare management easier and more accessible.
+The frontend mobile application for the Mediconnect healthcare platform, designed to bridge the gap between patients and doctors with a seamless user experience.
 
-## 🚀 Tech Stack
-* **Frontend:** Flutter & Dart
-* **Backend:** .NET Core (RESTful APIs)
+## 📱 Mobile Tech Stack
+* **Framework:** Flutter
+* **Language:** Dart
+* **API Integration:** RESTful APIs (http)
 
-## 🛠️ Key Features
-* Secure Patient and Doctor Registration & Authentication (JWT).
-* Personalized User Profiles.
-* Seamless Medical Data Management.
-* (Add more features here as you build them...)
+## 🛠️ UI Features & Modules
+* Secure Patient and Doctor Registration Interfaces.
+* Personalized User Profile Screens.
+* Dynamic Doctor Search & Scheduling UI.
+* Seamless API integration with the Mediconnect Backend.
 
 ## 👥 Meet The Team
+
+**Frontend & API Integration (Flutter):**
 * **Moaaz Ali**
-* **Youssef Ahmed**
 * **Mustafa Amr**
 * **Ahmed Gohar**
 
+**Backend Development (.NET):**
+* **Youssef Ahmed**
+
 ---
-*This project is currently under active development.*
+*This repository contains the Flutter mobile client. The backend API is maintained separately by the backend team.*
