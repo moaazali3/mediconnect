@@ -1,16 +1,22 @@
-# mediconnect
+# 🏥 Mediconnect
 
-A new Flutter project.
+A comprehensive healthcare mobile application designed to bridge the gap between patients and doctors, making healthcare management easier and more accessible.
 
-## Getting Started
+## 🚀 Tech Stack
+* **Frontend:** Flutter & Dart
+* **Backend:** .NET Core (RESTful APIs)
 
-This project is a starting point for a Flutter application.
+## 🛠️ Key Features
+* Secure Patient and Doctor Registration & Authentication (JWT).
+* Personalized User Profiles.
+* Seamless Medical Data Management.
+* (Add more features here as you build them...)
 
-A few resources to get you started if this is your first Flutter project:
+## 👥 Meet The Team
+* **Moaaz Ali**
+* **Youssef Ahmed**
+* **Mustafa Amr**
+* **Ahmed Gohar**
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+*This project is currently under active development.*
