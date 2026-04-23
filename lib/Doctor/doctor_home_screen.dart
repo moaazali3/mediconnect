@@ -1,36 +1,24 @@
 import 'package:flutter/material.dart';
-import 'patient/screens/home_content.dart';
-import 'patient/screens/appointments_page.dart';
-import 'patient/screens/profile.dart';
+import 'doctor_appointments_page.dart';
+import 'doctor_profile_page.dart';
 
-class HomeScreen extends StatefulWidget {
-  final String? userId;
-  final String? userRole;
-
-  const HomeScreen({super.key, this.userId, this.userRole});
+class DoctorHomeScreen extends StatefulWidget {
+  const DoctorHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int currentIndex = 0;
 
-  late final List<Widget> pages;
-
-  @override
-  void initState() {
-    super.initState();
-    pages = [
-      const HomeContent(),
-      const AppointmentsPage(),
-      const ProfileScreen(),
-    ];
-  }
+  final pages = const [
+    DoctorAppointmentsPage(),
+    DoctorProfilePage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // استخدام اللون الغامق الموحد
     const Color primaryColor = Color(0xFF0D47A1);
 
     return Scaffold(
@@ -67,14 +55,15 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded),
-                activeIcon: Icon(Icons.home_rounded, size: 30),
-                label: "Home",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month_rounded),
-                activeIcon: Icon(Icons.calendar_month_rounded, size: 30),
-                label: "Schedule",
+                icon: Badge(
+                  label: Text('3'),
+                  child: Icon(Icons.list_alt_rounded),
+                ),
+                activeIcon: Badge(
+                  label: Text('3'),
+                  child: Icon(Icons.list_alt_rounded, size: 30),
+                ),
+                label: "Appointments",
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_rounded),
