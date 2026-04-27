@@ -208,7 +208,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.person_pin_rounded, color: primaryColor),
+                      icon: const Icon(Icons.account_circle_outlined, color: primaryColor),
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId))),
                     ),
                   ],
@@ -446,12 +446,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildResponseItem(String label, String value, {bool isStatus = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? Colors.green : Colors.black87)),
+          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? Colors.green : Colors.black87, fontSize: 14)),
         ],
       ),
     );
