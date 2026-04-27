@@ -24,13 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
     pages = [
       const HomeContent(),
       const AppointmentsPage(),
-      const ProfileScreen(),
+      ProfileScreen(userId: widget.userId), // تمرير الـ userId لصفحة البروفايل
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    // استخدام اللون الغامق الموحد
     const Color primaryColor = Color(0xFF0D47A1);
 
     return Scaffold(
