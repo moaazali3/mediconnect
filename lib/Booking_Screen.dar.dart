@@ -9,6 +9,7 @@ class BookingScreen extends StatefulWidget {
   final String specialty;
   final String fee;
   final List<String> availableDays;
+  final String? doctorImageUrl;
 
   const BookingScreen({
     super.key,
@@ -17,6 +18,7 @@ class BookingScreen extends StatefulWidget {
     this.specialty = "Senior Dentist",
     this.fee = "1000",
     this.availableDays = const ["Monday", "Wednesday", "Friday"],
+    this.doctorImageUrl = "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg",
   });
 
   @override
@@ -122,8 +124,12 @@ class _BookingScreenState extends State<BookingScreen> {
           CircleAvatar(
             radius: 35,
             backgroundColor: primaryColor.withOpacity(0.1),
-            child: const Icon(Icons.medical_services_rounded,
-                color: primaryColor, size: 35),
+            backgroundImage: widget.doctorImageUrl != null 
+                ? NetworkImage(widget.doctorImageUrl!) 
+                : null,
+            child: widget.doctorImageUrl == null 
+                ? const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35)
+                : null,
           ),
           const SizedBox(width: 15),
           Expanded(
@@ -133,16 +139,26 @@ class _BookingScreenState extends State<BookingScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.doctorName,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text(widget.specialty,
-                            style: const TextStyle(color: Colors.grey, fontSize: 14)),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.doctorName,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            widget.specialty,
+                            style: const TextStyle(color: Colors.grey, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 10),
                     GestureDetector(
                       onTap: () {
                         Navigator.push(
@@ -376,9 +392,9 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 20),
               _buildPaymentOption(
                 index: 0,
-                icon: Icons.payments_rounded,
-                title: "Cash at Clinic",
-                subtitle: "Pay when you arrive",
+                icon: Icons.domain_rounded,
+                title: "Pay at Hospital",
+                subtitle: "Pay at the reception",
                 selected: selectedPaymentIndex == 0,
                 onTap: () => setModalState(() => selectedPaymentIndex = 0),
               ),
