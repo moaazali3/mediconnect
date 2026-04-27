@@ -16,6 +16,20 @@ class DoctorProfileScreen extends StatefulWidget {
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final ApiService _apiService = ApiService();
 
+  int _calculateAge(String dob) {
+    try {
+      final birthDate = DateTime.parse(dob);
+      final today = DateTime.now();
+      int age = today.year - birthDate.year;
+      if (today.month < birthDate.month || (today.month == birthDate.month && today.day < birthDate.day)) {
+        age--;
+      }
+      return age;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +122,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         _buildDivider(),
                         _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
                         _buildDivider(),
-                        _buildInfoRow(Icons.cake_rounded, "Date of Birth", doctor.dateOfBirth),
+                        _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(doctor.dateOfBirth)} Years"),
                         _buildDivider(),
                         _buildInfoRow(Icons.location_on_rounded, "Clinic Address", doctor.address ?? "No Address"),
                       ]),
@@ -144,7 +158,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(builder: (context) => const LoginScreen()),
-                              (route) => false,
+                                  (route) => false,
                             );
                           },
                           icon: const Icon(Icons.power_settings_new_rounded),

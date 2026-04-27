@@ -40,11 +40,13 @@ class CreateAppointmentModel {
   final String patientId;
   final String doctorId;
   final String dayOfWeek;
+  final String appointmentDate; // Added appointmentDate
 
   CreateAppointmentModel({
     required this.patientId,
     required this.doctorId,
     required this.dayOfWeek,
+    required this.appointmentDate,
   });
 
   Map<String, dynamic> toJson() {
@@ -52,6 +54,7 @@ class CreateAppointmentModel {
       "patientId": patientId,
       "doctorId": doctorId,
       "dayOfWeek": dayOfWeek,
+      "appointmentDate": appointmentDate, // Added to JSON
     };
   }
 }

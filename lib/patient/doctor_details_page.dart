@@ -3,11 +3,14 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/doctor_profile_screen.dart';
+import 'package:mediconnect/Doctor/doctor_profile_screen.dart';
+import 'package:intl/intl.dart';
 
 class DoctorDetailsPage extends StatelessWidget {
   final String doctorId;
-  const DoctorDetailsPage({super.key, required this.doctorId});
+  final String? patientId; // Added patientId
+
+  const DoctorDetailsPage({super.key, required this.doctorId, this.patientId});
 
   void _showBookAppointmentSheet(BuildContext context, String doctorId) {
     final ApiService apiService = ApiService();
@@ -58,10 +61,21 @@ class DoctorDetailsPage extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
                       onPressed: () async {
+                        // Calculate next date for the selected day
+                        DateTime now = DateTime.now();
+                        int targetDayIndex = days.indexOf(selectedDay) + 1; // Mon=1, ..., Sun=7
+                        int currentDayIndex = now.weekday;
+                        int daysToAdd = (targetDayIndex - currentDayIndex + 7) % 7;
+                        // If selected day is today, we could book for today or next week. 
+                        // Let's assume next week if today, or logic can be adjusted.
+                        DateTime targetDate = now.add(Duration(days: daysToAdd));
+                        String formattedDate = DateFormat('yyyy-MM-dd').format(targetDate);
+
                         final appointment = CreateAppointmentModel(
-                          patientId: "1", 
+                          patientId: patientId ?? "1", 
                           doctorId: doctorId,
                           dayOfWeek: selectedDay,
+                          appointmentDate: formattedDate,
                         );
 
                         Navigator.pop(context); 
