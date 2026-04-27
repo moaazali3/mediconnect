@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 class SearchBarWidget extends StatelessWidget {
-  const SearchBarWidget({super.key});
+  final Function(String)? onChanged;
+  
+  const SearchBarWidget({super.key, this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: "Search doctor...",
           prefixIcon: const Icon(Icons.search),

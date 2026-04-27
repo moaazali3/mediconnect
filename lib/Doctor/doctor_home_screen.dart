@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'doctor_appointments_page.dart';
-import 'doctor_profile_page.dart';
+import 'doctor_profile_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
-  const DoctorHomeScreen({super.key});
+  final String? userId;
+
+  const DoctorHomeScreen({super.key, this.userId});
 
   @override
   State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
@@ -12,10 +14,16 @@ class DoctorHomeScreen extends StatefulWidget {
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int currentIndex = 0;
 
-  final pages = const [
-    DoctorAppointmentsPage(),
-    DoctorProfilePage(),
-  ];
+  late final List<Widget> pages;
+
+  @override
+  void initState() {
+    super.initState();
+    pages = [
+      DoctorAppointmentsPage(doctorId: widget.userId),
+      DoctorProfileScreen(doctorId: widget.userId ?? ""), // Fixed named parameter
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,14 +63,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             },
             items: const [
               BottomNavigationBarItem(
-                icon: Badge(
-                  label: Text('3'),
-                  child: Icon(Icons.list_alt_rounded),
-                ),
-                activeIcon: Badge(
-                  label: Text('3'),
-                  child: Icon(Icons.list_alt_rounded, size: 30),
-                ),
+                icon: Icon(Icons.list_alt_rounded),
+                activeIcon: Icon(Icons.list_alt_rounded, size: 30),
                 label: "Appointments",
               ),
               BottomNavigationBarItem(

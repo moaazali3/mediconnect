@@ -5,40 +5,47 @@ import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateDoctorModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
-import 'package:mediconnect/models/DoctorProfileModel.dart'; // تأكد من إضافة الاستيراد
+import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/models/MedicalRecordModel.dart';
+import 'package:mediconnect/models/PaymentModel.dart';
+
 class ApiService {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
 
+  // --- Profile Services ---
   Future<PatientProfileModel> getPatientProfile(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/profile/Patient/$id'));
+    final response = await http.get(Uri.parse('$baseUrl/Profile/Patient/$id'));
     if (response.statusCode == 200) {
       return PatientProfileModel.fromJson(jsonDecode(response.body));
     } else {
       throw "فشل في تحميل بيانات ملف المريض";
     }
   }
+
   Future<DoctorProfileModel> getDoctorProfile(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/profile/Doctor/$id'));
+    final response = await http.get(Uri.parse('$baseUrl/Profile/Doctor/$id'));
     if (response.statusCode == 200) {
       return DoctorProfileModel.fromJson(jsonDecode(response.body));
     } else {
       throw "فشل في تحميل بيانات الملف الشخصي";
     }
   }
+
+  // --- Appointment Services ---
   Future<bool> createAppointment(CreateAppointmentModel appointment) async {
     final response = await http.post(
       Uri.parse('$baseUrl/Appointment'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(appointment.toJson()),
     );
-    return response.statusCode == 200;
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 
-// جلب مواعيد الطبيب
   Future<List<DoctorAppointmentModel>> getDoctorAppointments(String doctorId) async {
-    final response = await http.get(Uri.parse('$baseUrl/Appointment/Doctor/$doctorId'));
+    final response = await http.get(Uri.parse('$baseUrl/Appointment/doctor/$doctorId'));
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => DoctorAppointmentModel.fromJson(item)).toList();
@@ -46,16 +53,73 @@ class ApiService {
     throw "خطأ في جلب مواعيد الطبيب";
   }
 
-// جلب مواعيد المريض
   Future<List<PatientAppointmentModel>> getPatientAppointments(String patientId) async {
-    final response = await http.get(Uri.parse('$baseUrl/Appointment/Patient/$patientId'));
+    final response = await http.get(Uri.parse('$baseUrl/Appointment/patient/$patientId'));
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => PatientAppointmentModel.fromJson(item)).toList();
     }
     throw "خطأ في جلب مواعيد المريض";
   }
-  // تحديث دالة جلب الأطباء لتناسب الـ Backend الجديد (Pagination & Filter)
+
+  Future<bool> completeAppointmentStatus(String appointmentId) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Appointment/complete?appointmentId=$appointmentId'),
+    );
+    return response.statusCode == 200;
+  }
+
+  Future<bool> cancelAppointmentStatus(String appointmentId) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Appointment/cancel?appointmentId=$appointmentId'),
+    );
+    return response.statusCode == 200;
+  }
+
+  // --- Doctor Schedule Services ---
+  Future<List<DoctorScheduleModel>> getDoctorSchedule(String doctorId) async {
+    final response = await http.get(Uri.parse('$baseUrl/DoctorSchedule/$doctorId'));
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
+    }
+    throw "Error fetching doctor schedule";
+  }
+
+  Future<bool> createDoctorSchedule(DoctorScheduleModel schedule, String doctorId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/DoctorSchedule?DoctorId=$doctorId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(schedule.toJson()),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- Medical Record Services ---
+  Future<List<MedicalRecordModel>> getPatientMedicalHistory(String patientId) async {
+    final response = await http.get(Uri.parse('$baseUrl/MedicalRecord/patient/$patientId'));
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => MedicalRecordModel.fromJson(item)).toList();
+    }
+    throw "Error fetching medical history";
+  }
+
+  // --- Payment Services ---
+  Future<bool> createPayment(PaymentModel payment) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/Payment'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payment.toJson()),
+    );
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  // --- Doctor Services ---
   Future<List<DoctorModel>> getAllDoctors({String? specializationName, int pageNumber = 1}) async {
     final Map<String, String> queryParameters = {
       'pageNumber': pageNumber.toString(),
@@ -66,7 +130,6 @@ class ApiService {
     }
 
     final uri = Uri.parse('$baseUrl/Doctor').replace(queryParameters: queryParameters);
-
     final response = await http.get(uri);
 
     if (response.statusCode == 200) {
@@ -77,6 +140,28 @@ class ApiService {
     }
   }
 
+  Future<DoctorFullModel> getDoctorDetails(String doctorId, String patientId) async {
+    final response = await http.get(Uri.parse('$baseUrl/Doctor/$doctorId/$patientId'));
+    if (response.statusCode == 200) {
+      return DoctorFullModel.fromJson(jsonDecode(response.body));
+    }
+    throw "خطأ في تحميل بيانات الدكتور";
+  }
+
+  Future<bool> createDoctor(CreateDoctorModel doctor) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/Doctor'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(doctor.toJson()),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // --- Specialization Services ---
   Future<List<SpecializationModel>> getAllSpecializations() async {
     final response = await http.get(Uri.parse('$baseUrl/Specialization'));
     if (response.statusCode == 200) {
@@ -86,56 +171,20 @@ class ApiService {
       throw "Error fetching specializations";
     }
   }
-  // دالة لتعديل تخصص موجود
+
   Future<bool> updateSpecialization(int id, CreateSpecializationModel specialization) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/Specialization/$id'), // نرسل الـ id في المسار
+        Uri.parse('$baseUrl/Specialization/$id'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(specialization.toJson()), // نستخدم نفس الـ toJson الخاص بموديل الإضافة
+        body: jsonEncode(specialization.toJson()),
       );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        print("خطأ في تعديل التخصص: ${response.body}");
-        return false;
-      }
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print("حدث خطأ أثناء الاتصال: $e");
-      return false;
-    }
-  }
-  Future<DoctorFullModel> getDoctorDetails(String id) async {
-    final response = await http.get(Uri.parse('$baseUrl/Doctor/$id'));
-    if (response.statusCode == 200) {
-      return DoctorFullModel.fromJson(jsonDecode(response.body));
-    }
-    throw "خطأ في تحميل بيانات الدكتور";
-  }
-
-  // دالة لإضافة طبيب جديد باستخدام الموديل
-  Future<bool> createDoctor(CreateDoctorModel doctor) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/Doctor'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(doctor.toJson()),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        print("خطأ في إضافة الطبيب: ${response.body}");
-        return false;
-      }
-    } catch (e) {
-      print("حدث خطأ أثناء الاتصال: $e");
       return false;
     }
   }
 
-  // دالة لإضافة تخصص جديد باستخدام الموديل
   Future<bool> createSpecialization(CreateSpecializationModel specialization) async {
     try {
       final response = await http.post(
@@ -143,19 +192,13 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(specialization.toJson()),
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        print("خطأ في إضافة التخصص: ${response.body}");
-        return false;
-      }
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print("حدث خطأ أثناء الاتصال: $e");
       return false;
     }
   }
 
+  // --- Auth Services ---
   Future<bool> registerUser({
     required String firstName,
     required String lastName,
@@ -171,9 +214,7 @@ class ApiService {
     required String emergencyContact,
   }) async {
     try {
-      // السطر السحري اللي بيحول التاريخ لـ YYYY-MM-DD من غير وقت
       String formattedDate = "${dateOfBirth.year}-${dateOfBirth.month.toString().padLeft(2, '0')}-${dateOfBirth.day.toString().padLeft(2, '0')}";
-
       final response = await http.post(
         Uri.parse('$baseUrl/Auth/Register'),
         headers: {'Content-Type': 'application/json'},
@@ -185,20 +226,15 @@ class ApiService {
           "phoneNumber": phone,
           "emergencyContact": emergencyContact,
           "gender": gender,
-          "dateOfBirth": formattedDate, // <--- التعديل حصل هنا
+          "dateOfBirth": formattedDate,
           "address": address,
           "bloodType": bloodType,
           "height": height,
           "weight": weight
         }),
       );
-
-      print('🔥 Status Code: ${response.statusCode}');
-      print('🔥 Server Reply: ${response.body}');
-
       return response.statusCode == 200;
     } catch (e) {
-      print('🔥 Exception in API request: $e');
       return false;
     }
   }

@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart'; 
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/register_screen.dart';
-import 'package:mediconnect/home_screen.dart'; // الانتقال للهوم
+import 'package:mediconnect/home_screen.dart'; 
+import 'package:mediconnect/Doctor/doctor_home_screen.dart'; // Import Doctor Home
 import 'package:mediconnect/services/api_service.dart';
-
+//super.moaaz2026@gmail.com
+//"email": "sara.mahmoud@mediconnect.com",
+//"password": "Password@123",
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-//super.moaaz2026@gmail.com
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -37,13 +39,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  primaryColor.withValues(alpha: 0.8),
+                  primaryColor.withOpacity(0.8),
                   Colors.white,
                 ],
               ),
             ),
           ),
-          Container(color: Colors.black.withValues(alpha: 0.4)),
+          Container(color: Colors.black.withOpacity(0.4)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -55,9 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: Colors.white.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
                       child: Form(
                         key: formKey,
@@ -138,16 +140,26 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     "").toString().toLowerCase();
 
                                       if (mounted) {
-                                        // ننتقل للهوم ونبعت البيانات
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => HomeScreen(
-                                              userId: userId,
-                                              userRole: role,
+                                        if (role == "doctor") {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => DoctorHomeScreen(
+                                                userId: userId,
+                                              ),
                                             ),
-                                          ),
-                                        );
+                                          );
+                                        } else {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => HomeScreen(
+                                                userId: userId,
+                                                userRole: role,
+                                              ),
+                                            ),
+                                          );
+                                        }
                                       }
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(

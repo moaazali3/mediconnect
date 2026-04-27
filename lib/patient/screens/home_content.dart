@@ -8,7 +8,8 @@ import 'package:mediconnect/patient/widgets/doctor_card.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class HomeContent extends StatefulWidget {
-  const HomeContent({super.key});
+  final String? userId; 
+  const HomeContent({super.key, this.userId});
 
   @override
   State<HomeContent> createState() => _HomeContentState();
@@ -17,18 +18,37 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   final ApiService _apiService = ApiService();
   String selectedSpecialization = "All";
+  String searchQuery = "";
+  late Future<List<DoctorModel>> _doctorsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctors();
+  }
+
+  void _fetchDoctors() {
+    setState(() {
+      _doctorsFuture = _apiService.getAllDoctors(specializationName: selectedSpecialization);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       children: [
         const SizedBox(height: 20),
-        const SearchBarWidget(),
+        SearchBarWidget(
+          onChanged: (value) {
+            setState(() {
+              searchQuery = value.toLowerCase();
+            });
+          },
+        ),
         const SizedBox(height: 20),
         const HomeBanner(),
         const SizedBox(height: 20),
         
-        // --- Specializations Section ---
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -59,7 +79,6 @@ class _HomeContentState extends State<HomeContent> {
 
         const SizedBox(height: 20),
         
-        // --- Doctors Section ---
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -69,7 +88,7 @@ class _HomeContentState extends State<HomeContent> {
         ),
         const SizedBox(height: 10),
         FutureBuilder<List<DoctorModel>>(
-          future: _apiService.getAllDoctors(specializationName: selectedSpecialization),
+          future: _doctorsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: Padding(
@@ -83,21 +102,32 @@ class _HomeContentState extends State<HomeContent> {
                 child: Text("Error: ${snapshot.error}"),
               ));
             }
-            final doctors = snapshot.data ?? [];
+            
+            var doctors = snapshot.data ?? [];
+            
+            // Apply search filter locally
+            if (searchQuery.isNotEmpty) {
+              doctors = doctors.where((doc) {
+                final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
+                return fullName.contains(searchQuery);
+              }).toList();
+            }
+
             if (doctors.isEmpty) {
               return const Center(child: Padding(
                 padding: EdgeInsets.all(40.0),
-                child: Text("No doctors found for this specialization"),
+                child: Text("No doctors found"),
               ));
             }
 
             return Column(
-              children: doctors.map((doc) => DoctorCard(
+              children: doctors.map<Widget>((doc) => DoctorCard(
                 id: doc.id,
                 name: "${doc.firstName} ${doc.lastName}",
-                spec: selectedSpecialization == "All" ? "Doctor" : selectedSpecialization, // Logic could be improved if DoctorModel had specName
+                spec: selectedSpecialization == "All" ? "Doctor" : selectedSpecialization,
                 gender: doc.gender,
                 experience: doc.experienceYears,
+                patientId: widget.userId,
               )).toList()
             );
           },
@@ -108,9 +138,14 @@ class _HomeContentState extends State<HomeContent> {
   }
 
   Widget _buildSpecItem(String title) {
-    bool isSelected = selected == title;
+    bool isSelected = selectedSpecialization == title;
     return GestureDetector(
-      onTap: () => setState(() => selectedSpecialization = title),
+      onTap: () {
+        setState(() {
+          selectedSpecialization = title;
+          _fetchDoctors(); // Refresh list when spec changes
+        });
+      },
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -130,7 +165,4 @@ class _HomeContentState extends State<HomeContent> {
       ),
     );
   }
-
-  // To fix the 'selected' variable error in _buildSpecItem
-  String get selected => selectedSpecialization;
 }

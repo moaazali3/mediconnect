@@ -1,69 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
-
-class ConsultationRecord {
-  final String doctorName;
-  final String specialty;
-  final String date;
-  final String diagnosis;
-  final List<String> prescription;
-  final String imageUrl;
-
-  ConsultationRecord({
-    required this.doctorName,
-    required this.specialty,
-    required this.date,
-    required this.diagnosis,
-    required this.prescription,
-    required this.imageUrl,
-  });
-}
+import 'package:mediconnect/models/MedicalRecordModel.dart';
+import 'package:mediconnect/services/api_service.dart';
 
 class PatientHistoryScreen extends StatefulWidget {
-  const PatientHistoryScreen({super.key});
+  final String? userId; // Add userId to fetch real data
+  const PatientHistoryScreen({super.key, this.userId});
 
   @override
   State<PatientHistoryScreen> createState() => _PatientHistoryScreenState();
 }
 
 class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
-  final List<ConsultationRecord> records = [];
-
-  @override
-  void initState() {
-    super.initState();
-    const String dummyUrl = "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
-    // Dummy Data
-    records.addAll([
-      ConsultationRecord(
-        doctorName: "Dr. Adam Doma",
-        specialty: "Senior Dentist",
-        date: "12 Oct 2026",
-        diagnosis: "Gingivitis",
-        prescription: ["Chlorhexidine Mouthwash", "Ibuprofen 400mg"],
-        imageUrl: dummyUrl,
-      ),
-      ConsultationRecord(
-        doctorName: "Dr. Sarah Johnson",
-        specialty: "Cardiologist",
-        date: "05 Sep 2026",
-        diagnosis: "Mild Hypertension",
-        prescription: ["Lisinopril 5mg", "Amlodipine 2.5mg"],
-        imageUrl: dummyUrl,
-      ),
-      ConsultationRecord(
-        doctorName: "Dr. Michael Chen",
-        specialty: "General Physician",
-        date: "20 Aug 2026",
-        diagnosis: "Acute Bronchitis",
-        prescription: ["Azithromycin 500mg", "Cough Syrup", "Panadol 500mg"],
-        imageUrl: dummyUrl,
-      ),
-    ]);
-  }
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
+    String idToFetch = widget.userId ?? "1"; // Default for testing
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F9),
       appBar: AppBar(
@@ -79,17 +33,36 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(20),
-        itemCount: records.length,
-        itemBuilder: (context, index) {
-          return _buildHistoryCard(records[index]);
+      body: FutureBuilder<List<MedicalRecordModel>>(
+        future: _apiService.getPatientMedicalHistory(idToFetch),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: primaryColor));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text("Error: ${snapshot.error}"),
+            ));
+          }
+          final records = snapshot.data ?? [];
+          if (records.isEmpty) {
+            return const Center(child: Text("No medical records found"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: records.length,
+            itemBuilder: (context, index) {
+              return _buildHistoryCard(records[index]);
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildHistoryCard(ConsultationRecord record) {
+  Widget _buildHistoryCard(MedicalRecordModel record) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(15),
@@ -113,7 +86,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
               CircleAvatar(
                 radius: 25,
                 backgroundColor: primaryColor.withOpacity(0.1),
-                backgroundImage: NetworkImage(record.imageUrl),
+                child: const Icon(Icons.person, color: primaryColor),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -127,7 +100,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      record.specialty,
+                      record.doctorSpecialty,
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -137,7 +110,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                record.date,
+                _formatDate(record.visitDate),
                 style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
@@ -145,8 +118,8 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           Divider(color: Colors.grey.shade100, height: 25),
           
           // Diagnosis Section
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.medical_information_rounded, color: Colors.grey, size: 16),
               SizedBox(width: 6),
               Text("Diagnosis", style: TextStyle(color: Colors.grey, fontSize: 13)),
@@ -160,28 +133,29 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           const SizedBox(height: 15),
 
           // Prescription Section
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.medication_rounded, color: Colors.grey, size: 16),
               SizedBox(width: 6),
               Text("Prescription", style: TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: record.prescription.map((med) => Chip(
-              label: Text(med, style: const TextStyle(color: primaryColor, fontSize: 12, fontWeight: FontWeight.w500)),
-              backgroundColor: primaryColor.withOpacity(0.08),
-              side: BorderSide.none,
-              padding: EdgeInsets.zero,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            )).toList(),
+          Text(
+            record.prescription,
+            style: const TextStyle(color: Colors.black87, fontSize: 14),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDate(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return "${date.day}/${date.month}/${date.year}";
+    } catch (e) {
+      return dateStr;
+    }
   }
 }

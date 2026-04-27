@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/services/api_service.dart';
 
-class AppointmentsPage extends StatelessWidget {
-  const AppointmentsPage({super.key});
+class AppointmentsPage extends StatefulWidget {
+  final String? userId;
+  const AppointmentsPage({super.key, this.userId});
+
+  @override
+  State<AppointmentsPage> createState() => _AppointmentsPageState();
+}
+
+class _AppointmentsPageState extends State<AppointmentsPage> {
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
+    String idToFetch = widget.userId ?? "1"; // Default for testing
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -14,23 +27,38 @@ class AppointmentsPage extends StatelessWidget {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        children: const [
-          AppointmentCard(
-            name: "Dr. Ahmed Mohamed",
-            spec: "Cardiology Specialist",
-            date: "12 May, 2024",
-            time: "05:00 PM",
-          ),
-          AppointmentCard(
-            name: "Dr. Sara Ali",
-            spec: "Dental Surgeon",
-            date: "15 May, 2024",
-            time: "03:00 PM",
-          ),
-        ],
+      body: FutureBuilder<List<PatientAppointmentModel>>(
+        future: _apiService.getPatientAppointments(idToFetch),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: primaryColor));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          final appointments = snapshot.data ?? [];
+          if (appointments.isEmpty) {
+            return const Center(child: Text("No appointments found"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              final appointment = appointments[index];
+              return AppointmentCard(
+                name: "Dr. ${appointment.doctorName}",
+                spec: appointment.dayOfWeek,
+                date: appointment.appointmentDate,
+                time: "${appointment.startTime} - ${appointment.endTime}",
+                status: appointment.status,
+                queue: appointment.queueNumber,
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -41,6 +69,8 @@ class AppointmentCard extends StatelessWidget {
   final String spec;
   final String date;
   final String time;
+  final String status;
+  final int queue;
 
   const AppointmentCard({
     super.key,
@@ -48,12 +78,12 @@ class AppointmentCard extends StatelessWidget {
     required this.spec,
     required this.date,
     required this.time,
+    required this.status,
+    required this.queue,
   });
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D47A1);
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -68,49 +98,78 @@ class AppointmentCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          CircleAvatar(
-            radius: 25,
-            backgroundColor: primaryColor.withOpacity(0.1),
-            child: const Icon(Icons.person, color: primaryColor, size: 30),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 16,
-                    color: Color(0xFF263238),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  spec,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const SizedBox(height: 10),
-                Row(
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: primaryColor.withOpacity(0.1),
+                child: const Icon(Icons.person, color: primaryColor, size: 30),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: primaryColor.withOpacity(0.7)),
-                    const SizedBox(width: 5),
-                    Text(date, style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontWeight: FontWeight.w500)),
-                    const SizedBox(width: 15),
-                    Icon(Icons.access_time_rounded, size: 14, color: primaryColor.withOpacity(0.7)),
-                    const SizedBox(width: 5),
-                    Text(time, style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 16,
+                        color: Color(0xFF263238),
+                      ),
+                    ),
+                    Text(
+                      spec,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(status).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(color: _getStatusColor(status), fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
-          Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey.shade400),
+          const Divider(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildInfoItem(Icons.calendar_today_rounded, date),
+              _buildInfoItem(Icons.access_time_rounded, time),
+              _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue"),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildInfoItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
+        const SizedBox(width: 5),
+        Text(text, style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Colors.orange;
+      case 'completed': return Colors.green;
+      case 'cancelled': return Colors.red;
+      default: return Colors.blue;
+    }
   }
 }

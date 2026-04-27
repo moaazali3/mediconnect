@@ -3,12 +3,13 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/edit_patient_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
+import 'package:mediconnect/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'LoginScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? patientId; // معرف المريض (اختياري حالياً للتجربة)
-  const ProfileScreen({super.key, this.patientId});
+  final String? userId; // معرف المريض
+  const ProfileScreen({super.key, this.userId});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -18,8 +19,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
 
   Future<void> _launchWhatsApp() async {
-    final String phoneNumber = "201000000000";
-    final String message = "Hello MediConnect, I need help with my account.";
+    const String phoneNumber = "201000000000";
+    const String message = "Hello MediConnect, I need help with my account.";
     final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
     
     if (await canLaunchUrl(whatsappUri)) {
@@ -35,8 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // إذا لم يتوفر ID، نستخدم قيمة افتراضية للتجربة (يجب تغييره لاحقاً)
-    final String targetId = widget.patientId ?? "1"; 
+    final String targetId = widget.userId ?? "1"; 
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
@@ -47,7 +47,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return const Center(child: CircularProgressIndicator(color: primaryColor));
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
+            ));
           }
           if (!snapshot.hasData) {
             return const Center(child: Text("No Profile Data Found"));
@@ -57,7 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           return CustomScrollView(
             slivers: [
-              _buildAppBar(),
+              _buildAppBar(profile),
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.all(20),
@@ -78,6 +81,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 30),
                       
+                      // --- Medical History Button ---
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => PatientHistoryScreen(userId: targetId)),
+                            );
+                          },
+                          icon: const Icon(Icons.history_rounded, color: primaryColor),
+                          label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: primaryColor, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
                       _buildSectionTitle("Personal Information"),
                       _buildProfileCard([
                         _buildInfoRow(Icons.email_rounded, "Email", profile.email),
@@ -130,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(PatientProfileModel profile) {
     return SliverAppBar(
       expandedHeight: 180,
       pinned: true,
@@ -144,18 +168,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               colors: [primaryColor, Color(0xFF1E88E5)],
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white,
                   child: CircleAvatar(
                     radius: 46,
-                    backgroundColor: primaryColor,
-                    child: Icon(Icons.person_rounded, size: 60, color: Colors.white),
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
+                      size: 60, 
+                      color: primaryColor
+                    ),
                   ),
                 ),
               ],
@@ -248,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -266,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.08),
+              color: primaryColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: primaryColor, size: 22),
