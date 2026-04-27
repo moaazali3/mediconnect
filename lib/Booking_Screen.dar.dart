@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:mediconnect/doctor_profile_screen.dart';
+import 'package:mediconnect/doctor_profile_view_screen.dart'; // التغيير هنا لصفحة العرض فقط
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -72,7 +72,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
 
     try {
-      // Logic for Patient ID selection
       final String patientId = (widget.patientId != null && widget.patientId != "") ? widget.patientId! : "1"; 
       
       final String dayName = DateFormat('EEEE').format(selectedDate!);
@@ -83,13 +82,9 @@ class _BookingScreenState extends State<BookingScreen> {
         dayOfWeek: dayName,
       );
 
-      print("🚀 ATTEMPTING BOOKING FOR PATIENT ID: $patientId");
-
       bool apptSuccess = await _apiService.createAppointment(appointmentRequest);
 
       if (apptSuccess) {
-        print("✅ SUCCESS: Appointment created for Patient: $patientId");
-
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
         
@@ -112,7 +107,6 @@ class _BookingScreenState extends State<BookingScreen> {
         throw "Failed to create appointment";
       }
     } catch (e) {
-      print("❌ ERROR: Booking failed for Patient ID ${widget.patientId}: $e");
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
@@ -209,7 +203,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.info_outline_rounded, color: primaryColor),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileScreen(doctorId: widget.doctorId))),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId))),
                     ),
                   ],
                 ),
@@ -446,12 +440,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildResponseItem(String label, String value, {bool isStatus = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? Colors.green : Colors.black87, fontSize: 14)),
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? Colors.green : Colors.black87)),
         ],
       ),
     );
