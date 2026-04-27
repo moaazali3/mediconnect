@@ -15,6 +15,7 @@ dependencies:
   http: ^1.6.0
   intl: ^0.19.0
   jwt_decoder: ^2.0.1 # إضافة المكتبة هنا
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
