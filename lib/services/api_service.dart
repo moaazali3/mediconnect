@@ -9,7 +9,7 @@ import 'package:mediconnect/models/DoctorProfileModel.dart'; // تأكد من إ
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 class ApiService {
-  final String baseUrl = "https://localhost:7039/api";
+  final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
 
   Future<PatientProfileModel> getPatientProfile(String id) async {
     final response = await http.get(Uri.parse('$baseUrl/profile/Patient/$id'));
