@@ -22,15 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     pages = [
-      const HomeContent(),
-      const AppointmentsPage(),
-      const ProfileScreen(),
+      HomeContent(userId: widget.userId), // Pass userId here
+      AppointmentsPage(userId: widget.userId),
+      ProfileScreen(userId: widget.userId),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    // استخدام اللون الغامق الموحد
     const Color primaryColor = Color(0xFF0D47A1);
 
     return Scaffold(

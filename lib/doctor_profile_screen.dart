@@ -34,6 +34,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           }
 
           final doctor = snapshot.data!;
+          const String dummyImageUrl = "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
 
           return CustomScrollView(
             slivers: [
@@ -60,7 +61,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.white,
-                            child: Icon(Icons.medical_services_rounded, size: 55, color: primaryColor),
+                            backgroundImage: NetworkImage(dummyImageUrl),
                           ),
                         ),
                       ],

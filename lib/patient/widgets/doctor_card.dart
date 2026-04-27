@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:mediconnect/patient/doctor_details_page.dart';
+import 'package:mediconnect/Booking_Screen.dar.dart';
 
 class DoctorCard extends StatelessWidget {
+  final String id;
   final String name;
   final String spec;
+  final String gender;
+  final double experience;
+  final String? patientId;
 
-  const DoctorCard(this.name, this.spec, {super.key});
+  const DoctorCard({
+    required this.id,
+    required this.name,
+    required this.spec,
+    required this.gender,
+    required this.experience,
+    this.patientId,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,19 +47,22 @@ class DoctorCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               radius: 30,
-              backgroundColor: primaryColor.withOpacity(0.1),
-              child: const Icon(Icons.person, size: 40, color: primaryColor),
+              backgroundColor: (gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+              child: Icon(
+                gender == "Male" ? Icons.male : Icons.female, 
+                size: 35, 
+                color: gender == "Male" ? Colors.blue : Colors.pink
+              ),
             ),
           ),
           const SizedBox(width: 15),
 
-          // 📝 Doctor Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  "Dr. $name",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -66,22 +81,14 @@ class DoctorCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+                    const Icon(Icons.history_edu, color: primaryColor, size: 18),
                     const SizedBox(width: 4),
                     Text(
-                      "4.8",
+                      "$experience Years Exp.",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.grey.shade800,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      "(120 Reviews)",
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -90,15 +97,16 @@ class DoctorCard extends StatelessWidget {
             ),
           ),
 
-          // ➡️ Action Button
           ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => DoctorDetailsPage(
-                    name: name,
-                    spec: spec,
+                  builder: (_) => BookingScreen(
+                    doctorId: id,
+                    doctorName: "Dr. $name",
+                    specialty: spec,
+                    patientId: patientId,
                   ),
                 ),
               );
