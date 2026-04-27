@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/edit_patient_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'LoginScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -15,6 +16,22 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
+
+  Future<void> _launchWhatsApp() async {
+    final String phoneNumber = "201000000000";
+    final String message = "Hello MediConnect, I need help with my account.";
+    final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
+    
+    if (await canLaunchUrl(whatsappUri)) {
+      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not launch WhatsApp")),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +207,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red, width: 1.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 25),
+        const Divider(),
+        const SizedBox(height: 25),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton.icon(
+            onPressed: _launchWhatsApp,
+            icon: const Icon(Icons.chat_rounded, color: Colors.white),
+            label: const Text("Contact Support (WhatsApp)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF25D366),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              elevation: 2,
             ),
           ),
         ),

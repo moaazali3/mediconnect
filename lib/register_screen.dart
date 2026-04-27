@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final addressController = TextEditingController();
   
   String? selectedGender;
-  String? selectedRole;
+  final String selectedRole = "Patient"; // Role is always Patient now
   String? selectedBloodType;
 
   @override
@@ -49,7 +49,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _performRegister() async {
-    // 1. إظهار لودينج ديالوج
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -57,20 +56,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     try {
-      // التحقق من التاريخ قبل الإرسال
       DateTime dob;
       try {
         dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
       } catch (e) {
         if (mounted) Navigator.pop(context);
-        print('❌ Error parsing Date: $e'); // <--- ضفنا الطباعة هنا
         return;
       }
-
-      print('🚀 Sending Data to API:'); // <--- عشان نتأكد البيانات طالعة صح
-      print('Name: ${fNameController.text} ${lNameController.text}');
-      print('Email: ${emailController.text}');
-      print('Role: $selectedRole');
 
       final success = await ApiService().registerUser(
         firstName: fNameController.text,
@@ -87,17 +79,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         emergencyContact: emergencyController.text,
       );
 
-      // 2. السطر السحري لمنع أخطاء الـ Async Gaps و Windows Accessibility
       if (!mounted) return;
-
-      // إغلاق اللودينج
       Navigator.pop(context);
 
       if (success) {
         _showSuccessDialog(context);
       } else {
-        // <--- هنا طبعنا إن API ردت بـ false
-        print('❌ API Returned FALSE. Registration Failed on Server side.');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Registration failed. Please try again."),
@@ -109,14 +96,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
 
-      // <--- ده أهم سطر، هيطبعلك الإيرور الفعلي في الكونسول
-      print('🔥 CRITICAL ERROR IN CATCH BLOCK: $e');
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -230,24 +215,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(height: 12),
 
-                            Row(
-                              children: [
-                                Expanded(child: _buildDropdownField(
-                                  label: "Gender",
-                                  icon: Icons.wc_rounded,
-                                  value: selectedGender,
-                                  items: ['Male', 'Female'],
-                                  onChanged: (val) => setState(() => selectedGender = val),
-                                )),
-                                const SizedBox(width: 8),
-                                Expanded(child: _buildDropdownField(
-                                  label: "Type",
-                                  icon: Icons.supervised_user_circle_rounded,
-                                  value: selectedRole,
-                                  items: ['Doctor', 'Patient'],
-                                  onChanged: (val) => setState(() => selectedRole = val),
-                                )),
-                              ],
+                            // Gender dropdown only
+                            _buildDropdownField(
+                              label: "Gender",
+                              icon: Icons.wc_rounded,
+                              value: selectedGender,
+                              items: ['Male', 'Female'],
+                              onChanged: (val) => setState(() => selectedGender = val),
                             ),
                             const SizedBox(height: 12),
 
