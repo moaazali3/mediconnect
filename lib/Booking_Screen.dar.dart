@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:mediconnect/doctor_profile_screen.dart';
+import 'package:mediconnect/Doctor/doctor_profile_screen.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -59,10 +59,16 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _performBooking() async {
-    if (selectedDate == null || selectedPaymentIndex == null) return;
+    if (selectedDate == null || selectedPaymentIndex == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a date and payment method")),
+      );
+      return;
+    }
+
+    final String patientId = (widget.patientId != null && widget.patientId != "") ? widget.patientId! : "1";
 
     setState(() => isLoading = true);
-    
     Navigator.pop(context); // Close payment sheet
 
     showDialog(
@@ -72,24 +78,21 @@ class _BookingScreenState extends State<BookingScreen> {
     );
 
     try {
-      // Logic for Patient ID selection
-      final String patientId = (widget.patientId != null && widget.patientId != "") ? widget.patientId! : "1"; 
-      
       final String dayName = DateFormat('EEEE').format(selectedDate!);
+      final String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate!);
 
       final appointmentRequest = CreateAppointmentModel(
         patientId: patientId,
         doctorId: widget.doctorId,
         dayOfWeek: dayName,
+        appointmentDate: formattedDate, // Now correctly passing the selected date
       );
 
-      print("🚀 ATTEMPTING BOOKING FOR PATIENT ID: $patientId");
+      print("🚀 Booking for Patient: $patientId on $formattedDate");
 
       bool apptSuccess = await _apiService.createAppointment(appointmentRequest);
 
       if (apptSuccess) {
-        print("✅ SUCCESS: Appointment created for Patient: $patientId");
-
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
         
@@ -112,9 +115,8 @@ class _BookingScreenState extends State<BookingScreen> {
         throw "Failed to create appointment";
       }
     } catch (e) {
-      print("❌ ERROR: Booking failed for Patient ID ${widget.patientId}: $e");
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+        if (Navigator.canPop(context)) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );

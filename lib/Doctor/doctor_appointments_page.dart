@@ -1,25 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/services/api_service.dart';
 
 class DoctorAppointmentsPage extends StatefulWidget {
-  const DoctorAppointmentsPage({super.key});
+  final String? doctorId;
+  const DoctorAppointmentsPage({super.key, this.doctorId});
 
   @override
   State<DoctorAppointmentsPage> createState() => _DoctorAppointmentsPageState();
 }
 
 class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
-  int doneCount = 8;
-  int totalCount = 24;
-  
-  final List<Map<String, dynamic>> _appointments = [
-    {"id": "#AP-1024", "name": "Ahmed Mohamed", "reason": "Dental Checkup", "time": "10:30 AM", "date": "12 May, 2024"},
-    {"id": "#AP-1025", "name": "Sara Ali", "reason": "Heart Surgery Follow-up", "time": "12:00 PM", "date": "12 May, 2024"},
-    {"id": "#AP-1026", "name": "Omar Khalid", "reason": "General Consultation", "time": "02:15 PM", "date": "13 May, 2024"},
-  ];
+  final ApiService _apiService = ApiService();
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D47A1);
+    String idToFetch = widget.doctorId ?? "1";
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -30,58 +27,54 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: IconButton(
-              icon: const Badge(
-                label: Text('2'),
-                child: Icon(Icons.notifications_none_rounded, color: Colors.black),
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("No new notifications")),
-                );
-              },
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // 📊 Statistics Summary
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem("Total", totalCount.toString(), primaryColor),
-                _buildStatItem("Pending", _appointments.length.toString(), Colors.orangeAccent),
-                _buildStatItem("Done", doneCount.toString(), Colors.greenAccent),
-              ],
-            ),
-          ),
-          
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 20, 16, 10),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                "Today's Appointments",
+                "Incoming Appointments",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ),
-
           Expanded(
-            child: _appointments.isEmpty 
-              ? const Center(child: Text("No appointments for today"))
-              : ListView.builder(
+            child: FutureBuilder<List<DoctorAppointmentModel>>(
+              future: _apiService.getDoctorAppointments(idToFetch),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: primaryColor));
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Text("Error: ${snapshot.error}"),
+                    ),
+                  );
+                }
+                
+                final appointments = snapshot.data ?? [];
+                
+                // --- Sorting logic ---
+                // We sort by date first, then by start time
+                appointments.sort((a, b) {
+                  int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
+                  if (dateCompare != 0) return dateCompare;
+                  return a.startTime.compareTo(b.startTime);
+                });
+
+                if (appointments.isEmpty) {
+                  return const Center(child: Text("No appointments found"));
+                }
+
+                return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _appointments.length,
+                  itemCount: appointments.length,
                   itemBuilder: (context, index) {
-                    final appointment = _appointments[index];
+                    final appointment = appointments[index];
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(16),
@@ -104,11 +97,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                 radius: 25,
                                 backgroundColor: primaryColor.withOpacity(0.1),
                                 child: Text(
-                                  appointment['name'][0],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: primaryColor,
-                                  ),
+                                  appointment.patientName.isNotEmpty ? appointment.patientName[0] : "?",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
                                 ),
                               ),
                               const SizedBox(width: 15),
@@ -116,31 +106,26 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          appointment['name'],
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                        Text(
-                                          appointment['id'],
-                                          style: TextStyle(
-                                            color: primaryColor.withOpacity(0.7),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      appointment.patientName,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
                                     Text(
-                                      appointment['reason'],
+                                      "Day: ${appointment.dayOfWeek}",
                                       style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                                     ),
                                   ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "Queue #${appointment.queueNumber}",
+                                  style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -153,10 +138,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                 children: [
                                   Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey.shade500),
                                   const SizedBox(width: 5),
-                                  Text(
-                                    appointment['date'],
-                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                                  ),
+                                  Text(appointment.appointmentDate, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                                 ],
                               ),
                               Row(
@@ -164,12 +146,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                   Icon(Icons.access_time_rounded, size: 14, color: Colors.grey.shade500),
                                   const SizedBox(width: 5),
                                   Text(
-                                    appointment['time'],
-                                    style: const TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
+                                    "${appointment.startTime} - ${appointment.endTime}",
+                                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -179,29 +157,12 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                       ),
                     );
                   },
-                ),
+                );
+              },
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-        ),
-      ],
     );
   }
 }
