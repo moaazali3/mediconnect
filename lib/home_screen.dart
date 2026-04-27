@@ -22,9 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     pages = [
-      const HomeContent(),
-      const AppointmentsPage(),
-      ProfileScreen(userId: widget.userId), // تمرير الـ userId لصفحة البروفايل
+      HomeContent(userId: widget.userId), // Pass userId here
+      AppointmentsPage(userId: widget.userId),
+      ProfileScreen(userId: widget.userId),
     ];
   }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediconnect/patient/doctor_details_page.dart';
+import 'package:mediconnect/Booking_Screen.dar.dart';
 
 class DoctorCard extends StatelessWidget {
   final String id;
@@ -7,6 +7,7 @@ class DoctorCard extends StatelessWidget {
   final String spec;
   final String gender;
   final double experience;
+  final String? patientId;
 
   const DoctorCard({
     required this.id,
@@ -14,6 +15,7 @@ class DoctorCard extends StatelessWidget {
     required this.spec,
     required this.gender,
     required this.experience,
+    this.patientId,
     super.key,
   });
 
@@ -100,7 +102,12 @@ class DoctorCard extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => DoctorDetailsPage(doctorId: id),
+                  builder: (_) => BookingScreen(
+                    doctorId: id,
+                    doctorName: "Dr. $name",
+                    specialty: spec,
+                    patientId: patientId,
+                  ),
                 ),
               );
             },

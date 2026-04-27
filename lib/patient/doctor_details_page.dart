@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/doctor_profile_screen.dart';
 
 class DoctorDetailsPage extends StatelessWidget {
   final String doctorId;
@@ -58,7 +59,7 @@ class DoctorDetailsPage extends StatelessWidget {
                       ),
                       onPressed: () async {
                         final appointment = CreateAppointmentModel(
-                          patientId: "1", // Use proper ID in production
+                          patientId: "1", 
                           doctorId: doctorId,
                           dayOfWeek: selectedDay,
                         );
@@ -108,7 +109,7 @@ class DoctorDetailsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Doctor Details", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text("Booking Appointment", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
       body: FutureBuilder<DoctorProfileModel>(
         future: apiService.getDoctorProfile(doctorId),
@@ -127,21 +128,32 @@ class DoctorDetailsPage extends StatelessWidget {
           }
 
           final doctor = snapshot.data!;
-          return SingleChildScrollView(
+          return Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildProfileCard(doctor),
-                const SizedBox(height: 25),
-                const Text("Biography", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                Text(doctor.biography, style: TextStyle(color: Colors.grey[700])),
-                const SizedBox(height: 25),
-                _buildInfoSection(Icons.work_outline, "Experience", "${doctor.experienceYears} Years"),
-                _buildInfoSection(Icons.payments_outlined, "Consultation Fee", "\$${doctor.consultationFee}"),
-                _buildInfoSection(Icons.phone_outlined, "Phone Number", doctor.phoneNumber),
+                _buildProfileCard(context, doctor),
                 const SizedBox(height: 30),
+                const Text("Select Service", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.medical_information_outlined, color: primaryColor),
+                      const SizedBox(width: 15),
+                      const Expanded(child: Text("General Consultation", style: TextStyle(fontWeight: FontWeight.w600))),
+                      Text("\$${doctor.consultationFee}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                const Spacer(),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -151,7 +163,7 @@ class DoctorDetailsPage extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     ),
-                    child: const Text("Book Appointment", 
+                    child: const Text("Continue to Book", 
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
@@ -163,7 +175,7 @@ class DoctorDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileCard(DoctorProfileModel doctor) {
+  Widget _buildProfileCard(BuildContext context, DoctorProfileModel doctor) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -174,52 +186,39 @@ class DoctorDetailsPage extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 40,
+            radius: 35,
             backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
             child: Icon(
               doctor.gender == "Male" ? Icons.male : Icons.female,
               color: doctor.gender == "Male" ? Colors.blue : Colors.pink,
-              size: 40,
+              size: 35,
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text(doctor.specializationName, style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                const Row(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.star, color: Colors.amber, size: 18),
-                    SizedBox(width: 5),
-                    Text("4.9 (120 reviews)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text("Dr. ${doctor.firstName}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.info_outline, color: primaryColor),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DoctorProfileScreen(doctorId: doctorId),
+                          ),
+                        );
+                      },
+                    )
                   ],
-                )
+                ),
+                Text(doctor.specializationName, style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500)),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoSection(IconData icon, String title, String content) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade100)),
-      child: Row(
-        children: [
-          Icon(icon, color: primaryColor, size: 24),
-          const SizedBox(width: 15),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey[600])),
-              Text(content, style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w500)),
-            ],
           ),
         ],
       ),

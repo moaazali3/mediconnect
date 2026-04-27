@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/patient_history_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? userId; // Adding userId to fetch profile
+  final String? userId;
 
   const ProfileScreen({super.key, this.userId});
 
@@ -17,8 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If no userId is provided (not logged in or dummy data), we show a placeholder or handle it
-    String idToFetch = widget.userId ?? "1"; // Default to "1" for testing if ID is missing
+    String idToFetch = widget.userId ?? "1";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
@@ -77,6 +77,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 30),
                   
+                  // --- Medical History Button ---
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PatientHistoryScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.history_rounded, color: primaryColor),
+                      label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        side: const BorderSide(color: primaryColor, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+
                   _buildProfileSection("Personal Info", [
                     _buildProfileField(Icons.phone_outlined, "Phone Number", patient.phoneNumber),
                     _buildProfileField(Icons.cake_outlined, "Date of Birth", patient.dateOfBirth),
