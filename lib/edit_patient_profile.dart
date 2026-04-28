@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/models/PatientProfileModel.dart';
+import 'package:intl/intl.dart';
 
 class EditPatientProfile extends StatefulWidget {
-  const EditPatientProfile({super.key});
+  final String? patientId;
+  const EditPatientProfile({super.key, this.patientId});
 
   @override
   State<EditPatientProfile> createState() => _EditPatientProfileState();
@@ -10,6 +14,8 @@ class EditPatientProfile extends StatefulWidget {
 
 class _EditPatientProfileState extends State<EditPatientProfile> {
   final formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+  bool isLoading = true;
 
   final fNameController = TextEditingController();
   final lNameController = TextEditingController();
@@ -19,22 +25,95 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
   final heightController = TextEditingController();
   final emergencyController = TextEditingController();
   final emailController = TextEditingController();
-  final ageController = TextEditingController();
+  final dobController = TextEditingController();
   String? selectedBloodType;
+  String? selectedGender;
 
   @override
   void initState() {
     super.initState();
-    fNameController.text = "John";
-    lNameController.text = "Doe";
-    emailController.text = "johndoe@example.com";
-    phoneController.text = "01234567890";
-    addressController.text = "Cairo, Egypt";
-    weightController.text = "75";
-    heightController.text = "180";
-    emergencyController.text = "01987654321";
-    ageController.text = "26";
-    selectedBloodType = "A+";
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      final String targetId = widget.patientId ?? "1";
+      final profile = await _apiService.getPatientProfile(targetId);
+      setState(() {
+        fNameController.text = profile.firstName;
+        lNameController.text = profile.lastName;
+        emailController.text = profile.email;
+        phoneController.text = profile.phoneNumber;
+        addressController.text = profile.address ?? "";
+        weightController.text = profile.weight.toString();
+        heightController.text = profile.height.toString();
+        emergencyController.text = profile.emergencyContact;
+        dobController.text = profile.dateOfBirth;
+        selectedBloodType = profile.bloodType;
+        selectedGender = profile.gender;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading profile: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateProfile() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+    final String targetId = widget.patientId ?? "1";
+
+    final Map<String, dynamic> updateData = {
+      "firstName": fNameController.text,
+      "lastName": lNameController.text,
+      "dateOfBirth": dobController.text,
+      "gender": selectedGender,
+      "address": addressController.text,
+      "bloodType": selectedBloodType,
+      "height": double.tryParse(heightController.text) ?? 0,
+      "weight": double.tryParse(weightController.text) ?? 0,
+      "emergencyContact": emergencyController.text,
+      "phoneNumber": phoneController.text,
+    };
+
+    final success = await _apiService.updatePatientProfile(targetId, updateData);
+
+    setState(() => isLoading = false);
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _changePassword(String oldP, String newP) async {
+    final String targetId = widget.patientId ?? "1";
+    final success = await _apiService.changePassword(targetId, oldP, newP);
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -51,123 +130,130 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Center(
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: primaryColor,
-                    child: CircleAvatar(
-                      radius: 47,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.person_rounded, size: 55, color: primaryColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                _buildSectionTitle("Personal Information"),
-                _buildEditCard([
-                  _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
-                  _buildDivider(),
-                  Row(
-                    children: [
-                      Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
-                    ],
-                  ),
-                  _buildDivider(),
-                  Row(
-                    children: [
-                      Expanded(child: _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildEditRow(label: "Age", controller: ageController, icon: Icons.cake_rounded)),
-                    ],
-                  ),
-                  _buildDivider(),
-                  _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
-                ]),
-
-                const SizedBox(height: 20),
-                _buildSectionTitle("Medical Background"),
-                _buildEditCard([
-                  Row(
-                    children: [
-                      Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined)),
-                    ],
-                  ),
-                  _buildDivider(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDropdownField(
-                          label: "Blood Type",
-                          icon: Icons.bloodtype_outlined,
-                          value: selectedBloodType,
-                          items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                          onChanged: (val) => setState(() => selectedBloodType = val),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator(color: primaryColor))
+        : SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: primaryColor,
+                        child: CircleAvatar(
+                          radius: 47,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person_rounded, size: 55, color: primaryColor),
                         ),
                       ),
-                    ],
-                  ),
-                  _buildDivider(),
-                  _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
-                ]),
-
-                const SizedBox(height: 30),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        Navigator.pop(context, {
-                          'fName': fNameController.text,
-                          'lName': lNameController.text,
-                          'phone': phoneController.text,
-                          'address': addressController.text,
-                          'weight': weightController.text,
-                          'height': heightController.text,
-                          'emergency': emergencyController.text,
-                          'age': ageController.text,
-                          'blood': selectedBloodType ?? "A+",
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.check_circle_rounded, size: 20),
-                    label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                  ),
+                    const SizedBox(height: 25),
+
+                    _buildSectionTitle("Personal Information"),
+                    _buildEditCard([
+                      _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
+                      _buildDivider(),
+                      Row(
+                        children: [
+                          Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
+                      _buildDivider(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: "Gender",
+                              icon: Icons.wc_rounded,
+                              value: selectedGender,
+                              items: ['Male', 'Female'],
+                              onChanged: (val) => setState(() => selectedGender = val),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildEditRow(
+                              label: "Birth Date",
+                              controller: dobController,
+                              icon: Icons.calendar_month_rounded,
+                              isReadOnly: true,
+                              onTap: () async {
+                                DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
+                    ]),
+
+                    const SizedBox(height: 20),
+                    _buildSectionTitle("Medical Background"),
+                    _buildEditCard([
+                      Row(
+                        children: [
+                          Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildDropdownField(
+                        label: "Blood Type",
+                        icon: Icons.bloodtype_outlined,
+                        value: selectedBloodType,
+                        items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+                        onChanged: (val) => setState(() => selectedBloodType = val),
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
+                    ]),
+
+                    const SizedBox(height: 30),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton.icon(
+                        onPressed: _updateProfile,
+                        icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                        label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => _showChangePasswordDialog(context),
+                        child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 15),
-                Center(
-                  child: TextButton(
-                    onPressed: () => _showChangePasswordDialog(context),
-                    child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -189,14 +275,15 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     );
   }
 
-  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: TextFormField(
         controller: controller,
         readOnly: isReadOnly,
+        onTap: onTap,
         keyboardType: keyboardType,
-        style: TextStyle(color: isReadOnly ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
@@ -204,7 +291,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
           border: InputBorder.none,
           isDense: true,
         ),
-        validator: isReadOnly ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
+        validator: isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
       ),
     );
   }
@@ -239,7 +326,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setModalState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
           content: Form(
@@ -256,7 +343,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                   isObscured: isObscured,
                   suffix: IconButton(
                     icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
-                    onPressed: () => setState(() => isObscured = !isObscured),
+                    onPressed: () => setModalState(() => isObscured = !isObscured),
                   ),
                 ),
               ],
@@ -265,7 +352,12 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
             ElevatedButton(
-              onPressed: () { if (passKey.currentState!.validate()) Navigator.pop(context); },
+              onPressed: () { 
+                if (passKey.currentState!.validate()) {
+                  _changePassword(oldPass.text, newPass.text);
+                  Navigator.pop(context);
+                }
+              },
               style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
               child: const Text("Update", style: TextStyle(color: Colors.white)),
             ),
