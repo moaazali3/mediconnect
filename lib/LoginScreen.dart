@@ -4,11 +4,9 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/register_screen.dart';
 import 'package:mediconnect/home_screen.dart'; 
-import 'package:mediconnect/Doctor/doctor_home_screen.dart'; // Import Doctor Home
+import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/services/api_service.dart';
-//super.moaaz2026@gmail.com
-//"email": "sara.mahmoud@mediconnect.com",
-//"password": "Password@123",
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
   @override
@@ -120,13 +118,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                       builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
                                     );
 
-                                    var result = await ApiService().login(emailController.text, passwordController.text);
+                                    var response = await ApiService().login(emailController.text, passwordController.text);
 
                                     if (!mounted) return;
                                     Navigator.pop(context); 
 
-                                    if (result != null && result.containsKey('token')) {
-                                      String token = result['token'];
+                                    if (response.success && response.data != null) {
+                                      String token = response.data['token'];
                                       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
                                       
                                       String userId = decodedToken['userId'] ?? 
@@ -163,7 +161,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       }
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text("Login failed. Check credentials."), backgroundColor: Colors.red),
+                                        SnackBar(
+                                          content: Text(response.message), 
+                                          backgroundColor: Colors.red,
+                                          duration: const Duration(seconds: 5),
+                                        ),
                                       );
                                     }
                                   }

@@ -61,10 +61,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
       } catch (e) {
         if (mounted) Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Invalid Date Format"), backgroundColor: Colors.red),
+        );
         return;
       }
 
-      final success = await ApiService().registerUser(
+      final response = await ApiService().registerUser(
         firstName: fNameController.text,
         lastName: lNameController.text,
         email: emailController.text,
@@ -82,13 +85,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       Navigator.pop(context);
 
-      if (success) {
+      if (response.success) {
         _showSuccessDialog(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registration failed. Please try again."),
+          SnackBar(
+            content: Text(response.message),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -113,13 +117,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  primaryColor.withOpacity(0.8),
+                  primaryColor.withValues(alpha: 0.8),
                   Colors.white,
                 ],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withValues(alpha: 0.05)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -131,9 +135,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: Form(
                         key: formKey,
@@ -143,7 +147,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: primaryColor.withOpacity(0.1),
+                                color: primaryColor.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.person_add_alt_1_rounded, size: 50, color: primaryColor),
@@ -334,7 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
@@ -347,9 +351,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       ),
       validator: validator ?? (value) => (value == null || value.isEmpty) ? "Required" : null,
@@ -376,15 +380,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       ),
       validator: (val) => val == null ? "Required" : null,

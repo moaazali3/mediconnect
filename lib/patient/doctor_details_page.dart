@@ -195,13 +195,13 @@ class DoctorDetailsPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 35,
-            backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+            backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withValues(alpha: 0.1),
             child: Icon(
               doctor.gender == "Male" ? Icons.male : Icons.female,
               color: doctor.gender == "Male" ? Colors.blue : Colors.pink,
