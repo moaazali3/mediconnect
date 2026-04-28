@@ -4,6 +4,7 @@ class DoctorModel {
   final String lastName;
   final String gender;
   final double experienceYears;
+  final String specializationName;
 
   DoctorModel({
     required this.id,
@@ -11,6 +12,7 @@ class DoctorModel {
     required this.lastName,
     required this.gender,
     required this.experienceYears,
+    required this.specializationName,
   });
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class DoctorModel {
       lastName: json['lastName'] ?? '',
       gender: json['gender'] ?? '',
       experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
+      specializationName: json['specializationName'] ?? 'General',
     );
   }
 }

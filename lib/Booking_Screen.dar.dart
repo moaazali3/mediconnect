@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:mediconnect/Doctor/doctor_profile_screen.dart';
+import 'package:mediconnect/doctor_profile_view_screen.dart'; // Import the view-only profile
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -85,10 +85,8 @@ class _BookingScreenState extends State<BookingScreen> {
         patientId: patientId,
         doctorId: widget.doctorId,
         dayOfWeek: dayName,
-        appointmentDate: formattedDate, // Now correctly passing the selected date
+        appointmentDate: formattedDate,
       );
-
-      print("🚀 Booking for Patient: $patientId on $formattedDate");
 
       bool apptSuccess = await _apiService.createAppointment(appointmentRequest);
 
@@ -210,8 +208,8 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.info_outline_rounded, color: primaryColor),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileScreen(doctorId: widget.doctorId))),
+                      icon: const Icon(Icons.account_circle_outlined, color: primaryColor),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId))),
                     ),
                   ],
                 ),
