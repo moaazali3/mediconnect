@@ -75,95 +75,98 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFF),
-          appBar: AppBar(
-            backgroundColor: primaryColor,
-            elevation: 0,
-            toolbarHeight: 60,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text(
-              "Doctor Profile",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            centerTitle: true,
-          ),
           bottomNavigationBar: _buildBottomAction(doctor.phoneNumber),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildIdentityCard(doctor, dummyImageUrl),
-                const SizedBox(height: 25),
-                _buildStatsRow(doctor, age),
-                const SizedBox(height: 30),
-                _buildSectionTitle("Professional Biography"),
-                _buildInfoCard(doctor.biography),
-                const SizedBox(height: 25),
-                _buildSectionTitle("Professional Details"),
-                _buildProfileCard([
-                  _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
-                  _buildDivider(),
-                  _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
-                ]),
-                const SizedBox(height: 30),
-              ],
-            ),
+          body: Column(
+            children: [
+              _buildFixedHeader(doctor, dummyImageUrl),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatsRow(doctor, age),
+                      const SizedBox(height: 30),
+                      _buildSectionTitle("Professional Biography"),
+                      _buildInfoCard(doctor.biography),
+                      const SizedBox(height: 25),
+                      _buildSectionTitle("Professional Details"),
+                      _buildProfileCard([
+                        _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
+                      ]),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildIdentityCard(DoctorProfileModel doctor, String imageUrl) {
+  Widget _buildFixedHeader(DoctorProfileModel doctor, String imageUrl) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
+      padding: const EdgeInsets.only(top: 50, bottom: 25, left: 10, right: 20),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              onPressed: () => Navigator.pop(context),
             ),
-            child: CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.white,
-              backgroundImage: NetworkImage(imageUrl),
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: CircleAvatar(
+                radius: 35,
+                backgroundColor: Colors.white,
+                backgroundImage: NetworkImage(imageUrl),
+              ),
             ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  style: TextStyle(fontSize: 15, color: primaryColor.withOpacity(0.8), fontWeight: FontWeight.w600),
-                ),
-              ],
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Dr. ${doctor.firstName} ${doctor.lastName}",
+                    style: const TextStyle(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white
+                    ),
+                  ),
+                  Text(
+                    doctor.specializationName,
+                    style: const TextStyle(
+                      fontSize: 14, 
+                      color: Colors.white70, 
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

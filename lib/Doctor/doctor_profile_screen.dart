@@ -89,78 +89,16 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               ? doctor.imageUrl!
               : "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
 
-          return CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 220,
-                pinned: true,
-                backgroundColor: primaryColor,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomLeft,
-                        colors: [primaryColor, Color(0xFF00397F)],
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 50),
-                        Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            CircleAvatar(
-                              radius: 60,
-                              backgroundColor: Colors.white24,
-                              child: CircleAvatar(
-                                radius: 55,
-                                backgroundColor: Colors.white,
-                                backgroundImage: NetworkImage(displayImage),
-                              ),
-                            ),
-                            if (_isUploading)
-                              const Positioned.fill(
-                                child: CircularProgressIndicator(color: Colors.white),
-                              ),
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.white,
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.camera_alt_rounded, size: 20, color: primaryColor),
-                                onPressed: _isUploading ? null : _pickAndUploadImage,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              SliverToBoxAdapter(
-                child: Container(
+          return Column(
+            children: [
+              _buildFixedHeader(doctor, displayImage),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Text(
-                          "Dr. ${doctor.firstName} ${doctor.lastName}",
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          doctor.specializationName,
-                          style: const TextStyle(fontSize: 16, color: primaryColor, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-
                       _buildSectionTitle("Professional Details"),
                       _buildProfileCard([
                         _buildInfoRow(Icons.badge_rounded, "Specialization", doctor.specializationName),
@@ -238,6 +176,85 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFixedHeader(DoctorProfileModel doctor, String displayImage) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [primaryColor, Color(0xFF00397F)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      padding: const EdgeInsets.only(top: 10, bottom: 25, left: 20, right: 20),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    backgroundImage: NetworkImage(displayImage),
+                  ),
+                ),
+                if (_isUploading)
+                  const Positioned.fill(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                CircleAvatar(
+                  radius: 15,
+                  backgroundColor: Colors.white,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.camera_alt_rounded, size: 16, color: primaryColor),
+                    onPressed: _isUploading ? null : _pickAndUploadImage,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Dr. ${doctor.firstName} ${doctor.lastName}",
+                    style: const TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white
+                    ),
+                  ),
+                  Text(
+                    doctor.specializationName,
+                    style: const TextStyle(
+                      fontSize: 14, 
+                      color: Colors.white70, 
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
