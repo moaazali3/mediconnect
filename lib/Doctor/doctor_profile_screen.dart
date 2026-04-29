@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/LoginScreen.dart';
 import 'package:mediconnect/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
@@ -15,6 +17,7 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final ApiService _apiService = ApiService();
+  bool _isUploading = false;
 
   int _calculateAge(String dob) {
     try {
@@ -27,6 +30,40 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       return age;
     } catch (e) {
       return 0;
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+
+    if (image != null) {
+      setState(() => _isUploading = true);
+      try {
+        final success = await _apiService.uploadDoctorImage(widget.doctorId, image.path);
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Profile image updated successfully!"), backgroundColor: Colors.green),
+            );
+          }
+          setState(() {}); 
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Failed to upload image"), backgroundColor: Colors.red),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -48,12 +85,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           }
 
           final doctor = snapshot.data!;
-          const String dummyImageUrl = "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
+          final String displayImage = (doctor.imageUrl != null && doctor.imageUrl!.isNotEmpty)
+              ? doctor.imageUrl!
+              : "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
 
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 220,
                 pinned: true,
                 backgroundColor: primaryColor,
                 flexibleSpace: FlexibleSpaceBar(
@@ -65,18 +104,36 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         colors: [primaryColor, Color(0xFF00397F)],
                       ),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(height: 50),
-                        CircleAvatar(
-                          radius: 55,
-                          backgroundColor: Colors.white24,
-                          child: CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.white,
-                            backgroundImage: NetworkImage(dummyImageUrl),
-                          ),
+                        const SizedBox(height: 50),
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.white24,
+                              child: CircleAvatar(
+                                radius: 55,
+                                backgroundColor: Colors.white,
+                                backgroundImage: NetworkImage(displayImage),
+                              ),
+                            ),
+                            if (_isUploading)
+                              const Positioned.fill(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.white,
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.camera_alt_rounded, size: 20, color: primaryColor),
+                                onPressed: _isUploading ? null : _pickAndUploadImage,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -118,13 +175,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       const SizedBox(height: 25),
                       _buildSectionTitle("Personal Information"),
                       _buildProfileCard([
-                        _buildInfoRow(Icons.email_rounded, "Email", doctor.email),
+                        _buildInfoRow(Icons.email_outlined, "Email", doctor.email),
                         _buildDivider(),
-                        _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
+                        _buildInfoRow(Icons.phone_android_rounded, "Phone Number", doctor.phoneNumber),
                         _buildDivider(),
                         _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(doctor.dateOfBirth)} Years"),
                         _buildDivider(),
-                        _buildInfoRow(Icons.location_on_rounded, "Clinic Address", doctor.address ?? "No Address"),
+                        _buildInfoRow(Icons.location_on_outlined, "Clinic Address", doctor.address ?? "No Address"),
                       ]),
 
                       const SizedBox(height: 40),
@@ -139,7 +196,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               MaterialPageRoute(builder: (context) => EditDoctorProfile(doctorId: widget.doctorId)),
                             );
                             if (result == true) {
-                              setState(() {}); // Refresh data
+                              setState(() {}); 
                             }
                           },
                           icon: const Icon(Icons.edit_note_rounded),
@@ -202,7 +259,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -221,7 +278,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: primaryColor.withValues(alpha: 0.08),
+              color: primaryColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: primaryColor, size: 22),

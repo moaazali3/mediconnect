@@ -10,6 +10,7 @@ class DoctorProfileModel {
   final double experienceYears;
   final double consultationFee;
   final String biography;
+  final String? imageUrl;
 
   DoctorProfileModel({
     required this.firstName,
@@ -23,6 +24,7 @@ class DoctorProfileModel {
     required this.experienceYears,
     required this.consultationFee,
     required this.biography,
+    this.imageUrl,
   });
 
   factory DoctorProfileModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class DoctorProfileModel {
       experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
       consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,
       biography: json['biography'] ?? '',
+      imageUrl: json['imageUrl'],
     );
   }
 
@@ -50,6 +53,7 @@ class DoctorProfileModel {
       "address": address,
       "phoneNumber": phoneNumber,
       "biography": biography,
+      "imageUrl": imageUrl,
     };
   }
 }

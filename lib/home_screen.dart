@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'patient/screens/home_content.dart';
 import 'patient/screens/appointments_page.dart';
 import 'patient/screens/profile.dart';
@@ -15,25 +18,72 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int currentIndex = 0;
+  final ApiService _apiService = ApiService();
+  String? userName;
 
   late final List<Widget> pages;
 
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     pages = [
-      HomeContent(userId: widget.userId), // Pass userId here
+      HomeContent(userId: widget.userId),
       AppointmentsPage(userId: widget.userId),
       ProfileScreen(userId: widget.userId),
     ];
   }
 
+  Future<void> _loadUserName() async {
+    if (widget.userId != null) {
+      try {
+        final profile = await _apiService.getPatientProfile(widget.userId!);
+        setState(() {
+          userName = "${profile.firstName} ${profile.lastName}";
+        });
+      } catch (e) {
+        debugPrint("Error loading user name: $e");
+        setState(() {
+          userName = "User";
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D47A1);
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      appBar: currentIndex == 0 ? AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: 70,
+        title: Padding(
+          padding: const EdgeInsets.only(left: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Hello,",
+                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400),
+              ),
+              Text(
+                userName ?? "Loading...",
+                style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 15),
+            child: CircleAvatar(
+              backgroundColor: primaryColor.withOpacity(0.1),
+              child: const Icon(Icons.notifications_none_rounded, color: primaryColor),
+            ),
+          )
+        ],
+      ) : null,
       body: pages[currentIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),

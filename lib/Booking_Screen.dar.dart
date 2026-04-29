@@ -124,6 +124,37 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
+  void _showSuccessBooking() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 80),
+            const SizedBox(height: 20),
+            const Text("Booking Successful!", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Text("Your appointment with ${widget.doctorName} is confirmed for ${DateFormat('yMMMd').format(selectedDate!)}.", textAlign: TextAlign.center),
+            const SizedBox(height: 25),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text("GO TO APPOINTMENTS", style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     List<DateTime> availableDates = getAvailableDates();
@@ -363,11 +394,11 @@ class _BookingScreenState extends State<BookingScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: selectedPaymentIndex == null ? null : _performBooking,
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                  child: const Text("CONFIRM BOOKING", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  child: const Text("CONFIRM BOOKING", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
             ],
           ),
         ),
@@ -376,83 +407,36 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildPaymentOption({required int index, required IconData icon, required String title, required String subtitle, required bool selected, required VoidCallback onTap}) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
+          color: selected ? primaryColor.withOpacity(0.05) : Colors.white,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: selected ? primaryColor : Colors.grey.shade200, width: selected ? 2 : 1),
-          color: selected ? primaryColor.withOpacity(0.05) : Colors.transparent,
+          border: Border.all(color: selected ? primaryColor : Colors.grey.shade200, width: 1.5),
         ),
         child: Row(
           children: [
-            Icon(icon, color: primaryColor, size: 28),
-            const SizedBox(width: 15),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12))])),
-            Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded, color: selected ? primaryColor : Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showSuccessBooking() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        contentPadding: EdgeInsets.zero,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              decoration: const BoxDecoration(color: Colors.green, borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-              child: const Center(child: Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 80)),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: selected ? primaryColor : Colors.grey.shade100, shape: BoxShape.circle),
+              child: Icon(icon, color: selected ? Colors.white : Colors.grey, size: 22),
             ),
-            Padding(
-              padding: const EdgeInsets.all(25),
+            const SizedBox(width: 15),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Booking Successful!", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  _buildResponseItem("Doctor Name", widget.doctorName),
-                  _buildResponseItem("Date", DateFormat('yyyy-MM-dd').format(selectedDate!)),
-                  _buildResponseItem("Day", DateFormat('EEEE').format(selectedDate!)),
-                  _buildResponseItem("Status", "Confirmed", isStatus: true),
-                  const SizedBox(height: 25),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Go back
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                      child: const Text("DONE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
+                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87)),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             ),
+            if (selected) const Icon(Icons.check_circle_rounded, color: primaryColor),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildResponseItem(String label, String value, {bool isStatus = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isStatus ? Colors.green : Colors.black87, fontSize: 14)),
-        ],
       ),
     );
   }

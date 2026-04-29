@@ -72,7 +72,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                         MaterialPageRoute(
                           builder: (context) => DoctorBookingsDetail(doctor: doctor),
                         ),
-                      );
+                      ).then((_) => setState(() {})); // Refresh when returning
                     },
                   ),
                 );
@@ -82,71 +82,195 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
   }
 }
 
-class DoctorBookingsDetail extends StatelessWidget {
+class DoctorBookingsDetail extends StatefulWidget {
   final DoctorModel doctor;
   const DoctorBookingsDetail({super.key, required this.doctor});
 
   @override
-  Widget build(BuildContext context) {
-    final apiService = ApiService();
+  State<DoctorBookingsDetail> createState() => _DoctorBookingsDetailState();
+}
 
+class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
+  final ApiService _apiService = ApiService();
+  bool _isProcessing = false;
+
+  Future<void> _updateStatus(String id, bool isAccept) async {
+    setState(() => _isProcessing = true);
+    try {
+      bool success;
+      if (isAccept) {
+        success = await _apiService.completeAppointmentStatus(id);
+      } else {
+        success = await _apiService.cancelAppointmentStatus(id);
+      }
+
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!"),
+              backgroundColor: isAccept ? Colors.green : Colors.red,
+            ),
+          );
+          setState(() {}); // Refresh list
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Bookings: ${doctor.firstName}", style: const TextStyle(color: Colors.white)),
+        title: Text("Bookings: ${widget.doctor.firstName}", style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: FutureBuilder<List<DoctorAppointmentModel>>(
-        future: apiService.getDoctorAppointments(doctor.id),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No bookings found for this doctor."));
-          }
+      body: Stack(
+        children: [
+          FutureBuilder<List<DoctorAppointmentModel>>(
+            future: _apiService.getDoctorAppointments(widget.doctor.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text("Error: ${snapshot.error}"));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text("No bookings found for this doctor."));
+              }
 
-          final appointments = snapshot.data!;
-          return ListView.builder(
-            itemCount: appointments.length,
-            padding: const EdgeInsets.all(15),
-            itemBuilder: (context, index) {
-              final app = appointments[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  title: Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Date: ${app.appointmentDate}"),
-                      Text("Time: ${app.startTime} - ${app.endTime}"),
-                    ],
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: app.status.toLowerCase() == 'confirmed' ? Colors.green.shade100 : Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      app.status,
-                      style: TextStyle(
-                        color: app.status.toLowerCase() == 'confirmed' ? Colors.green.shade900 : Colors.orange.shade900,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              final appointments = snapshot.data!;
+              
+              // Sorting logic: Date then Start Time
+              appointments.sort((a, b) {
+                int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
+                if (dateCompare != 0) return dateCompare;
+                return a.startTime.compareTo(b.startTime);
+              });
+
+              return ListView.builder(
+                itemCount: appointments.length,
+                padding: const EdgeInsets.all(15),
+                itemBuilder: (context, index) {
+                  final app = appointments[index];
+                  final bool isFinalized = app.status == "Completed" || app.status == "Cancelled" || app.status == "Confirmed";
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(app.status).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  app.status,
+                                  style: TextStyle(
+                                    color: _getStatusColor(app.status),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Date: ${app.appointmentDate}", style: TextStyle(color: Colors.grey[700])),
+                                  Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: Colors.grey[700])),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  "Queue: #${app.queueNumber}",
+                                  style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!isFinalized) ...[
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, false),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                    ),
+                                    child: const Text("Cancel"),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text("Accept"),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+          if (_isProcessing)
+            Container(
+              color: Colors.black12,
+              child: const Center(child: CircularProgressIndicator(color: primaryColor)),
+            ),
+        ],
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Colors.orange;
+      case 'completed': 
+      case 'confirmed': return Colors.green;
+      case 'cancelled': return Colors.red;
+      default: return Colors.blue;
+    }
   }
 }

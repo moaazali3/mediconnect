@@ -14,8 +14,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   intl: ^0.19.0
-  jwt_decoder: ^2.0.1 # إضافة المكتبة هنا
+  jwt_decoder: ^2.0.1
   url_launcher: ^6.3.2
+  image_picker: ^1.0.4
 
 dev_dependencies:
   flutter_test:

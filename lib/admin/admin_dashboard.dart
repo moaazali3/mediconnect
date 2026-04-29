@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
+import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
@@ -310,7 +311,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           "Manage list",
           Icons.category_rounded,
           Colors.amber.shade700,
-          () {},
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
         ),
         _buildActionCard(
           context,

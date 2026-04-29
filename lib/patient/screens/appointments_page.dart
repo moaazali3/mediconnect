@@ -14,38 +14,6 @@ class AppointmentsPage extends StatefulWidget {
 class _AppointmentsPageState extends State<AppointmentsPage> {
   final ApiService _apiService = ApiService();
 
-  Future<void> _cancelAppointment(String appointmentId) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
-    );
-
-    try {
-      final success = await _apiService.cancelAppointmentStatus(appointmentId);
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        if (success) {
-          setState(() {}); // Refresh list
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Appointment cancelled successfully"), backgroundColor: Colors.green),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to cancel appointment"), backgroundColor: Colors.red),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     String idToFetch = widget.userId ?? "1"; 
@@ -83,7 +51,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   time: "${appointment.startTime} - ${appointment.endTime}",
                   status: appointment.status,
                   queue: appointment.queueNumber,
-                  onCancel: () => _cancelAppointment(appointment.appointmentId),
                 );
               },
             );
@@ -102,7 +69,6 @@ class AppointmentCard extends StatelessWidget {
   final String time;
   final String status;
   final int queue;
-  final VoidCallback onCancel;
 
   const AppointmentCard({
     super.key,
@@ -113,13 +79,10 @@ class AppointmentCard extends StatelessWidget {
     required this.time,
     required this.status,
     required this.queue,
-    required this.onCancel,
   });
 
   @override
   Widget build(BuildContext context) {
-    bool isPending = status.toLowerCase() == 'pending';
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -185,45 +148,6 @@ class AppointmentCard extends StatelessWidget {
               _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue"),
             ],
           ),
-          if (isPending) ...[
-            const SizedBox(height: 15),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          title: const Text("Cancel Appointment"),
-                          content: const Text("Are you sure you want to cancel this appointment?"),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Keep it")),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                                onCancel();
-                              }, 
-                              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.cancel_outlined, size: 18),
-                    label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ]
         ],
       ),
     );

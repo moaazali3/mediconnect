@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:mediconnect/LoginScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? userId; // معرف المريض
+  final String? userId;
   const ProfileScreen({super.key, this.userId});
 
   @override
@@ -81,7 +81,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 30),
                       
-                      // --- Medical History Button ---
                       SizedBox(
                         width: double.infinity,
                         height: 55,
@@ -104,23 +103,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       _buildSectionTitle("Personal Information"),
                       _buildProfileCard([
-                        _buildInfoRow(Icons.email_rounded, "Email", profile.email),
+                        _buildInfoRow(Icons.email_outlined, "Email", profile.email),
                         _buildDivider(),
-                        _buildInfoRow(Icons.phone_rounded, "Phone", profile.phoneNumber),
+                        _buildInfoRow(Icons.phone_android_rounded, "Phone", profile.phoneNumber),
                         _buildDivider(),
-                        _buildInfoRow(Icons.location_on_rounded, "Address", profile.address ?? "No Address"),
+                        _buildInfoRow(Icons.location_on_outlined, "Address", profile.address ?? "No Address"),
                       ]),
                       
                       const SizedBox(height: 25),
                       _buildSectionTitle("Medical Background"),
                       _buildProfileCard([
-                        _buildInfoRow(Icons.bloodtype_rounded, "Blood Type", profile.bloodType),
+                        _buildInfoRow(Icons.bloodtype_outlined, "Blood Type", profile.bloodType),
                         _buildDivider(),
                         _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(profile.dateOfBirth)} Years"),
                         _buildDivider(),
                         _buildInfoRow(Icons.height_rounded, "Height", "${profile.height} cm"),
                         _buildDivider(),
-                        _buildInfoRow(Icons.monitor_weight_rounded, "Weight", "${profile.weight} kg"),
+                        _buildInfoRow(Icons.monitor_weight_outlined, "Weight", "${profile.weight} kg"),
                         _buildDivider(),
                         _buildInfoRow(Icons.contact_emergency_rounded, "Emergency Contact", profile.emergencyContact),
                       ]),
@@ -207,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (context) => EditPatientProfile(userId: targetId,)),
               );
               if (result == true) {
-                setState(() {}); // Refresh data
+                setState(() {});
               }
             },
             icon: const Icon(Icons.edit_note_rounded),

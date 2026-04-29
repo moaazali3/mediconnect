@@ -38,7 +38,6 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
   Future<void> _loadProfileData() async {
     try {
       final String targetId = widget.userId ?? "1";
-      print("Loading Profile for Patient ID: $targetId");
       final profile = await _apiService.getPatientProfile(targetId);
       setState(() {
         fNameController.text = profile.firstName;
@@ -69,7 +68,6 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
     setState(() => isLoading = true);
     final String targetId = widget.userId ?? "1";
-    print("Updating Profile for Patient ID: $targetId");
 
     final PatientProfileModel updatedProfile = PatientProfileModel(
       firstName: fNameController.text,
@@ -162,14 +160,29 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Center(
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: primaryColor,
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [primaryColor, Color(0xFF1E88E5)],
+                          ),
+                        ),
                         child: CircleAvatar(
-                          radius: 47,
+                          radius: 50,
                           backgroundColor: Colors.white,
-                          child: Icon(Icons.person_rounded, size: 55, color: primaryColor),
+                          child: CircleAvatar(
+                            radius: 46,
+                            backgroundColor: Colors.white,
+                            child: Icon(
+                              selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
+                              size: 60, 
+                              color: primaryColor
+                            ),
+                          ),
                         ),
                       ),
                     ),
