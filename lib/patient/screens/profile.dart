@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
-import 'package:mediconnect/edit_patient_profile.dart';
+import 'package:mediconnect/patient/screens/edit_patient_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
-import 'package:mediconnect/patient_history_screen.dart';
+import 'package:mediconnect/patient/screens/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:mediconnect/LoginScreen.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;

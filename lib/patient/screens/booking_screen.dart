@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:mediconnect/doctor_profile_view_screen.dart'; // Import the view-only profile
+import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';

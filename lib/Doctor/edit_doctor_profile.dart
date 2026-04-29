@@ -26,7 +26,6 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   final dobController = TextEditingController();
   String? selectedGender;
   
-  // These are kept to rebuild the model but are not part of the Update DTO
   String specializationName = "";
   double experienceYears = 0;
   double consultationFee = 0;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mediconnect/LoginScreen.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/admin/admin_dashboard.dart';
-import 'home_screen.dart';
+import 'package:mediconnect/home_screen.dart';
 
 void main() {
   runApp(const MyApp());

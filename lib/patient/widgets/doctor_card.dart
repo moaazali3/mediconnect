@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediconnect/Booking_Screen.dar.dart';
+import 'package:mediconnect/patient/screens/booking_screen.dart';
 
 class DoctorCard extends StatelessWidget {
   final String id;

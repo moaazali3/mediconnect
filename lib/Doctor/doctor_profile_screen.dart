@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
-import 'package:mediconnect/LoginScreen.dart';
-import 'package:mediconnect/edit_doctor_profile.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:image_picker/image_picker.dart';

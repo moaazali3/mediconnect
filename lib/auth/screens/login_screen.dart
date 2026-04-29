@@ -2,12 +2,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:jwt_decoder/jwt_decoder.dart'; 
 import 'package:mediconnect/constants/colors.dart';
-import 'package:mediconnect/register_screen.dart';
+import 'package:mediconnect/auth/screens/register_screen.dart';
 import 'package:mediconnect/home_screen.dart'; 
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
-//admin@hospital.com Admin123!
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

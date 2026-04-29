@@ -5,7 +5,7 @@ import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
-import 'package:mediconnect/LoginScreen.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});

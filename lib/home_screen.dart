@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
-import 'patient/screens/home_content.dart';
-import 'patient/screens/appointments_page.dart';
-import 'patient/screens/profile.dart';
+import 'package:mediconnect/patient/screens/home_content.dart';
+import 'package:mediconnect/patient/screens/appointments_page.dart';
+import 'package:mediconnect/patient/screens/profile.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userId;

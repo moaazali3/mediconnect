@@ -49,7 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  // --- Validators with Comprehensive Error Messages ---
+  // --- Validators ---
 
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return "Required";
@@ -173,11 +173,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [primaryColor.withValues(alpha: 0.8), Colors.white],
+                colors: [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
-          Container(color: Colors.black.withValues(alpha: 0.05)),
+          Container(color: Colors.black.withOpacity(0.05)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -189,9 +189,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: Colors.white.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
                       child: Form(
                         key: formKey,
@@ -200,7 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
                               child: const Icon(Icons.person_add_alt_1_rounded, size: 50, color: primaryColor),
                             ),
                             const SizedBox(height: 10),
@@ -420,7 +420,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         suffixIcon: isPassword
@@ -431,9 +431,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       ),
       validator: validator ?? (value) => (value == null || value.isEmpty) ? "Required" : null,
@@ -459,13 +459,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       ),
       validator: (val) => val == null ? "Required" : null,

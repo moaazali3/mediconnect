@@ -4,7 +4,7 @@ import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class PatientHistoryScreen extends StatefulWidget {
-  final String? userId; // Add userId to fetch real data
+  final String? userId; 
   const PatientHistoryScreen({super.key, this.userId});
 
   @override
@@ -16,7 +16,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String idToFetch = widget.userId ?? "1"; // Default for testing
+    String idToFetch = widget.userId ?? "1"; 
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F9),
@@ -80,7 +80,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
           Row(
             children: [
               CircleAvatar(
@@ -117,7 +116,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           ),
           Divider(color: Colors.grey.shade100, height: 25),
           
-          // Diagnosis Section
           const Row(
             children: [
               Icon(Icons.medical_information_rounded, color: Colors.grey, size: 16),
@@ -132,7 +130,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           ),
           const SizedBox(height: 15),
 
-          // Prescription Section
           const Row(
             children: [
               Icon(Icons.medication_rounded, color: Colors.grey, size: 16),
