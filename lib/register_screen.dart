@@ -12,6 +12,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  int currentStep = 0;
   bool registerPasswordObscured = true;
   bool confirmPasswordObscured = true;
   final formKey = GlobalKey<FormState>();
@@ -48,6 +49,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  // --- Validators with Comprehensive Error Messages ---
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) return "Required";
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return "Email must have:\n• Valid format (e.g. name@example.com)";
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return "Required";
+    
+    List<String> requirements = [];
+    if (value.length < 8) requirements.add("• At least 8 characters");
+    if (!RegExp(r'[A-Z]').hasMatch(value)) requirements.add("• One uppercase letter");
+    if (!RegExp(r'[a-z]').hasMatch(value)) requirements.add("• One lowercase letter");
+    if (!RegExp(r'[0-9]').hasMatch(value)) requirements.add("• One number");
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) requirements.add("• One special character");
+
+    if (requirements.isEmpty) return null;
+    return "Password must have:\n" + requirements.join("\n");
+  }
+
+  String? _validateName(String? value, String label) {
+    if (value == null || value.isEmpty) return "Required";
+    List<String> requirements = [];
+    if (value.length < 3) requirements.add("• At least 3 characters");
+    if (RegExp(r'[0-9]').hasMatch(value)) requirements.add("• No numbers allowed");
+    
+    if (requirements.isEmpty) return null;
+    return "$label must have:\n" + requirements.join("\n");
+  }
+
+  String? _validatePhone(String? value, String label) {
+    if (value == null || value.isEmpty) return "Required";
+    List<String> requirements = [];
+    if (value.length != 11) requirements.add("• Exactly 11 digits");
+    if (!value.startsWith("01")) requirements.add("• Must start with 01");
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) requirements.add("• Only numbers allowed");
+    
+    if (requirements.isEmpty) return null;
+    return "$label must have:\n" + requirements.join("\n");
+  }
+
+  String? _validateAddress(String? value) {
+    if (value == null || value.isEmpty) return "Required";
+    if (value.length < 5) return "Address must have:\n• Min 5 characters";
+    return null;
+  }
+
+  String? _validateWeight(String? value) {
+    if (value == null || value.isEmpty) return "Required";
+    double? w = double.tryParse(value);
+    if (w == null || w < 2 || w > 300) {
+      return "Weight must have:\n• Range between 2 and 300 kg";
+    }
+    return null;
+  }
+
+  String? _validateHeight(String? value) {
+    if (value == null || value.isEmpty) return "Required";
+    double? h = double.tryParse(value);
+    if (h == null || h < 40 || h > 250) {
+      return "Height must have:\n• Range between 40 and 250 cm";
+    }
+    return null;
+  }
+
   Future<void> _performRegister() async {
     showDialog(
       context: context,
@@ -56,16 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     try {
-      DateTime dob;
-      try {
-        dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
-      } catch (e) {
-        if (mounted) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Invalid Date Format"), backgroundColor: Colors.red),
-        );
-        return;
-      }
+      DateTime dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
 
       final response = await ApiService().registerUser(
         firstName: fNameController.text,
@@ -89,17 +151,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _showSuccessDialog(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
+          SnackBar(content: Text(response.message), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
@@ -116,10 +173,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withValues(alpha: 0.8),
-                  Colors.white,
-                ],
+                colors: [primaryColor.withValues(alpha: 0.8), Colors.white],
               ),
             ),
           ),
@@ -146,158 +200,167 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle),
                               child: const Icon(Icons.person_add_alt_1_rounded, size: 50, color: primaryColor),
                             ),
                             const SizedBox(height: 10),
-                            const Text(
-                              "Create Account",
-                              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor),
-                            ),
-                            const SizedBox(height: 30),
+                            Text(_getStepTitle(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                            const SizedBox(height: 5),
+                            Text("Step ${currentStep + 1} of 3", style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                            const SizedBox(height: 25),
 
-                            Row(
-                              children: [
-                                Expanded(child: _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline)),
-                                const SizedBox(width: 10),
-                                Expanded(child: _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline)),
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-
-                            Row(
-                              children: [
-                                Expanded(child: _buildTextField(controller: phoneController, label: "Phone", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone)),
-                                const SizedBox(width: 10),
-                                Expanded(child: _buildTextField(controller: emergencyController, label: "Emergency", icon: Icons.contact_emergency_rounded, keyboardType: TextInputType.phone)),
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-
-                            Row(
-                              children: [
-                                Expanded(child: _buildTextField(controller: weightController, label: "Weight", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
-                                const SizedBox(width: 10),
-                                Expanded(child: _buildTextField(controller: heightController, label: "Height", icon: Icons.height_rounded, keyboardType: TextInputType.number)),
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-
-                            Row(
-                              children: [
-                                Expanded(child: _buildDropdownField(
-                                  label: "Blood",
-                                  icon: Icons.bloodtype_rounded,
-                                  value: selectedBloodType,
-                                  items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                                  onChanged: (val) => setState(() => selectedBloodType = val),
-                                )),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: _buildTextField(
-                                    controller: dobController,
-                                    label: "Birth Date",
-                                    icon: Icons.calendar_month_rounded,
-                                    readOnly: true,
-                                    onTap: () async {
-                                      DateTime? picked = await showDatePicker(
-                                        context: context,
-                                        initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
-                                        firstDate: DateTime(1900),
-                                        lastDate: DateTime.now(),
-                                      );
-                                      if (picked != null) {
-                                        setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                      }
+                            // STEP 1: Account Details
+                            if (currentStep == 0) 
+                              Column(
+                                key: const ValueKey(0),
+                                children: [
+                                  _buildTextField(
+                                    controller: emailController,
+                                    label: "Email Address",
+                                    icon: Icons.alternate_email_rounded,
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: _validateEmail,
+                                  ),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(
+                                    controller: passController,
+                                    label: "Password",
+                                    icon: Icons.lock_person_rounded,
+                                    isPassword: true,
+                                    isPasswordHidden: registerPasswordObscured,
+                                    onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured),
+                                    validator: _validatePassword,
+                                  ),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(
+                                    controller: confirmPassController,
+                                    label: "Confirm Password",
+                                    icon: Icons.lock_person_rounded,
+                                    isPassword: true,
+                                    isPasswordHidden: confirmPasswordObscured,
+                                    onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) return "Required";
+                                      if (value != passController.text) return "Passwords do not match";
+                                      return null;
                                     },
+                                  ),
+                                ],
+                              ),
+
+                            // STEP 2: Personal Details
+                            if (currentStep == 1) 
+                              Column(
+                                key: const ValueKey(1),
+                                children: [
+                                  _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone Number")),
+                                  const SizedBox(height: 15),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildDropdownField(
+                                        label: "Gender",
+                                        icon: Icons.wc_rounded,
+                                        value: selectedGender,
+                                        items: ['Male', 'Female'],
+                                        onChanged: (val) => setState(() => selectedGender = val),
+                                      )),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _buildTextField(
+                                          controller: dobController,
+                                          label: "Birth Date",
+                                          icon: Icons.calendar_month_rounded,
+                                          readOnly: true,
+                                          onTap: () async {
+                                            DateTime? picked = await showDatePicker(
+                                              context: context,
+                                              initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
+                                              firstDate: DateTime(1900),
+                                              lastDate: DateTime.now(),
+                                            );
+                                            if (picked != null) {
+                                              setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: addressController, label: "Home Address", icon: Icons.location_on_outlined, validator: _validateAddress),
+                                ],
+                              ),
+
+                            // STEP 3: Medical Details
+                            if (currentStep == 2) 
+                              Column(
+                                key: const ValueKey(2),
+                                children: [
+                                  _buildDropdownField(
+                                    label: "Blood Type",
+                                    icon: Icons.bloodtype_rounded,
+                                    value: selectedBloodType,
+                                    items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+                                    onChanged: (val) => setState(() => selectedBloodType = val),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number, validator: _validateWeight),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height_rounded, keyboardType: TextInputType.number, validator: _validateHeight),
+                                  const SizedBox(height: 15),
+                                  _buildTextField(controller: emergencyController, label: "Emergency Contact", icon: Icons.contact_emergency_rounded, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Emergency Contact")),
+                                ],
+                              ),
+
+                            const SizedBox(height: 35),
+
+                            Row(
+                              children: [
+                                if (currentStep > 0) 
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: () => setState(() => currentStep--),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 15),
+                                        side: const BorderSide(color: primaryColor),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                      ),
+                                      child: const Text("BACK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                if (currentStep > 0) const SizedBox(width: 15),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _handleNext,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: primaryColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 15),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                      elevation: 5,
+                                    ),
+                                    child: Text(currentStep == 2 ? "SIGN UP" : "NEXT", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 15),
-
-                            _buildDropdownField(
-                              label: "Gender",
-                              icon: Icons.wc_rounded,
-                              value: selectedGender,
-                              items: ['Male', 'Female'],
-                              onChanged: (val) => setState(() => selectedGender = val),
-                            ),
-                            const SizedBox(height: 15),
-
-                            _buildTextField(
-                              controller: addressController,
-                              label: "Home Address",
-                              icon: Icons.location_on_outlined,
-                            ),
-                            const SizedBox(height: 15),
-
-                            _buildTextField(
-                              controller: emailController,
-                              label: "Email Address",
-                              icon: Icons.alternate_email_rounded,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            const SizedBox(height: 15),
-
-                            _buildTextField(
-                              controller: passController,
-                              label: "Password",
-                              icon: Icons.lock_person_rounded,
-                              isPassword: true,
-                              isPasswordHidden: registerPasswordObscured,
-                              onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured),
-                            ),
-                            const SizedBox(height: 15),
-                            
-                            _buildTextField(
-                              controller: confirmPassController,
-                              label: "Confirm Password",
-                              icon: Icons.lock_person_rounded,
-                              isPassword: true,
-                              isPasswordHidden: confirmPasswordObscured,
-                              onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return "Required";
-                                if (value != passController.text) return "No match";
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 35),
-
-                            SizedBox(
-                              width: double.infinity,
-                              height: 58,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    _performRegister();
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  elevation: 5,
-                                ),
-                                child: const Text("SIGN UP", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                              ),
-                            ),
                             const SizedBox(height: 20),
 
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("Already have an account?", style: TextStyle(fontSize: 14)),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text("Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
-                                ),
-                              ],
-                            ),
+                            if (currentStep == 0)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text("Already have an account?"),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text("Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
@@ -310,6 +373,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
       ),
     );
+  }
+
+  String _getStepTitle() {
+    switch (currentStep) {
+      case 0: return "Account Details";
+      case 1: return "Personal Details";
+      case 2: return "Medical Details";
+      default: return "";
+    }
+  }
+
+  void _handleNext() {
+    if (formKey.currentState!.validate()) {
+      if (currentStep < 2) {
+        setState(() => currentStep++);
+      } else {
+        _performRegister();
+      }
+    }
   }
 
   Widget _buildTextField({
@@ -330,17 +412,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       keyboardType: keyboardType,
       readOnly: readOnly,
       onTap: onTap,
-      style: const TextStyle(fontSize: 15),
+      style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        errorMaxLines: 10,
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         suffixIcon: isPassword
@@ -370,19 +450,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return DropdownButtonFormField<String>(
       isExpanded: true,
       value: value,
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 15)))).toList(),
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 15, color: Colors.black),
+      style: const TextStyle(fontSize: 14, color: Colors.black),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
