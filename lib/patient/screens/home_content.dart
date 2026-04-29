@@ -19,11 +19,15 @@ class _HomeContentState extends State<HomeContent> {
   final ApiService _apiService = ApiService();
   String selectedSpecialization = "All";
   String searchQuery = "";
+  
+  late Future<List<SpecializationModel>> _specializationsFuture;
   late Future<List<DoctorModel>> _doctorsFuture;
 
   @override
   void initState() {
     super.initState();
+    // Store futures in state variables to prevent unnecessary re-fetching on rebuilds (like search)
+    _specializationsFuture = _apiService.getAllSpecializations();
     _fetchDoctors();
   }
 
@@ -31,6 +35,15 @@ class _HomeContentState extends State<HomeContent> {
     setState(() {
       _doctorsFuture = _apiService.getAllDoctors(specializationName: selectedSpecialization);
     });
+  }
+
+  void _onSpecializationTapped(String name) {
+    if (selectedSpecialization != name) {
+      setState(() {
+        selectedSpecialization = name;
+        _fetchDoctors();
+      });
+    }
   }
 
   @override
@@ -49,6 +62,7 @@ class _HomeContentState extends State<HomeContent> {
         const HomeBanner(),
         const SizedBox(height: 20),
         
+        // --- Specializations Section ---
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -57,12 +71,23 @@ class _HomeContentState extends State<HomeContent> {
           ),
         ),
         const SizedBox(height: 10),
+        
         FutureBuilder<List<SpecializationModel>>(
-          future: _apiService.getAllSpecializations(),
+          future: _specializationsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(height: 50, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
+              return const SizedBox(
+                height: 50, 
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2))
+              );
             }
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text("Error: ${snapshot.error}", style: const TextStyle(color: Colors.red, fontSize: 12)),
+              );
+            }
+
             final specs = snapshot.data ?? [];
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -79,6 +104,7 @@ class _HomeContentState extends State<HomeContent> {
 
         const SizedBox(height: 20),
         
+        // --- Doctors Section ---
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
@@ -99,13 +125,19 @@ class _HomeContentState extends State<HomeContent> {
             if (snapshot.hasError) {
               return Center(child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: Text("Error: ${snapshot.error}"),
+                child: Column(
+                  children: [
+                    Text("Error loading doctors: ${snapshot.error}", textAlign: TextAlign.center),
+                    const SizedBox(height: 10),
+                    ElevatedButton(onPressed: _fetchDoctors, child: const Text("Retry")),
+                  ],
+                ),
               ));
             }
             
             var doctors = snapshot.data ?? [];
             
-            // Apply search filter locally
+            // Apply search filter locally to prevent flashing/re-fetching
             if (searchQuery.isNotEmpty) {
               doctors = doctors.where((doc) {
                 final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
@@ -140,12 +172,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildSpecItem(String title) {
     bool isSelected = selectedSpecialization == title;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedSpecialization = title;
-          _fetchDoctors(); // Refresh list when spec changes
-        });
-      },
+      onTap: () => _onSpecializationTapped(title),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

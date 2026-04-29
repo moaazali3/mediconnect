@@ -133,11 +133,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
+                          onPressed: () async {
+                            final result = await Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const EditDoctorProfile()),
+                              MaterialPageRoute(builder: (context) => EditDoctorProfile(doctorId: widget.doctorId)),
                             );
+                            if (result == true) {
+                              setState(() {}); // Refresh data
+                            }
                           },
                           icon: const Icon(Icons.edit_note_rounded),
                           label: const Text("Update Profile Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

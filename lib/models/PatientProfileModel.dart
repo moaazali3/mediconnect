@@ -40,4 +40,19 @@ class PatientProfileModel {
       phoneNumber: json['phoneNumber'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "firstName": firstName,
+      "lastName": lastName,
+      "dateOfBirth": dateOfBirth,
+      "gender": gender,
+      "address": address,
+      "bloodType": bloodType,
+      "height": height,
+      "weight": weight,
+      "emergencyContact": emergencyContact,
+      "phoneNumber": phoneNumber,
+    };
+  }
 }

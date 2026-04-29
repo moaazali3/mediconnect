@@ -14,76 +14,112 @@ class AppointmentsPage extends StatefulWidget {
 class _AppointmentsPageState extends State<AppointmentsPage> {
   final ApiService _apiService = ApiService();
 
+  Future<void> _cancelAppointment(String appointmentId) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+    );
+
+    try {
+      final success = await _apiService.cancelAppointmentStatus(appointmentId);
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        if (success) {
+          setState(() {}); // Refresh list
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Appointment cancelled successfully"), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to cancel appointment"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String idToFetch = widget.userId ?? "1"; // Default for testing
+    String idToFetch = widget.userId ?? "1"; 
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          "My Appointments",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: FutureBuilder<List<PatientAppointmentModel>>(
-        future: _apiService.getPatientAppointments(idToFetch),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-          final appointments = snapshot.data ?? [];
-          if (appointments.isEmpty) {
-            return const Center(child: Text("No appointments found"));
-          }
+      body: SafeArea(
+        child: FutureBuilder<List<PatientAppointmentModel>>(
+          future: _apiService.getPatientAppointments(idToFetch),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(color: primaryColor));
+            }
+            if (snapshot.hasError) {
+              return Center(child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
+              ));
+            }
+            final appointments = snapshot.data ?? [];
+            if (appointments.isEmpty) {
+              return const Center(child: Text("No appointments found"));
+            }
 
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            itemCount: appointments.length,
-            itemBuilder: (context, index) {
-              final appointment = appointments[index];
-              return AppointmentCard(
-                name: "Dr. ${appointment.doctorName}",
-                spec: appointment.dayOfWeek,
-                date: appointment.appointmentDate,
-                time: "${appointment.startTime} - ${appointment.endTime}",
-                status: appointment.status,
-                queue: appointment.queueNumber,
-              );
-            },
-          );
-        },
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              itemCount: appointments.length,
+              itemBuilder: (context, index) {
+                final appointment = appointments[index];
+                return AppointmentCard(
+                  appointmentId: appointment.appointmentId,
+                  name: "Dr. ${appointment.doctorName}",
+                  spec: appointment.dayOfWeek,
+                  date: appointment.appointmentDate,
+                  time: "${appointment.startTime} - ${appointment.endTime}",
+                  status: appointment.status,
+                  queue: appointment.queueNumber,
+                  onCancel: () => _cancelAppointment(appointment.appointmentId),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 }
 
 class AppointmentCard extends StatelessWidget {
+  final String appointmentId;
   final String name;
   final String spec;
   final String date;
   final String time;
   final String status;
   final int queue;
+  final VoidCallback onCancel;
 
   const AppointmentCard({
     super.key,
+    required this.appointmentId,
     required this.name,
     required this.spec,
     required this.date,
     required this.time,
     required this.status,
     required this.queue,
+    required this.onCancel,
   });
 
   @override
   Widget build(BuildContext context) {
+    bool isPending = status.toLowerCase() == 'pending';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -149,6 +185,45 @@ class AppointmentCard extends StatelessWidget {
               _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue"),
             ],
           ),
+          if (isPending) ...[
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          title: const Text("Cancel Appointment"),
+                          content: const Text("Are you sure you want to cancel this appointment?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Keep it")),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                onCancel();
+                              }, 
+                              child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.cancel_outlined, size: 18),
+                    label: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ]
         ],
       ),
     );

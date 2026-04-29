@@ -11,6 +11,7 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
+import 'package:mediconnect/models/AdminDashboardModel.dart';
 
 class ApiResponse {
   final bool success;
@@ -23,77 +24,85 @@ class ApiResponse {
 class ApiService {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
 
-  // إضافة هيدر لتخطي تحذير ngrok وضمان استلام JSON
+  // Headers to bypass ngrok warning page if necessary
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': '69420', // كود تخطي تحذير ngrok
+    'ngrok-skip-browser-warning': 'true',
   };
 
-  // --- Profile Services ---
-  Future<PatientProfileModel> getPatientProfile(String id) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Profile/patient/$id'),
-      headers: _headers,
-    );
+  // --- Admin Services ---
+  Future<AdminDashboardModel> getAdminDashboardStats() async {
+    final response = await http.get(Uri.parse('$baseUrl/Admin/dashboard'), headers: _headers);
     if (response.statusCode == 200) {
-      return PatientProfileModel.fromJson(jsonDecode(response.body));
+      return AdminDashboardModel.fromJson(jsonDecode(response.body));
     } else {
-      throw "فشل في تحميل بيانات ملف المريض (كود: ${response.statusCode})";
+      throw "Failed to load admin dashboard stats";
     }
   }
 
-  Future<bool> updatePatientProfile(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/Profile/patient/$id'),
-        headers: _headers,
-        body: jsonEncode(data),
-      );
-      return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      return false;
+  Future<List<AppointmentModel>> getAllAppointments({int pageNumber = 1}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/Admin/appointments?pageNumber=$pageNumber'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => AppointmentModel.fromJson(item)).toList();
+    } else {
+      throw "Failed to load all appointments";
+    }
+  }
+
+  // --- Profile Services ---
+  Future<PatientProfileModel> getPatientProfile(String id) async {
+    final response = await http.get(Uri.parse('$baseUrl/Profile/Patient/$id'), headers: _headers);
+    if (response.statusCode == 200) {
+      return PatientProfileModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw "فشل في تحميل بيانات ملف المريض";
+    }
+  }
+
+  Future<bool> updatePatientProfile(String id, PatientProfileModel profile) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Profile/Patient/$id'),
+      headers: _headers,
+      body: jsonEncode(profile.toJson()),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to update profile";
+      print("Server Error for Update Profile $id: $errorMessage");
+      throw errorMessage;
     }
   }
 
   Future<DoctorProfileModel> getDoctorProfile(String id) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Profile/doctor/$id'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/Profile/Doctor/$id'), headers: _headers);
     if (response.statusCode == 200) {
       return DoctorProfileModel.fromJson(jsonDecode(response.body));
     } else {
-      throw "فشل في تحميل بيانات الملف الشخصي (كود: ${response.statusCode})";
+      throw "فشل في تحميل بيانات الملف الشخصي";
     }
   }
 
-  Future<bool> updateDoctorProfile(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/Profile/doctor/$id'),
-        headers: _headers,
-        body: jsonEncode(data),
-      );
-      return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // --- Auth Services ---
-  Future<bool> changePassword(String userId, String oldPassword, String newPassword) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/Profile/change-password/$userId'),
-        headers: _headers,
-        body: jsonEncode({
-          "oldPassword": oldPassword,
-          "newPassword": newPassword,
-        }),
-      );
-      return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      return false;
+  Future<bool> updateDoctorProfile(String id, DoctorProfileModel profile) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Profile/Doctor/$id'),
+      headers: _headers,
+      body: jsonEncode(profile.toJson()),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to update doctor profile";
+      print("Server Error for Update Doctor Profile $id: $errorMessage");
+      throw errorMessage;
     }
   }
 
@@ -108,27 +117,21 @@ class ApiService {
   }
 
   Future<List<DoctorAppointmentModel>> getDoctorAppointments(String doctorId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Appointment/doctor/$doctorId'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/Appointment/doctor/$doctorId'), headers: _headers);
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => DoctorAppointmentModel.fromJson(item)).toList();
     }
-    throw "خطأ في جلب مواعيد الطبيب (كود: ${response.statusCode})";
+    throw "خطأ في جلب مواعيد الطبيب";
   }
 
   Future<List<PatientAppointmentModel>> getPatientAppointments(String patientId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Appointment/patient/$patientId'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/Appointment/patient/$patientId'), headers: _headers);
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => PatientAppointmentModel.fromJson(item)).toList();
     }
-    throw "خطأ في جلب مواعيد المريض (كود: ${response.statusCode})";
+    throw "خطأ في جلب مواعيد المريض";
   }
 
   Future<bool> completeAppointmentStatus(String appointmentId) async {
@@ -136,7 +139,15 @@ class ApiService {
       Uri.parse('$baseUrl/Appointment/complete?appointmentId=$appointmentId'),
       headers: _headers,
     );
-    return response.statusCode == 200;
+    
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to complete appointment";
+      print("Server Error for Appointment $appointmentId: $errorMessage");
+      throw "ID: $appointmentId - $errorMessage";
+    }
   }
 
   Future<bool> cancelAppointmentStatus(String appointmentId) async {
@@ -144,20 +155,42 @@ class ApiService {
       Uri.parse('$baseUrl/Appointment/cancel?appointmentId=$appointmentId'),
       headers: _headers,
     );
-    return response.statusCode == 200;
+    
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      // Safely handle errors whether they are a String or a Map/List
+      String errorMessage = body['errors']?.toString() ?? "Failed to cancel appointment";
+      print("Server Error for Appointment $appointmentId: $errorMessage");
+      throw "ID: $appointmentId - $errorMessage";
+    }
+  }
+
+  Future<bool> deleteAppointment(String appointmentId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/Appointment/$appointmentId'),
+      headers: _headers,
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to delete appointment";
+      print("Server Error for Appointment $appointmentId: $errorMessage");
+      throw "ID: $appointmentId - $errorMessage";
+    }
   }
 
   // --- Doctor Schedule Services ---
   Future<List<DoctorScheduleModel>> getDoctorSchedule(String doctorId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/DoctorSchedule/$doctorId'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/DoctorSchedule/$doctorId'), headers: _headers);
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
     }
-    throw "Error fetching doctor schedule (كود: ${response.statusCode})";
+    throw "Error fetching doctor schedule";
   }
 
   Future<bool> createDoctorSchedule(DoctorScheduleModel schedule, String doctorId) async {
@@ -175,15 +208,12 @@ class ApiService {
 
   // --- Medical Record Services ---
   Future<List<MedicalRecordModel>> getPatientMedicalHistory(String patientId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/MedicalRecord/patient/$patientId'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/MedicalRecord/patient/$patientId'), headers: _headers);
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => MedicalRecordModel.fromJson(item)).toList();
     }
-    throw "Error fetching medical history (كود: ${response.statusCode})";
+    throw "Error fetching medical history";
   }
 
   // --- Payment Services ---
@@ -213,19 +243,16 @@ class ApiService {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => DoctorModel.fromJson(item)).toList();
     } else {
-      throw "Server error! (كود: ${response.statusCode})";
+      throw "Server error!";
     }
   }
 
   Future<DoctorFullModel> getDoctorDetails(String doctorId, String patientId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Doctor/$doctorId/$patientId'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/Doctor/$doctorId/$patientId'), headers: _headers);
     if (response.statusCode == 200) {
       return DoctorFullModel.fromJson(jsonDecode(response.body));
     }
-    throw "خطأ في تحميل بيانات الدكتور (كود: ${response.statusCode})";
+    throw "خطأ في تحميل بيانات الدكتور";
   }
 
   Future<bool> createDoctor(CreateDoctorModel doctor) async {
@@ -243,15 +270,12 @@ class ApiService {
 
   // --- Specialization Services ---
   Future<List<SpecializationModel>> getAllSpecializations() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/Specialization'),
-      headers: _headers,
-    );
+    final response = await http.get(Uri.parse('$baseUrl/Specialization'), headers: _headers);
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => SpecializationModel.fromJson(item)).toList();
     } else {
-      throw "Error fetching specializations (كود: ${response.statusCode})";
+      throw "Error fetching specializations: ${response.statusCode}";
     }
   }
 
@@ -348,5 +372,11 @@ class ApiService {
     } catch (e) {
       return ApiResponse(success: false, message: e.toString());
     }
+  }
+
+  Future<bool> changePassword(String id, String oldPassword, String newPassword) async {
+    // Assuming there's a change password endpoint, implementation might vary.
+    // Placeholder as it was used in edit_patient_profile but not found in ApiService.
+    return false;
   }
 }

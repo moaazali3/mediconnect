@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       
                       const SizedBox(height: 40),
                       
-                      _buildActionButtons(context),
+                      _buildActionButtons(context, targetId),
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -194,18 +194,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) {
+  Widget _buildActionButtons(BuildContext context, String targetId) {
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           height: 55,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EditPatientProfile()),
+                MaterialPageRoute(builder: (context) => EditPatientProfile(userId: targetId,)),
               );
+              if (result == true) {
+                setState(() {}); // Refresh data
+              }
             },
             icon: const Icon(Icons.edit_note_rounded),
             label: const Text("Update Profile Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

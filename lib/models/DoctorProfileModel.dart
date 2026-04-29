@@ -40,4 +40,16 @@ class DoctorProfileModel {
       biography: json['biography'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "firstName": firstName,
+      "lastName": lastName,
+      "dateOfBirth": dateOfBirth,
+      "gender": gender,
+      "address": address,
+      "phoneNumber": phoneNumber,
+      "biography": biography,
+    };
+  }
 }

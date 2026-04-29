@@ -23,7 +23,7 @@ class AppointmentModel {
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
     return AppointmentModel(
-      appointmentId: json['appointmentId'] ?? '',
+      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
       patientId: json['patientId'] ?? '',
       doctorId: json['doctorId'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
@@ -40,7 +40,7 @@ class CreateAppointmentModel {
   final String patientId;
   final String doctorId;
   final String dayOfWeek;
-  final String appointmentDate; // Added appointmentDate
+  final String appointmentDate;
 
   CreateAppointmentModel({
     required this.patientId,
@@ -54,12 +54,13 @@ class CreateAppointmentModel {
       "patientId": patientId,
       "doctorId": doctorId,
       "dayOfWeek": dayOfWeek,
-      "appointmentDate": appointmentDate, // Added to JSON
+      "appointmentDate": appointmentDate,
     };
   }
 }
 
 class DoctorAppointmentModel {
+  final String appointmentId;
   final String patientName;
   final String appointmentDate;
   final String dayOfWeek;
@@ -69,6 +70,7 @@ class DoctorAppointmentModel {
   final int queueNumber;
 
   DoctorAppointmentModel({
+    required this.appointmentId,
     required this.patientName,
     required this.appointmentDate,
     required this.dayOfWeek,
@@ -80,6 +82,7 @@ class DoctorAppointmentModel {
 
   factory DoctorAppointmentModel.fromJson(Map<String, dynamic> json) {
     return DoctorAppointmentModel(
+      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
       patientName: json['patientName'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',
@@ -92,6 +95,7 @@ class DoctorAppointmentModel {
 }
 
 class PatientAppointmentModel {
+  final String appointmentId;
   final String doctorName;
   final String appointmentDate;
   final String dayOfWeek;
@@ -101,6 +105,7 @@ class PatientAppointmentModel {
   final int queueNumber;
 
   PatientAppointmentModel({
+    required this.appointmentId,
     required this.doctorName,
     required this.appointmentDate,
     required this.dayOfWeek,
@@ -112,6 +117,7 @@ class PatientAppointmentModel {
 
   factory PatientAppointmentModel.fromJson(Map<String, dynamic> json) {
     return PatientAppointmentModel(
+      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
       doctorName: json['doctorName'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',

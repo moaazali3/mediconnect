@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
+import 'package:intl/intl.dart';
 
 class EditDoctorProfile extends StatefulWidget {
   final String? doctorId;
@@ -24,6 +25,11 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   final emailController = TextEditingController();
   final dobController = TextEditingController();
   String? selectedGender;
+  
+  // These are kept to rebuild the model but are not part of the Update DTO
+  String specializationName = "";
+  double experienceYears = 0;
+  double consultationFee = 0;
 
   @override
   void initState() {
@@ -44,6 +50,11 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         bioController.text = doctor.biography;
         dobController.text = doctor.dateOfBirth;
         selectedGender = doctor.gender;
+        
+        specializationName = doctor.specializationName;
+        experienceYears = doctor.experienceYears;
+        consultationFee = doctor.consultationFee;
+        
         isLoading = false;
       });
     } catch (e) {
@@ -62,46 +73,68 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     setState(() => isLoading = true);
     final String targetId = widget.doctorId ?? "1";
 
-    // Matching the 7 fields shown in the Swagger image for Doctor PUT
-    final Map<String, dynamic> updateData = {
-      "firstName": fNameController.text,
-      "lastName": lNameController.text,
-      "dateOfBirth": dobController.text,
-      "gender": selectedGender,
-      "address": addressController.text,
-      "phoneNumber": phoneController.text,
-      "biography": bioController.text,
-    };
+    final DoctorProfileModel updatedDoctor = DoctorProfileModel(
+      firstName: fNameController.text,
+      lastName: lNameController.text,
+      email: emailController.text,
+      dateOfBirth: dobController.text,
+      gender: selectedGender ?? '',
+      address: addressController.text,
+      phoneNumber: phoneController.text,
+      biography: bioController.text,
+      specializationName: specializationName,
+      experienceYears: experienceYears,
+      consultationFee: consultationFee
+    );
 
-    final success = await _apiService.updateDoctorProfile(targetId, updateData);
+    try {
+      final success = await _apiService.updateDoctorProfile(targetId, updatedDoctor);
+      setState(() => isLoading = false);
 
-    setState(() => isLoading = false);
-
-    if (mounted) {
-      if (success) {
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Doctor Profile Updated Successfully!'), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Doctor Profile Updated!'), backgroundColor: Colors.green),
-        );
-        Navigator.pop(context, true);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   Future<void> _changePassword(String oldP, String newP) async {
+    setState(() => isLoading = true);
     final String targetId = widget.doctorId ?? "1";
-    final success = await _apiService.changePassword(targetId, oldP, newP);
-    if (mounted) {
-      if (success) {
+    try {
+      final success = await _apiService.changePassword(targetId, oldP, newP);
+      setState(() => isLoading = false);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
     }
@@ -158,12 +191,38 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                       _buildDivider(),
                       _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
                       _buildDivider(),
-                      _buildDropdownField(
-                        label: "Gender",
-                        icon: Icons.wc_rounded,
-                        value: selectedGender,
-                        items: ['Male', 'Female'],
-                        onChanged: (val) => setState(() => selectedGender = val),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: "Gender",
+                              icon: Icons.wc_rounded,
+                              value: selectedGender,
+                              items: ['Male', 'Female'],
+                              onChanged: (val) => setState(() => selectedGender = val),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildEditRow(
+                              label: "Birth Date",
+                              controller: dobController,
+                              icon: Icons.calendar_month_rounded,
+                              isReadOnly: true,
+                              onTap: () async {
+                                DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ]),
 
@@ -224,15 +283,16 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     );
   }
 
-  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, int maxLines = 1}) {
+  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, int maxLines = 1, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: TextFormField(
         controller: controller,
         readOnly: isReadOnly,
+        onTap: onTap,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        style: TextStyle(color: isReadOnly ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(color: (isReadOnly && onTap == null) ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
@@ -240,7 +300,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
           border: InputBorder.none,
           isDense: true,
         ),
-        validator: isReadOnly ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
+        validator: (isReadOnly && onTap == null) ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
       ),
     );
   }
@@ -307,7 +367,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               child: const Text("Update", style: TextStyle(color: Colors.white)),
             ),
           ],

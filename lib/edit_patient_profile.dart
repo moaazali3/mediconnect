@@ -5,8 +5,8 @@ import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:intl/intl.dart';
 
 class EditPatientProfile extends StatefulWidget {
-  final String? patientId;
-  const EditPatientProfile({super.key, this.patientId});
+  final String? userId;
+  const EditPatientProfile({super.key, this.userId});
 
   @override
   State<EditPatientProfile> createState() => _EditPatientProfileState();
@@ -37,7 +37,8 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
   Future<void> _loadProfileData() async {
     try {
-      final String targetId = widget.patientId ?? "1";
+      final String targetId = widget.userId ?? "1";
+      print("Loading Profile for Patient ID: $targetId");
       final profile = await _apiService.getPatientProfile(targetId);
       setState(() {
         fNameController.text = profile.firstName;
@@ -67,50 +68,71 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     if (!formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
-    final String targetId = widget.patientId ?? "1";
+    final String targetId = widget.userId ?? "1";
+    print("Updating Profile for Patient ID: $targetId");
 
-    final Map<String, dynamic> updateData = {
-      "firstName": fNameController.text,
-      "lastName": lNameController.text,
-      "dateOfBirth": dobController.text,
-      "gender": selectedGender,
-      "address": addressController.text,
-      "bloodType": selectedBloodType,
-      "height": double.tryParse(heightController.text) ?? 0,
-      "weight": double.tryParse(weightController.text) ?? 0,
-      "emergencyContact": emergencyController.text,
-      "phoneNumber": phoneController.text,
-    };
+    final PatientProfileModel updatedProfile = PatientProfileModel(
+      firstName: fNameController.text,
+      lastName: lNameController.text,
+      email: emailController.text,
+      dateOfBirth: dobController.text,
+      gender: selectedGender ?? '',
+      address: addressController.text,
+      bloodType: selectedBloodType ?? '',
+      height: double.tryParse(heightController.text) ?? 0,
+      weight: double.tryParse(weightController.text) ?? 0,
+      emergencyContact: emergencyController.text,
+      phoneNumber: phoneController.text,
+    );
 
-    final success = await _apiService.updatePatientProfile(targetId, updateData);
+    try {
+      final success = await _apiService.updatePatientProfile(targetId, updatedProfile);
+      setState(() => isLoading = false);
 
-    setState(() => isLoading = false);
-
-    if (mounted) {
-      if (success) {
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
+          );
+          Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
-        );
-        Navigator.pop(context, true);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   Future<void> _changePassword(String oldP, String newP) async {
-    final String targetId = widget.patientId ?? "1";
-    final success = await _apiService.changePassword(targetId, oldP, newP);
-    if (mounted) {
-      if (success) {
+    setState(() => isLoading = true);
+    final String targetId = widget.userId ?? "1";
+    try {
+      final success = await _apiService.changePassword(targetId, oldP, newP);
+      setState(() => isLoading = false);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
     }
@@ -358,7 +380,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                   Navigator.pop(context);
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               child: const Text("Update", style: TextStyle(color: Colors.white)),
             ),
           ],

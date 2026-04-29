@@ -5,7 +5,9 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/register_screen.dart';
 import 'package:mediconnect/home_screen.dart'; 
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
+import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
+//admin@hospital.com Admin123!
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -138,7 +140,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     "").toString().toLowerCase();
 
                                       if (mounted) {
-                                        if (role == "doctor") {
+                                        if (role == "admin") {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => const AdminDashboard(),
+                                            ),
+                                          );
+                                        } else if (role == "doctor") {
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
