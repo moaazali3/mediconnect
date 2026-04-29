@@ -12,6 +12,14 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 
+class ApiResponse {
+  final bool success;
+  final String message;
+  final dynamic data;
+
+  ApiResponse({required this.success, required this.message, this.data});
+}
+
 class ApiService {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
 
@@ -274,7 +282,7 @@ class ApiService {
   }
 
   // --- Auth Services ---
-  Future<bool> registerUser({
+  Future<ApiResponse> registerUser({
     required String firstName,
     required String lastName,
     required String email,
@@ -308,28 +316,37 @@ class ApiService {
           "weight": weight
         }),
       );
-      return response.statusCode == 200;
+      
+      final dynamic body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return ApiResponse(success: true, message: body.toString());
+      } else {
+        return ApiResponse(success: false, message: body['errors']?.toString() ?? body.toString());
+      }
     } catch (e) {
-      return false;
+      return ApiResponse(success: false, message: e.toString());
     }
   }
 
-  Future<Map<String, dynamic>?> login(String email, String password) async {
+  Future<ApiResponse> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse('$baseUrl/Auth/Login'),
         headers: _headers,
         body: jsonEncode({
           'email': email,
           'password': password,
         }),
       );
+      
+      final dynamic body = jsonDecode(response.body);
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return ApiResponse(success: true, message: "Login Successful", data: body);
+      } else {
+        return ApiResponse(success: false, message: body['errors']?.toString() ?? body.toString());
       }
-      return null;
     } catch (e) {
-      return null;
+      return ApiResponse(success: false, message: e.toString());
     }
   }
 }
