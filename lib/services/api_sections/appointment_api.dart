@@ -88,4 +88,55 @@ mixin AppointmentApi {
     }
     throw "Error fetching medical history";
   }
+
+  Future<MedicalRecordModel> getMedicalRecordByAppointment(String appointmentId) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/MedicalRecord/$appointmentId'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      return MedicalRecordModel.fromJson(jsonDecode(response.body));
+    }
+    throw "Error fetching medical record for appointment $appointmentId";
+  }
+
+  Future<bool> createMedicalRecord({
+    required String appointmentId,
+    required String diagnosis,
+    required String prescription,
+  }) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.post(
+      Uri.parse('${parent.baseUrl}/MedicalRecord'),
+      headers: parent._headers,
+      body: jsonEncode({
+        "appointmentId": appointmentId,
+        "diagnosis": diagnosis,
+        "prescription": prescription,
+      }),
+    );
+    
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  Future<bool> updateMedicalRecord(String medicalRecordId, String diagnosis, String prescription) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.put(
+      Uri.parse('${parent.baseUrl}/MedicalRecord/$medicalRecordId'),
+      headers: parent._headers,
+      body: jsonEncode({
+        "diagnosis": diagnosis,
+        "prescription": prescription,
+      }),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to update medical record";
+      throw errorMessage;
+    }
+  }
 }
