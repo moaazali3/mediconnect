@@ -1,3 +1,5 @@
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
+
 class DoctorFullModel {
   final String id;
   final String firstName;
@@ -6,8 +8,11 @@ class DoctorFullModel {
   final double experienceYears;
   final String biography;
   final double consultationFee;
-  final String dateOfBirth; // بنستقبله كـ String ونحوله لو احتجنا
+  final String dateOfBirth;
   final String gender;
+  final String? profilePictureUrl;
+  final bool isAppleToAppointment;
+  final List<DoctorScheduleModel> doctorSchedules;
 
   DoctorFullModel({
     required this.id,
@@ -19,19 +24,36 @@ class DoctorFullModel {
     required this.consultationFee,
     required this.dateOfBirth,
     required this.gender,
+    this.profilePictureUrl,
+    required this.isAppleToAppointment,
+    this.doctorSchedules = const [],
   });
 
   factory DoctorFullModel.fromJson(Map<String, dynamic> json) {
+    var scheduleList = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    
     return DoctorFullModel(
-      id: json['id'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      specializationName: json['specializationName'] ?? 'General',
-      experienceYears: (json['experienceYears'] as num).toDouble(),
-      biography: json['biography'] ?? '',
-      consultationFee: (json['consultationFee'] as num).toDouble(),
-      dateOfBirth: json['dateOfBirth'] ?? '',
-      gender: json['gender'] ?? '',
+      id: (json['id'] ?? json['Id'] ?? '').toString(),
+      firstName: (json['firstName'] ?? json['FirstName'] ?? '').toString(),
+      lastName: (json['lastName'] ?? json['LastName'] ?? '').toString(),
+      specializationName: (json['specializationName'] ?? json['SpecializationName'] ?? 'General').toString(),
+      experienceYears: _toDouble(json['experienceYears'] ?? json['ExperienceYears']),
+      biography: (json['biography'] ?? json['Biography'] ?? '').toString(),
+      consultationFee: _toDouble(json['consultationFee'] ?? json['ConsultationFee']),
+      dateOfBirth: (json['dateOfBirth'] ?? json['DateOfBirth'] ?? '').toString(),
+      gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
+      profilePictureUrl: (json['profilePictureUrl'] ?? json['ProfilePictureUrl'])?.toString(),
+      isAppleToAppointment: json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? false,
+      doctorSchedules: (scheduleList is List)
+          ? scheduleList.map((i) => DoctorScheduleModel.fromJson(i)).toList()
+          : [],
     );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 }

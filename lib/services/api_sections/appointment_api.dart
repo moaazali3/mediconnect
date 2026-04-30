@@ -79,30 +79,6 @@ mixin AppointmentApi {
     }
   }
 
-  Future<List<DoctorScheduleModel>> getDoctorSchedule(String doctorId) async {
-    final ApiService parent = this as ApiService;
-    final response = await http.get(Uri.parse('${parent.baseUrl}/DoctorSchedule/$doctorId'), headers: parent._headers);
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
-    }
-    throw "Error fetching doctor schedule";
-  }
-
-  Future<bool> createDoctorSchedule(DoctorScheduleModel schedule, String doctorId) async {
-    final ApiService parent = this as ApiService;
-    try {
-      final response = await http.post(
-        Uri.parse('${parent.baseUrl}/DoctorSchedule?DoctorId=$doctorId'),
-        headers: parent._headers,
-        body: jsonEncode(schedule.toJson()),
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      return false;
-    }
-  }
-
   Future<List<MedicalRecordModel>> getPatientMedicalHistory(String patientId) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers);

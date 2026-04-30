@@ -37,14 +37,36 @@ mixin AuthApi {
         }),
       );
       
-      final dynamic body = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        return ApiResponse(success: true, message: body.toString());
+      // محاولة فك التشفير بأمان
+      dynamic body;
+      try {
+        if (response.body.isNotEmpty) {
+          body = jsonDecode(response.body);
+        }
+      } catch (_) {
+        body = response.body;
+      }
+
+      // التحقق من أكواد النجاح 200 أو 201
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return ApiResponse(success: true, message: "Account created successfully", data: body);
       } else {
-        return ApiResponse(success: false, message: body['errors']?.toString() ?? body.toString());
+        String errorMessage = "Registration failed";
+        if (body is Map) {
+          if (body.containsKey('errors')) {
+            errorMessage = body['errors'].toString();
+          } else if (body.containsKey('message')) {
+            errorMessage = body['message'];
+          } else if (body.containsKey('title')) {
+            errorMessage = body['title'];
+          }
+        } else if (body is String && body.isNotEmpty) {
+          errorMessage = body;
+        }
+        return ApiResponse(success: false, message: errorMessage);
       }
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString());
+      return ApiResponse(success: false, message: "Connection error: $e");
     }
   }
 
@@ -60,14 +82,30 @@ mixin AuthApi {
         }),
       );
       
-      final dynamic body = jsonDecode(response.body);
+      dynamic body;
+      try {
+        if (response.body.isNotEmpty) {
+          body = jsonDecode(response.body);
+        }
+      } catch (_) {
+        body = response.body;
+      }
+
       if (response.statusCode == 200) {
         return ApiResponse(success: true, message: "Login Successful", data: body);
       } else {
-        return ApiResponse(success: false, message: body['errors']?.toString() ?? body.toString());
+        String errorMessage = "Login failed";
+        if (body is Map) {
+          if (body.containsKey('errors')) {
+            errorMessage = body['errors'].toString();
+          } else if (body.containsKey('message')) {
+            errorMessage = body['message'];
+          }
+        }
+        return ApiResponse(success: false, message: errorMessage);
       }
     } catch (e) {
-      return ApiResponse(success: false, message: e.toString());
+      return ApiResponse(success: false, message: "Connection error: $e");
     }
   }
 

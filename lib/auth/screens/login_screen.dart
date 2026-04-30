@@ -7,6 +7,7 @@ import 'package:mediconnect/home_screen.dart';
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,33 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool isPasswordHidden = true;
+  bool rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      emailController.text = prefs.getString('saved_email') ?? '';
+      rememberMe = emailController.text.isNotEmpty;
+    });
+  }
+
+  Future<void> _saveSession(String token, String role, String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+    await prefs.setString('user_role', role);
+    await prefs.setString('user_id', userId);
+    if (rememberMe) {
+      await prefs.setString('saved_email', emailController.text);
+    } else {
+      await prefs.remove('saved_email');
+    }
+  }
 
   @override
   void dispose() {
@@ -37,10 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withOpacity(0.8),
-                  Colors.white,
-                ],
+                colors: [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
@@ -67,10 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(15),
-                              decoration: const BoxDecoration(
-                                color: primaryColor,
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: const BoxDecoration(color: primaryColor, shape: BoxShape.circle),
                               child: const Icon(Icons.lock_person_rounded, size: 50, color: Colors.white),
                             ),
                             const SizedBox(height: 20),
@@ -106,7 +128,18 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               validator: (value) => (value == null || value.length < 6) ? "Min 6 characters" : null,
                             ),
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: rememberMe,
+                                  onChanged: (val) => setState(() => rememberMe = val ?? false),
+                                  activeColor: primaryColor,
+                                ),
+                                const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
                             SizedBox(
                               width: double.infinity,
                               height: 55,
@@ -138,42 +171,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
                                                     "").toString().toLowerCase();
 
+                                      // حفظ الجلسة للبقاء قيد تسجيل الدخول
+                                      await _saveSession(token, role, userId);
+
                                       if (mounted) {
                                         if (role == "admin") {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => const AdminDashboard(),
-                                            ),
-                                          );
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
                                         } else if (role == "doctor") {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => DoctorHomeScreen(
-                                                userId: userId,
-                                              ),
-                                            ),
-                                          );
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
                                         } else {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => HomeScreen(
-                                                userId: userId,
-                                                userRole: role,
-                                              ),
-                                            ),
-                                          );
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
                                         }
                                       }
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(response.message), 
-                                          backgroundColor: Colors.red,
-                                          duration: const Duration(seconds: 5),
-                                        ),
+                                        SnackBar(content: Text(response.message), backgroundColor: Colors.red),
                                       );
                                     }
                                   }

@@ -22,13 +22,20 @@ mixin DoctorApi {
     }
   }
 
-  Future<DoctorFullModel> getDoctorDetails(String doctorId, String patientId) async {
+  Future<DoctorFullModel> getDoctorDetails(String doctorId, String? patientId) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(Uri.parse('${parent.baseUrl}/Doctor/$doctorId/$patientId'), headers: parent._headers);
+    // التأكد من وجود قيمة للـ patientId لتجنب خطأ 404 في المسار
+    final String pId = (patientId == null || patientId.isEmpty) ? "00000000-0000-0000-0000-000000000000" : patientId;
+
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Doctor/$doctorId/$pId'), 
+      headers: parent._headers
+    );
+    
     if (response.statusCode == 200) {
       return DoctorFullModel.fromJson(jsonDecode(response.body));
     }
-    throw "خطأ في تحميل بيانات الدكتور";
+    throw "خطأ في تحميل بيانات الدكتور: ${response.statusCode}";
   }
 
   Future<bool> createDoctor(CreateDoctorModel doctor) async {
@@ -45,7 +52,6 @@ mixin DoctorApi {
     }
   }
 
-  // ميثود جديدة لرفع صورة الطبيب
   Future<bool> uploadDoctorImage(String doctorId, String filePath) async {
     final ApiService parent = this as ApiService;
     try {
@@ -53,26 +59,18 @@ mixin DoctorApi {
         'POST',
         Uri.parse('${parent.baseUrl}/Doctor/$doctorId/upload-image'),
       );
-
-      // إضافة الـ Headers (نفس الهيدرز المستخدمة ولكن بدون Content-Type لأن MultipartRequest يضيفه تلقائياً)
       request.headers.addAll({
         'ngrok-skip-browser-warning': 'true',
       });
-
-      // إضافة الملف (يجب أن يتطابق اسم الحقل 'File' مع المكتوب في الـ C# DTO)
       request.files.add(await http.MultipartFile.fromPath('File', filePath));
-
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        print("Upload failed: ${response.body}");
         return false;
       }
     } catch (e) {
-      print("Error uploading image: $e");
       return false;
     }
   }
