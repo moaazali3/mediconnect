@@ -32,10 +32,10 @@ class DoctorModel {
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     return DoctorModel(
       id: json['id'] ?? '',
-      profilePictureUrl: json['profilePictureUrl'] ?? json['profilePictureUrl'],
+      profilePictureUrl: json['profilePictureUrl'],
       firstName: json['firstName'] ?? '',
       lastName: json['lastName'] ?? '',
-      specializationName: json['specializationName'] ?? 'General',
+      specializationName: json['specializationName'] ?? '',
       experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
       biography: json['biography'] ?? '',
       consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,

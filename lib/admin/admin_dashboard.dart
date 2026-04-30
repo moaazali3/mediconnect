@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
+import 'package:mediconnect/admin/manage_doctors_page.dart'; // أضفنا هذا الاستيراد
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
@@ -34,7 +35,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Future<void> _signOut() async {
     final prefs = await SharedPreferences.getInstance();
-    // مسح بيانات الجلسة فقط والحفاظ على الإيميل إذا كان Remember Me مفعلاً
     await prefs.remove('auth_token');
     await prefs.remove('user_role');
     await prefs.remove('user_id');
@@ -296,15 +296,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _buildActionCard(
           context,
           "Add Doctor",
-          "Register new staff",
+          "Register staff",
           Icons.person_add_alt_1_rounded,
           Colors.blue.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())).then((_) => _refreshData()),
         ),
         _buildActionCard(
           context,
+          "Doctors List", // تم تغيير المسمى ليدل على الإدارة الكاملة
+          "Schedules & Fees",
+          Icons.medical_services_rounded,
+          Colors.teal.shade600,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())).then((_) => _refreshData()),
+        ),
+        _buildActionCard(
+          context,
           "Bookings",
-          "View schedules",
+          "View appointments",
           Icons.calendar_today_rounded,
           Colors.green.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageBookingsPage())).then((_) => _refreshData()),
@@ -320,7 +328,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _buildActionCard(
           context,
           "Analytics",
-          "Full reports",
+          "Reports",
           Icons.bar_chart_rounded,
           Colors.purple.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnalyticsPage())),

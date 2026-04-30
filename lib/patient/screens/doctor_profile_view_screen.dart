@@ -141,13 +141,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
                 _buildSectionTitle("Biography"),
                 _buildInfoCard(doctor.biography),
                 const SizedBox(height: 25),
-                _buildSectionTitle("Professional Details"),
-                _buildDetailCard([
-                  _buildDetailRow(Icons.phone_rounded, "Phone", doctor.phoneNumber),
-                  const Divider(),
-                  _buildDetailRow(Icons.calendar_month, "Gender", doctor.gender),
-                ]),
-                const SizedBox(height: 25),
                 _buildSectionTitle("Work Schedule"),
                 _buildScheduleList(doctor.doctorSchedules),
                 const SizedBox(height: 30),
@@ -218,29 +211,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailCard(List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: primaryColor, size: 20),
-          const SizedBox(width: 15),
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
       ),
     );
   }

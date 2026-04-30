@@ -4,23 +4,32 @@ mixin DoctorScheduleApi {
   // جلب جدول مواعيد الطبيب
   Future<List<DoctorScheduleModel>> getDoctorSchedule(String doctorId) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/DoctorSchedule/$doctorId'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/DoctorSchedule/$doctorId'),
+        headers: parent._headers,
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
+      } else if (response.statusCode == 404) {
+        // إذا كان الطبيب لا يملك جدولاً بعد، نرجع قائمة فارغة بدلاً من خطأ
+        return [];
+      } else {
+        throw "Server returned ${response.statusCode}: ${response.body}";
+      }
+    } catch (e) {
+      print("Error in getDoctorSchedule: $e");
+      // في حالة وجود خطأ، نفضل إرجاع قائمة فارغة لضمان استمرار عمل الواجهة
+      return [];
     }
-    throw "Error fetching doctor schedule";
   }
 
   // إنشاء جدول مواعيد جديد للطبيب
   Future<ApiResponse> createDoctorSchedule(String doctorId, Map<String, dynamic> scheduleData) async {
     final ApiService parent = this as ApiService;
     try {
-      // بناء البيانات لتطابق Swagger تماماً
-      // تحويل رقم اليوم إلى اسم اليوم إذا كان السيرفر يتوقعه كـ string
       final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       String dayName = scheduleData['dayOfWeek'] is int 
           ? days[scheduleData['dayOfWeek']] 
@@ -32,7 +41,6 @@ mixin DoctorScheduleApi {
             "dayOfWeek": dayName,
             "startTime": scheduleData['startTime'],
             "isAvailable": scheduleData['isAvailable'] ?? true,
-            // إذا كان الـ API يتوقع endTime أيضاً رغم عدم ظهوره في الصورة، يمكنك تفعيله هنا:
             "endTime": scheduleData['endTime'], 
           }
         ]

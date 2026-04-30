@@ -4,6 +4,7 @@ import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateDoctorModel.dart';
+import 'package:mediconnect/models/UpdateDoctorModel.dart'; // أضفنا هذا الاستيراد
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';

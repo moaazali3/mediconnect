@@ -52,6 +52,20 @@ mixin DoctorApi {
     }
   }
 
+  Future<bool> updateDoctor(String id, UpdateDoctorModel doctor) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Doctor/$id'),
+        headers: parent._headers,
+        body: jsonEncode(doctor.toJson()),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<bool> uploadDoctorImage(String doctorId, String filePath) async {
     final ApiService parent = this as ApiService;
     try {
