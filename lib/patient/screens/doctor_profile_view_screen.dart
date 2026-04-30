@@ -118,34 +118,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFF),
-          bottomNavigationBar: _buildBottomAction(doctor.phoneNumber),
-          body: Column(
-            children: [
-              _buildFixedHeader(doctor, dummyImageUrl),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatsRow(doctor, age),
-                      const SizedBox(height: 30),
-                      _buildSectionTitle("Professional Biography"),
-                      _buildInfoCard(doctor.biography),
-                      const SizedBox(height: 25),
-                      _buildSectionTitle("Professional Details"),
-                      _buildProfileCard([
-                        _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
-                        _buildDivider(),
-                        _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
-                      ]),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           appBar: AppBar(
             backgroundColor: primaryColor,
             elevation: 0,
@@ -169,6 +141,13 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
                 _buildSectionTitle("Biography"),
                 _buildInfoCard(doctor.biography),
                 const SizedBox(height: 25),
+                _buildSectionTitle("Professional Details"),
+                _buildDetailCard([
+                  _buildDetailRow(Icons.phone_rounded, "Phone", doctor.phoneNumber),
+                  const Divider(),
+                  _buildDetailRow(Icons.calendar_month, "Gender", doctor.gender),
+                ]),
+                const SizedBox(height: 25),
                 _buildSectionTitle("Work Schedule"),
                 _buildScheduleList(doctor.doctorSchedules),
                 const SizedBox(height: 30),
@@ -180,69 +159,14 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     );
   }
 
-  Widget _buildFixedHeader(DoctorFullModel doctor, String imageUrl) {
+  Widget _buildIdentityCard(DoctorFullModel doctor, String imageUrl) {
     return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
-      padding: const EdgeInsets.only(top: 50, bottom: 25, left: 10, right: 20),
-      child: SafeArea(
-        top: true,
-        bottom: false,
-        child: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-              onPressed: () => Navigator.pop(context),
-            ),
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: CircleAvatar(
-                radius: 35,
-                backgroundColor: Colors.white,
-                backgroundImage: NetworkImage(imageUrl),
-              ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Dr. ${doctor.firstName} ${doctor.lastName}",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white
-                    ),
-                  ),
-                  Text(
-                    doctor.specializationName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w500
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       child: Row(
         children: [
           CircleAvatar(
@@ -294,6 +218,29 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: primaryColor, size: 20),
+          const SizedBox(width: 15),
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const Spacer(),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }

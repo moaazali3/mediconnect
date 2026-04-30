@@ -13,6 +13,7 @@ class DoctorFullModel {
   final String? profilePictureUrl;
   final bool isAppleToAppointment;
   final List<DoctorScheduleModel> doctorSchedules;
+  final String phoneNumber; // أضفنا رقم الهاتف هنا
 
   DoctorFullModel({
     required this.id,
@@ -27,6 +28,7 @@ class DoctorFullModel {
     this.profilePictureUrl,
     required this.isAppleToAppointment,
     this.doctorSchedules = const [],
+    this.phoneNumber = '', // قيمة افتراضية
   });
 
   factory DoctorFullModel.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class DoctorFullModel {
       gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
       profilePictureUrl: (json['profilePictureUrl'] ?? json['ProfilePictureUrl'])?.toString(),
       isAppleToAppointment: json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? false,
+      phoneNumber: (json['phoneNumber'] ?? json['PhoneNumber'] ?? '').toString(),
       doctorSchedules: (scheduleList is List)
           ? scheduleList.map((i) => DoctorScheduleModel.fromJson(i)).toList()
           : [],
