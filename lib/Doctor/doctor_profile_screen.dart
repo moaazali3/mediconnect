@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
@@ -6,6 +5,7 @@ import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
@@ -86,71 +86,193 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
-    if (_doctor == null) return const Scaffold(body: Center(child: Text("Profile not found")));
-
-    final String displayImage = (_doctor!.profilePictureUrl != null && _doctor!.profilePictureUrl!.isNotEmpty)
-        ? _doctor!.profilePictureUrl!
-        : "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(displayImage),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderInfo(_doctor!),
-                  const SizedBox(height: 15),
-                  _buildStatusCard(_doctor!.isAppleToAppointment),
-                  const SizedBox(height: 25),
-                  _buildSectionTitleWithAction("Work Schedule", Icons.edit_calendar_rounded, _manageSchedule),
-                  _buildScheduleCard(_doctor!.doctorSchedules),
-                  const SizedBox(height: 25),
-                  _buildSectionTitle("Professional Details"),
-                  _buildInfoCard([
-                    _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${_doctor!.consultationFee} EGP"),
-                    _buildDivider(),
-                    _buildInfoRow(Icons.work_history_rounded, "Experience", "${_doctor!.experienceYears} Years"),
-                    _buildDivider(),
-                    _buildInfoRow(Icons.description_rounded, "Biography", _doctor!.biography),
-                  ]),
-                  const SizedBox(height: 25),
-                  _buildSectionTitle("Personal Info"),
-                  _buildInfoCard([
-                    _buildInfoRow(Icons.cake_rounded, "Age", "${_calculateAge(_doctor!.dateOfBirth)} Years"),
-                    _buildDivider(),
-                    _buildInfoRow(Icons.wc_rounded, "Gender", _doctor!.gender),
-                  ]),
-                  const SizedBox(height: 35),
-                  _buildActionButtons(),
-                ],
+      body: FutureBuilder<DoctorProfileModel>(
+        future: _apiService.getDoctorProfile(widget.doctorId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: primaryColor));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: Text("No Data Found"));
+          }
+
+          final doctor = snapshot.data!;
+          final String displayImage = (doctor.imageUrl != null && doctor.imageUrl!.isNotEmpty)
+              ? doctor.imageUrl!
+              : "https://via.placeholder.com/150";
+
+          return Column(
+            children: [
+              _buildFixedHeader(doctor, displayImage),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle("Professional Details"),
+                      _buildInfoCard([
+                        _buildInfoRow(Icons.badge_rounded, "Specialization", doctor.specializationName),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.work_history_rounded, "Experience", "${doctor.experienceYears} Years"),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.description_rounded, "Biography", doctor.biography),
+                      ]),
+
+                      const SizedBox(height: 25),
+                      _buildSectionTitle("Personal Information"),
+                      _buildInfoCard([
+                        _buildInfoRow(Icons.email_outlined, "Email", doctor.email),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.phone_android_rounded, "Phone Number", doctor.phoneNumber),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(doctor.dateOfBirth)} Years"),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.location_on_outlined, "Clinic Address", doctor.address ?? "No Address"),
+                      ]),
+
+                      const SizedBox(height: 25),
+                      _buildSectionTitleWithAction("Work Schedule", Icons.edit_calendar_rounded, _manageSchedule),
+                      _buildScheduleCard(_doctor?.doctorSchedules ?? []),
+
+                      const SizedBox(height: 40),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => EditDoctorProfile(doctorId: widget.doctorId)),
+                            );
+                            if (result == true) {
+                              setState(() {});
+                            }
+                          },
+                          icon: const Icon(Icons.edit_note_rounded),
+                          label: const Text("Update Profile Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                                  (route) => false,
+                            );
+                          },
+                          icon: const Icon(Icons.power_settings_new_rounded),
+                          label: const Text("Sign Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSliverAppBar(String imageUrl) {
-    return SliverAppBar(
-      expandedHeight: 200, pinned: true, backgroundColor: primaryColor,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          alignment: Alignment.center,
+  Widget _buildFixedHeader(DoctorProfileModel doctor, String displayImage) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [primaryColor, Color(0xFF00397F)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      padding: const EdgeInsets.only(top: 10, bottom: 25, left: 20, right: 20),
+      child: SafeArea(
+        child: Row(
           children: [
-            Container(decoration: const BoxDecoration(gradient: LinearGradient(colors: [primaryColor, Color(0xFF00397F)]))),
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                CircleAvatar(radius: 65, backgroundColor: Colors.white24, child: CircleAvatar(radius: 60, backgroundImage: NetworkImage(imageUrl))),
-                CircleAvatar(radius: 18, backgroundColor: Colors.white, child: IconButton(icon: const Icon(Icons.camera_alt, size: 18, color: primaryColor), onPressed: _pickAndUploadImage)),
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    backgroundImage: NetworkImage(displayImage),
+                  ),
+                ),
+                if (_isUploading)
+                  const Positioned.fill(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                CircleAvatar(
+                  radius: 15,
+                  backgroundColor: Colors.white,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.camera_alt_rounded, size: 16, color: primaryColor),
+                    onPressed: _isUploading ? null : _pickAndUploadImage,
+                  ),
+                ),
               ],
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Dr. ${doctor.firstName} ${doctor.lastName}",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white
+                    ),
+                  ),
+                  Text(
+                    doctor.specializationName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -158,32 +280,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     );
   }
 
-  Widget _buildHeaderInfo(DoctorModel doctor) {
-    return Center(child: Column(children: [
-      Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-      Text(doctor.specializationName, style: const TextStyle(fontSize: 16, color: primaryColor, fontWeight: FontWeight.w500)),
-    ]));
-  }
-
-  Widget _buildStatusCard(bool isAvailable) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: isAvailable ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15), border: Border.all(color: isAvailable ? Colors.green : Colors.red, width: 0.5),
-      ),
-      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.circle, size: 12, color: isAvailable ? Colors.green : Colors.red),
-        const SizedBox(width: 10),
-        Text(isAvailable ? "You are receiving appointments" : "Appointments are currently disabled", style: TextStyle(color: isAvailable ? Colors.green[800] : Colors.red[800], fontWeight: FontWeight.bold, fontSize: 13)),
-      ]),
-    );
-  }
-
   Widget _buildScheduleCard(List<DoctorScheduleModel> schedules) {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]),
-      child: schedules.isEmpty 
+      child: schedules.isEmpty
         ? const ListTile(title: Text("No work hours set", style: TextStyle(color: Colors.grey)))
         : Column(children: schedules.map((s) => ListTile(
             leading: const Icon(Icons.calendar_today_outlined, size: 18, color: primaryColor),
@@ -207,14 +307,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) => ListTile(leading: Icon(icon, color: primaryColor, size: 20), title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)), subtitle: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)));
 
   Widget _buildDivider() => Divider(height: 1, indent: 50, endIndent: 20, color: Colors.grey.shade100);
-
-  Widget _buildActionButtons() {
-    return Column(children: [
-      SizedBox(width: double.infinity, height: 55, child: ElevatedButton(onPressed: () {}, style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), child: const Text("Update Professional Info", style: TextStyle(fontWeight: FontWeight.bold)))),
-      const SizedBox(height: 15),
-      TextButton.icon(onPressed: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (r) => false), icon: const Icon(Icons.logout, color: Colors.red), label: const Text("Sign Out", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
-    ]);
-  }
 }
 
 class _ScheduleManagerSheet extends StatefulWidget {
@@ -239,7 +331,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
     super.initState();
     if (widget.existingSchedules.isNotEmpty) {
       final first = widget.existingSchedules.first;
-      _selectedDay = first.dayOfWeek;
+      _selectedDay = (first.dayOfWeek is int) ? first.dayOfWeek : 0;
       _startTime = _parseTime(first.startTime);
       _endTime = _parseTime(first.endTime);
     }
@@ -261,7 +353,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
       "isAvailable": true
     };
 
-    final response = widget.existingSchedules.isEmpty 
+    final response = widget.existingSchedules.isEmpty
       ? await _apiService.createDoctorSchedule(widget.doctorId, data)
       : await _apiService.updateDoctorSchedule(widget.doctorId, data);
 

@@ -49,8 +49,8 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
 
     try {
       final payment = PaymentModel(
-        paymentId: "", 
-        appointmentId: "", 
+        paymentId: "",
+        appointmentId: "",
         createdDate: DateTime.now().toIso8601String(),
         paymentMethod: "Online",
         paymentStatus: "Completed",
@@ -60,7 +60,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       final success = await _apiService.createPayment(payment);
 
       if (!mounted) return;
-      Navigator.pop(context); 
+      Navigator.pop(context);
 
       if (success) {
         _showSuccessDialog();
@@ -102,7 +102,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
         }
-        
+
         if (snapshot.hasError || !snapshot.hasData) {
           return Scaffold(
             appBar: AppBar(title: const Text("Error")),
@@ -141,6 +141,13 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
                 _buildSectionTitle("Biography"),
                 _buildInfoCard(doctor.biography),
                 const SizedBox(height: 25),
+                _buildSectionTitle("Professional Details"),
+                _buildDetailCard([
+                  _buildDetailRow(Icons.phone_rounded, "Phone", doctor.phoneNumber),
+                  const Divider(),
+                  _buildDetailRow(Icons.calendar_month, "Gender", doctor.gender),
+                ]),
+                const SizedBox(height: 25),
                 _buildSectionTitle("Work Schedule"),
                 _buildScheduleList(doctor.doctorSchedules),
                 const SizedBox(height: 30),
@@ -163,13 +170,13 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 40, 
-            backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty 
-                ? NetworkImage(imageUrl) 
+            radius: 40,
+            backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
+                ? NetworkImage(imageUrl)
                 : null,
             backgroundColor: Colors.grey[200],
-            child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty 
-                ? const Icon(Icons.person, size: 40, color: primaryColor) 
+            child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+                ? const Icon(Icons.person, size: 40, color: primaryColor)
                 : null,
           ),
           const SizedBox(width: 20),
@@ -211,6 +218,29 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailCard(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: primaryColor, size: 20),
+          const SizedBox(width: 15),
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          const Spacer(),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
       ),
     );
   }
