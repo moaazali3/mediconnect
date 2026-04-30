@@ -17,6 +17,9 @@ dependencies:
   jwt_decoder: ^2.0.1
   url_launcher: ^6.3.2
   image_picker: ^1.0.4
+  shared_preferences: ^2.2.2
+  shimmer: ^3.0.0
+  connectivity_plus: ^6.0.3
 
 dev_dependencies:
   flutter_test:

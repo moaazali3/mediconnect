@@ -6,6 +6,8 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:mediconnect/admin/analytics_page.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -30,7 +32,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  void _signOut() {
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    // مسح بيانات الجلسة فقط والحفاظ على الإيميل إذا كان Remember Me مفعلاً
+    await prefs.remove('auth_token');
+    await prefs.remove('user_role');
+    await prefs.remove('user_id');
+
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -69,9 +78,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Gradient Section
               _buildHeader(),
-
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -79,7 +86,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     _buildSectionTitle("System Statistics"),
                     const SizedBox(height: 15),
-                    
                     FutureBuilder<AdminDashboardModel>(
                       future: _statsFuture,
                       builder: (context, snapshot) {
@@ -98,7 +104,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         return _buildStatsGrid(snapshot.data!);
                       },
                     ),
-
                     const SizedBox(height: 30),
                     _buildSectionTitle("Management Console"),
                     const SizedBox(height: 15),
@@ -165,7 +170,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Icons.people_rounded,
                 Colors.blue,
               ),
-            ),
+            ), 
             const SizedBox(width: 15),
             Expanded(
               child: _buildStatCard(
@@ -200,7 +205,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
         const SizedBox(height: 15),
-        // Booking breakdown card
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -319,7 +323,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           "Full reports",
           Icons.bar_chart_rounded,
           Colors.purple.shade600,
-          () {},
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnalyticsPage())),
         ),
       ],
     );

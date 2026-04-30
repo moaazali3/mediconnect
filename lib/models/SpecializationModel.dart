@@ -16,4 +16,12 @@ class SpecializationModel {
       description: json['description'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+    };
+  }
 }

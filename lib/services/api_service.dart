@@ -20,6 +20,7 @@ part 'api_sections/profile_api.dart';
 part 'api_sections/appointment_api.dart';
 part 'api_sections/doctor_api.dart';
 part 'api_sections/payment_api.dart';
+part 'api_sections/doctor_schedule_api.dart';
 
 class ApiResponse {
   final bool success;
@@ -29,7 +30,7 @@ class ApiResponse {
   ApiResponse({required this.success, required this.message, this.data});
 }
 
-class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi {
+class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
 
   // Headers to bypass ngrok warning page if necessary

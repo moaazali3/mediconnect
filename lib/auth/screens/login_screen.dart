@@ -7,6 +7,7 @@ import 'package:mediconnect/home_screen.dart';
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,33 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool isPasswordHidden = true;
+  bool rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  Future<void> _loadSavedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      emailController.text = prefs.getString('saved_email') ?? '';
+      rememberMe = emailController.text.isNotEmpty;
+    });
+  }
+
+  Future<void> _saveSession(String token, String role, String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+    await prefs.setString('user_role', role);
+    await prefs.setString('user_id', userId);
+    if (rememberMe) {
+      await prefs.setString('saved_email', emailController.text);
+    } else {
+      await prefs.remove('saved_email');
+    }
+  }
 
   @override
   void dispose() {
@@ -38,10 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withOpacity(0.8),
-                  Colors.white,
-                ],
+                colors: [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
@@ -70,26 +95,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Logo (Same as Register)
                             Container(
                               padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: Colors.transparent,
-                                shape: BoxShape.circle,
-                              ),
+                              decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
                               child: Image.asset(
                                 "assets/images/img.png",
                                 height: 100,
                                 width: 100,
                                 fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => 
+                                errorBuilder: (context, error, stackTrace) =>
                                     const Icon(Icons.lock_person_rounded, size: 80, color: primaryColor),
                               ),
                             ),
                             const SizedBox(height: 20),
-                            const Text("Welcome Back", 
+                            const Text("Welcome Back",
                                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)),
-                            const Text("Login to your account", 
+                            const Text("Login to your account",
                                 style: TextStyle(fontSize: 16, color: Colors.black54)),
                             const SizedBox(height: 35),
-                            
+
                             // Email Field (Styled like Register)
                             _buildLoginField(
                               controller: emailController,
@@ -99,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               validator: (value) => (value == null || !value.contains("@")) ? "Valid email required" : null,
                             ),
                             const SizedBox(height: 20),
-                            
+
                             // Password Field (Styled like Register)
                             _buildLoginField(
                               controller: passwordController,
@@ -114,10 +136,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                 return null;
                               },
                             ),
-                            
-                            const SizedBox(height: 30),
-                            
+
                             // Login Button
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Checkbox(
+                                  value: rememberMe,
+                                  onChanged: (val) => setState(() => rememberMe = val ?? false),
+                                  activeColor: primaryColor,
+                                ),
+                                const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                              ],
+                            ),
+                            const SizedBox(height: 15),
                             SizedBox(
                               width: double.infinity,
                               height: 55,
@@ -149,6 +181,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
                                                     "").toString().toLowerCase();
 
+                                      // حفظ الجلسة للبقاء قيد تسجيل الدخول
+                                      await _saveSession(token, role, userId);
+
                                       if (mounted) {
                                         if (role == "admin") {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
@@ -160,10 +195,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                       }
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Incorrect email or password"), 
+                                        SnackBar(
+                                          content: Text(response.message), 
                                           backgroundColor: Colors.red,
-                                          duration: Duration(seconds: 5),
+                                          duration: const Duration(seconds: 5),
                                         ),
                                       );
                                     }
@@ -240,19 +275,19 @@ class _LoginScreenState extends State<LoginScreen> {
         fillColor: Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), 
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), 
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), 
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1)
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12), 
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)
         ),
       ),
