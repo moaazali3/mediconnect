@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class DoctorAppointmentsPage extends StatefulWidget {
@@ -62,15 +63,16 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     }
   }
 
-  void _showMedicalRecordDialog(DoctorAppointmentModel appointment) {
-    _diagnosisController.clear();
-    _prescriptionController.clear();
+  void _showMedicalRecordDialog(DoctorAppointmentModel appointment, {MedicalRecordModel? existingRecord}) {
+    _diagnosisController.text = existingRecord?.diagnosis ?? "";
+    _prescriptionController.text = existingRecord?.prescription ?? "";
+    bool isEdit = existingRecord != null;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: Text("Medical Record - ${appointment.patientName}"),
+        title: Text(isEdit ? "Edit Medical Record" : "Medical Record - ${appointment.patientName}"),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -104,25 +106,31 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
               setState(() => _isProcessing = true);
 
               try {
-                // 1. Create Medical Record using appointmentId
-                final recordSuccess = await _apiService.createMedicalRecord(
-                  appointmentId: appointment.appointmentId,
-                  diagnosis: _diagnosisController.text,
-                  prescription: _prescriptionController.text,
-                );
-
-                if (recordSuccess) {
-                  // 2. Complete Appointment Status
-                  await _apiService.completeAppointmentStatus(appointment.appointmentId);
-                  
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Success: Record created & Appointment completed"), backgroundColor: Colors.green),
-                    );
-                    setState(() {}); // Refresh list
-                  }
+                bool success;
+                if (isEdit) {
+                  // Update existing record (PUT)
+                  success = await _apiService.updateMedicalRecord(
+                    existingRecord.medicalRecordId,
+                    _diagnosisController.text,
+                    _prescriptionController.text,
+                  );
                 } else {
-                  throw "Failed to create medical record";
+                  // Create new record (POST)
+                  success = await _apiService.createMedicalRecord(
+                    appointmentId: appointment.appointmentId,
+                    diagnosis: _diagnosisController.text,
+                    prescription: _prescriptionController.text,
+                  );
+                  if (success) {
+                    await _apiService.completeAppointmentStatus(appointment.appointmentId);
+                  }
+                }
+
+                if (mounted && success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(isEdit ? "Record updated!" : "Record created & Appointment completed"), backgroundColor: Colors.green),
+                  );
+                  setState(() {}); // Refresh list
                 }
               } catch (e) {
                 if (mounted) {
@@ -135,11 +143,29 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
-            child: const Text("SAVE & COMPLETE"),
+            child: Text(isEdit ? "UPDATE" : "SAVE & COMPLETE"),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _fetchAndEditRecord(DoctorAppointmentModel appointment) async {
+    setState(() => _isProcessing = true);
+    try {
+      final record = await _apiService.getMedicalRecordByAppointment(appointment.appointmentId);
+      if (mounted) {
+        _showMedicalRecordDialog(appointment, existingRecord: record);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching record: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   @override
@@ -187,8 +213,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     }
                     
                     var appointments = snapshot.data ?? [];
-                    
-                    // Sorting logic: Date then Start Time
                     appointments.sort((a, b) {
                       int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
                       if (dateCompare != 0) return dateCompare;
@@ -204,7 +228,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                       itemCount: appointments.length,
                       itemBuilder: (context, index) {
                         final appointment = appointments[index];
-                        final bool isFinalized = appointment.status == "Completed" || appointment.status == "Cancelled";
+                        final bool isCompleted = appointment.status == "Completed";
+                        final bool isFinalized = isCompleted || appointment.status == "Cancelled";
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -244,7 +269,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                         Text(
                                           "Day: ${appointment.dayOfWeek} • ${appointment.status}",
                                           style: TextStyle(
-                                            color: appointment.status == "Completed" 
+                                            color: isCompleted 
                                               ? Colors.green 
                                               : (appointment.status == "Cancelled" ? Colors.red : Colors.grey.shade600), 
                                             fontSize: 13,
@@ -254,17 +279,12 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                       ],
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(10),
+                                  if (isCompleted)
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_note_rounded, color: primaryColor),
+                                      onPressed: () => _fetchAndEditRecord(appointment),
+                                      tooltip: "Edit Medical Record",
                                     ),
-                                    child: Text(
-                                      "Queue #${appointment.queueNumber}",
-                                      style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
                                 ],
                               ),
                               const Divider(height: 25),
