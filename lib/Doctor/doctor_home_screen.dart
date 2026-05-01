@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/services/api_service.dart';
 import 'doctor_appointments_page.dart';
 import 'doctor_profile_screen.dart';
 
@@ -13,24 +16,82 @@ class DoctorHomeScreen extends StatefulWidget {
 
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int currentIndex = 0;
+  final ApiService _apiService = ApiService();
+  String? doctorName;
 
   late final List<Widget> pages;
 
   @override
   void initState() {
     super.initState();
+    _loadDoctorName();
     pages = [
       DoctorAppointmentsPage(doctorId: widget.userId),
-      DoctorProfileScreen(doctorId: widget.userId ?? ""), // Fixed named parameter
+      DoctorProfileScreen(doctorId: widget.userId ?? ""),
     ];
+  }
+
+  Future<void> _loadDoctorName() async {
+    if (widget.userId != null) {
+      try {
+        final profile = await _apiService.getDoctorProfile(widget.userId!);
+        setState(() {
+          doctorName = "Dr. ${profile.firstName} ${profile.lastName}";
+        });
+      } catch (e) {
+        debugPrint("Error loading doctor name: $e");
+        setState(() {
+          doctorName = "Doctor";
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryColor = Color(0xFF0D47A1);
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      appBar: currentIndex == 1 ? null : AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white, // يمنع تغيير اللون في Material 3
+        scrolledUnderElevation: 0, // يمنع الظل واللون المتغير عند السكرول
+        elevation: 0,
+        toolbarHeight: 70,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.white, // تثبيت لون منطقة الـ Safe Area (Status Bar)
+          statusBarIconBrightness: Brightness.dark, // جعل الأيقونات (الساعة والبطارية) سوداء
+        ),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Hello,",
+                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400),
+              ),
+              Text(
+                doctorName ?? "Loading...",
+                style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 15),
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: Image.asset(
+                "assets/images/img.png",
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35),
+              ),
+            ),
+          )
+        ],
+      ),
       body: pages[currentIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),

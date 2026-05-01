@@ -4,6 +4,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
+import 'package:mediconnect/patient/screens/profile.dart'; // استيراد صفحة البروفايل
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -284,7 +285,6 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
 
               final appointments = snapshot.data!;
               
-              // Sorting logic: Date then Start Time
               appointments.sort((a, b) {
                 int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
                 if (dateCompare != 0) return dateCompare;
@@ -309,7 +309,25 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ProfileScreen(userId: app.patientId, readOnly: true),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  app.patientName, 
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 16, 
+                                    color: primaryColor,
+                                    decoration: TextDecoration.underline
+                                  )
+                                ),
+                              ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(

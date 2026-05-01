@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // أضفنا هذا الاستيراد للتحكم في الـ Status Bar
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
-import 'package:mediconnect/admin/manage_doctors_page.dart'; // أضفنا هذا الاستيراد
+import 'package:mediconnect/admin/manage_doctors_page.dart'; 
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
@@ -57,7 +58,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         backgroundColor: primaryColor,
+        surfaceTintColor: primaryColor, // يمنع تغير اللون في Material 3
+        scrolledUnderElevation: 0, // يمنع تغير اللون عند السكرول
         elevation: 0,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: primaryColor, // تثبيت لون الـ Safe Area العلوي
+          statusBarIconBrightness: Brightness.light, // جعل أيقونات الحالة بيضاء
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -211,7 +218,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
             ],
           ),
           child: Column(
@@ -246,7 +253,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -303,7 +310,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         _buildActionCard(
           context,
-          "Doctors List", // تم تغيير المسمى ليدل على الإدارة الكاملة
+          "Doctors List",
           "Schedules & Fees",
           Icons.medical_services_rounded,
           Colors.teal.shade600,
@@ -347,7 +354,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -357,7 +364,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),
