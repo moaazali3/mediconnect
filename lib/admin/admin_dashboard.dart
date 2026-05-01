@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
+import 'package:mediconnect/admin/today_appointments_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
@@ -182,7 +183,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Expanded(
               child: _buildStatCard(
-                "Appointments",
+                "Total Appts",
                 stats.totalAppointments.toString(),
                 Icons.event_note_rounded,
                 Colors.indigo,
@@ -190,48 +191,98 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             const SizedBox(width: 15),
             Expanded(
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()),
+                  );
+                },
+                child: _buildStatCard(
+                  "Today's Appts",
+                  stats.totalAppointmentsToday.toString(),
+                  Icons.today_rounded,
+                  Colors.pink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            Expanded(
               child: _buildStatCard(
-                "Revenue",
-                "${stats.totalRevenue.toStringAsFixed(0)} EGP",
+                "Today Revenue",
+                "${stats.totalRevenueToday.toStringAsFixed(0)} EGP",
                 Icons.payments_rounded,
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: _buildStatCard(
+                "Total Revenue",
+                "${stats.totalRevenue.toStringAsFixed(0)} EGP",
+                Icons.account_balance_wallet_rounded,
                 Colors.orange.shade800,
               ),
             ),
           ],
         ),
         const SizedBox(height: 15),
-        // Booking breakdown card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: Column(
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
-                  SizedBox(width: 10),
-                  Text("Appointment Breakdown", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatusInfo("Completed", stats.totalCompletedAppointments, Colors.green),
-                  _buildStatusInfo("Pending", stats.totalPendingAppointments, Colors.orange),
-                  _buildStatusInfo("Cancelled", stats.totalCancelledAppointments, Colors.red),
-                ],
-              ),
-            ],
-          ),
+        
+        // Today breakdown card
+        _buildBreakdownCard(
+          "Today's Appointment Status",
+          stats.totalCompletedAppointmentsToday,
+          stats.totalPendingAppointmentsToday,
+          stats.totalCancelledAppointmentsToday,
+        ),
+        
+        const SizedBox(height: 15),
+        
+        // Total breakdown card
+        _buildBreakdownCard(
+          "Overall Appointment Status",
+          stats.totalCompletedAppointments,
+          stats.totalPendingAppointments,
+          stats.totalCancelledAppointments,
         ),
       ],
+    );
+  }
+
+  Widget _buildBreakdownCard(String title, int completed, int pending, int cancelled) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
+              const SizedBox(width: 10),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatusInfo("Completed", completed, Colors.green),
+              _buildStatusInfo("Pending", pending, Colors.orange),
+              _buildStatusInfo("Cancelled", cancelled, Colors.red),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -252,7 +303,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 15),
           Text(
             value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 5),
           Text(

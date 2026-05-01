@@ -2,18 +2,28 @@ class AdminDashboardModel {
   final int totalPatients;
   final int totalDoctors;
   final int totalAppointments;
+  final int totalAppointmentsToday;
+  final int totalPendingAppointmentsToday;
+  final int totalCompletedAppointmentsToday;
+  final int totalCancelledAppointmentsToday;
+  final int totalPendingAppointments;
   final int totalCompletedAppointments;
   final int totalCancelledAppointments;
-  final int totalPendingAppointments;
+  final double totalRevenueToday;
   final double totalRevenue;
 
   AdminDashboardModel({
     required this.totalPatients,
     required this.totalDoctors,
     required this.totalAppointments,
+    required this.totalAppointmentsToday,
+    required this.totalPendingAppointmentsToday,
+    required this.totalCompletedAppointmentsToday,
+    required this.totalCancelledAppointmentsToday,
+    required this.totalPendingAppointments,
     required this.totalCompletedAppointments,
     required this.totalCancelledAppointments,
-    required this.totalPendingAppointments,
+    required this.totalRevenueToday,
     required this.totalRevenue,
   });
 
@@ -22,9 +32,14 @@ class AdminDashboardModel {
       totalPatients: json['totalPatients'] ?? 0,
       totalDoctors: json['totalDoctors'] ?? 0,
       totalAppointments: json['totalAppointments'] ?? 0,
+      totalAppointmentsToday: json['totalAppointmentsToday'] ?? 0,
+      totalPendingAppointmentsToday: json['totalPendingAppointmentsToday'] ?? 0,
+      totalCompletedAppointmentsToday: json['totalCompletedAppointmentsToday'] ?? 0,
+      totalCancelledAppointmentsToday: json['totalCancelledAppointmentsToday'] ?? 0,
+      totalPendingAppointments: json['totalpendingAppointments'] ?? 0,
       totalCompletedAppointments: json['totalCompletedAppointments'] ?? 0,
       totalCancelledAppointments: json['totalCancelledAppointments'] ?? 0,
-      totalPendingAppointments: json['totalpendingAppointments'] ?? 0,
+      totalRevenueToday: (json['totalRevenueToday'] ?? 0).toDouble(),
       totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
     );
   }
@@ -34,9 +49,14 @@ class AdminDashboardModel {
       'totalPatients': totalPatients,
       'totalDoctors': totalDoctors,
       'totalAppointments': totalAppointments,
+      'totalAppointmentsToday': totalAppointmentsToday,
+      'totalPendingAppointmentsToday': totalPendingAppointmentsToday,
+      'totalCompletedAppointmentsToday': totalCompletedAppointmentsToday,
+      'totalCancelledAppointmentsToday': totalCancelledAppointmentsToday,
+      'totalpendingAppointments': totalPendingAppointments,
       'totalCompletedAppointments': totalCompletedAppointments,
       'totalCancelledAppointments': totalCancelledAppointments,
-      'totalpendingAppointments': totalPendingAppointments,
+      'totalRevenueToday': totalRevenueToday,
       'totalRevenue': totalRevenue,
     };
   }
