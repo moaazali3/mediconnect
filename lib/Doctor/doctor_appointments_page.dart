@@ -202,40 +202,62 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final apps = _filteredAppointments;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: [
-                _buildHeader(),
-                _buildSearchField(), 
-                if (_isLoading)
-                  const Expanded(child: Center(child: CircularProgressIndicator(color: primaryColor)))
-                else if (_errorMessage != null)
-                  Expanded(child: Center(child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("Error: $_errorMessage"),
-                      ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
-                    ],
-                  )))
-                else
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildDayFilter(),
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: _fetchData,
-                            child: _buildAppointmentsList(),
-                          ),
-                        ),
-                      ],
-                    ),
+            RefreshIndicator(
+              onRefresh: _fetchData,
+              child: ListView(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  _buildSearchField(), 
+                  const SizedBox(height: 20),
+                  
+                  // قسم الفلتر بنفس ستايل الهوم
+                  _buildDayFilterSection(),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // قسم المواعيد بنفس ستايل "Top Doctors"
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text("Appointments List", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
-              ],
+                  const SizedBox(height: 10),
+                  
+                  if (_isLoading)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: CircularProgressIndicator(color: primaryColor),
+                    ))
+                  else if (_errorMessage != null)
+                    Center(child: Column(
+                      children: [
+                        Text("Error: $_errorMessage"),
+                        ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
+                      ],
+                    ))
+                  else if (apps.isEmpty)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: Text("No appointments found"),
+                    ))
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: apps.map((app) => _buildAppointmentCard(app)).toList(),
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
             if (_isProcessing)
               Container(color: Colors.black26, child: const Center(child: CircularProgressIndicator(color: primaryColor))),
@@ -247,7 +269,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -264,14 +286,13 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 
   Widget _buildSearchField() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
-        key: const ValueKey('doctor_search_field'),
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
-          hintText: "Search by patient name...",
-          prefixIcon: const Icon(Icons.search, color: primaryColor),
+          hintText: "Search patient...",
+          prefixIcon: const Icon(Icons.search),
           suffixIcon: _searchQuery.isNotEmpty 
             ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
                 _searchController.clear();
@@ -280,14 +301,16 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             : null,
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-          contentPadding: EdgeInsets.zero,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDayFilter() {
+  Widget _buildDayFilterSection() {
     List<String> workDays = _schedule.map((s) => s.getDayName()).toSet().toList();
     workDays.sort((a, b) => _weekDaysOrder.indexOf(a).compareTo(_weekDaysOrder.indexOf(b)));
     List<String> options = ["All", ...workDays];
@@ -296,72 +319,41 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text("Filter by Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
-        SizedBox(
-          height: 45,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: options.length,
-            itemBuilder: (context, index) {
-              final day = options[index];
-              final isSelected = _selectedDay == day;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDay = day),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: isSelected ? primaryColor : Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: isSelected ? primaryColor : Colors.grey.shade200,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      day,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey.shade700,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: options.map((day) => _buildFilterItem(day)).toList(),
           ),
         ),
-        const SizedBox(height: 15),
       ],
     );
   }
 
-  Widget _buildAppointmentsList() {
-    final apps = _filteredAppointments;
-    if (apps.isEmpty) {
-      return ListView(children: [SizedBox(height: 100, child: Center(child: Text(_searchQuery.isEmpty ? "No appointments" : "No matches found")))]);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      itemCount: apps.length,
-      itemBuilder: (context, index) {
-        final app = apps[index];
-        bool showHeader = index == 0 || apps[index-1].appointmentDate != app.appointmentDate;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showHeader) Padding(
-              padding: const EdgeInsets.only(top: 20, bottom: 12, left: 4),
-              child: Text("${app.dayOfWeek}, ${app.appointmentDate}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 15)),
-            ),
-            _buildAppointmentCard(app),
-          ],
-        );
-      },
+  Widget _buildFilterItem(String title) {
+    bool isSelected = _selectedDay == title;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDay = title),
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
+        ),
+        child: Text(
+          title, 
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey.shade700, 
+            fontWeight: FontWeight.bold
+          )
+        ),
+      ),
     );
   }
 
@@ -379,7 +371,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         borderRadius: BorderRadius.circular(22),
         child: Column(
           children: [
-            // Top Section (Patient Info) - Tap to Navigate
             Material(
               color: Colors.transparent,
               child: InkWell(
@@ -405,6 +396,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                 const Icon(Icons.contact_page_outlined, size: 16, color: Colors.grey),
                               ],
                             ),
+                            Text("${app.dayOfWeek}, ${app.appointmentDate}", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                             Text(app.status, style: TextStyle(color: _getStatusColor(app.status), fontSize: 13, fontWeight: FontWeight.w500)),
                           ],
                         ),
@@ -416,7 +408,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
               ),
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
-            // Bottom Section (Time & Actions)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
