@@ -239,7 +239,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.account_circle_outlined, color: primaryColor),
+                      icon: const Icon(Icons.info_outline, color: primaryColor),
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId))),
                     ),
                   ],

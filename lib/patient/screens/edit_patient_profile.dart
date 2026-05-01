@@ -140,155 +140,182 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      appBar: AppBar(
-        title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: isLoading 
         ? const Center(child: CircularProgressIndicator(color: primaryColor))
-        : SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [primaryColor, Color(0xFF1E88E5)],
+        : Column(
+            children: [
+              _buildFixedHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(15.0),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle("Personal Information"),
+                        _buildEditCard([
+                          _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
+                          _buildDivider(),
+                          Row(
+                            children: [
+                              Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
+                            ],
                           ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 46,
-                            backgroundColor: Colors.white,
-                            child: Icon(
-                              selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-                              size: 60, 
-                              color: primaryColor
+                          _buildDivider(),
+                          _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
+                          _buildDivider(),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildDropdownField(
+                                  label: "Gender",
+                                  icon: Icons.wc_rounded,
+                                  value: selectedGender,
+                                  items: ['Male', 'Female'],
+                                  onChanged: (val) => setState(() => selectedGender = val),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildEditRow(
+                                  label: "Birth Date",
+                                  controller: dobController,
+                                  icon: Icons.calendar_month_rounded,
+                                  isReadOnly: true,
+                                  onTap: () async {
+                                    DateTime? picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
+                                      firstDate: DateTime(1900),
+                                      lastDate: DateTime.now(),
+                                    );
+                                    if (picked != null) {
+                                      setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          _buildDivider(),
+                          _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
+                        ]),
+
+                        const SizedBox(height: 20),
+                        _buildSectionTitle("Medical Background"),
+                        _buildEditCard([
+                          Row(
+                            children: [
+                              Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
+                              const SizedBox(width: 8),
+                              Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
+                            ],
+                          ),
+                          _buildDivider(),
+                          _buildDropdownField(
+                            label: "Blood Type",
+                            icon: Icons.bloodtype_outlined,
+                            value: selectedBloodType,
+                            items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+                            onChanged: (val) => setState(() => selectedBloodType = val),
+                          ),
+                          _buildDivider(),
+                          _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
+                        ]),
+
+                        const SizedBox(height: 30),
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton.icon(
+                            onPressed: _updateProfile,
+                            icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                            label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-
-                    _buildSectionTitle("Personal Information"),
-                    _buildEditCard([
-                      _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
-                      _buildDivider(),
-                      Row(
-                        children: [
-                          Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
-                        ],
-                      ),
-                      _buildDivider(),
-                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
-                      _buildDivider(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdownField(
-                              label: "Gender",
-                              icon: Icons.wc_rounded,
-                              value: selectedGender,
-                              items: ['Male', 'Female'],
-                              onChanged: (val) => setState(() => selectedGender = val),
-                            ),
+                        const SizedBox(height: 15),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => _showChangePasswordDialog(context),
+                            child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildEditRow(
-                              label: "Birth Date",
-                              controller: dobController,
-                              icon: Icons.calendar_month_rounded,
-                              isReadOnly: true,
-                              onTap: () async {
-                                DateTime? picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
-                                  firstDate: DateTime(1900),
-                                  lastDate: DateTime.now(),
-                                );
-                                if (picked != null) {
-                                  setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      _buildDivider(),
-                      _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
-                    ]),
-
-                    const SizedBox(height: 20),
-                    _buildSectionTitle("Medical Background"),
-                    _buildEditCard([
-                      Row(
-                        children: [
-                          Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
-                        ],
-                      ),
-                      _buildDivider(),
-                      _buildDropdownField(
-                        label: "Blood Type",
-                        icon: Icons.bloodtype_outlined,
-                        value: selectedBloodType,
-                        items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                        onChanged: (val) => setState(() => selectedBloodType = val),
-                      ),
-                      _buildDivider(),
-                      _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
-                    ]),
-
-                    const SizedBox(height: 30),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton.icon(
-                        onPressed: _updateProfile,
-                        icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
-                        label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    const SizedBox(height: 15),
-                    Center(
-                      child: TextButton(
-                        onPressed: () => _showChangePasswordDialog(context),
-                        child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildFixedHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primaryColor, Color(0xFF1E88E5)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      padding: const EdgeInsets.only(top: 50, bottom: 20, left: 10, right: 20),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+              onPressed: () => Navigator.pop(context),
+            ),
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
+                  size: 40, 
+                  color: primaryColor
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "${fNameController.text} ${lNameController.text}",
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const Text("Edit Patient Profile", style: TextStyle(fontSize: 13, color: Colors.white70)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

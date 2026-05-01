@@ -15,7 +15,22 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   final ApiService _apiService = ApiService();
   bool _isProcessing = false;
 
-  Future<void> _updateStatus(String id, bool isAccept) async {
+  final _diagnosisController = TextEditingController();
+  final _prescriptionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _diagnosisController.dispose();
+    _prescriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateStatus(String id, bool isAccept, {DoctorAppointmentModel? appointment}) async {
+    if (isAccept && appointment != null) {
+      _showMedicalRecordDialog(appointment);
+      return;
+    }
+
     setState(() => _isProcessing = true);
     try {
       bool success;
@@ -45,6 +60,86 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  void _showMedicalRecordDialog(DoctorAppointmentModel appointment) {
+    _diagnosisController.clear();
+    _prescriptionController.clear();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text("Medical Record - ${appointment.patientName}"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _diagnosisController,
+                decoration: const InputDecoration(labelText: "Diagnosis", border: OutlineInputBorder()),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: _prescriptionController,
+                decoration: const InputDecoration(labelText: "Prescription", border: OutlineInputBorder()),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
+          ElevatedButton(
+            onPressed: () async {
+              if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please fill all fields")),
+                );
+                return;
+              }
+
+              Navigator.pop(context); // Close dialog
+              setState(() => _isProcessing = true);
+
+              try {
+                // 1. Create Medical Record using appointmentId
+                final recordSuccess = await _apiService.createMedicalRecord(
+                  appointmentId: appointment.appointmentId,
+                  diagnosis: _diagnosisController.text,
+                  prescription: _prescriptionController.text,
+                );
+
+                if (recordSuccess) {
+                  // 2. Complete Appointment Status
+                  await _apiService.completeAppointmentStatus(appointment.appointmentId);
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Success: Record created & Appointment completed"), backgroundColor: Colors.green),
+                    );
+                    setState(() {}); // Refresh list
+                  }
+                } else {
+                  throw "Failed to create medical record";
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                  );
+                }
+              } finally {
+                if (mounted) setState(() => _isProcessing = false);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+            child: const Text("SAVE & COMPLETE"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -92,9 +187,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     }
                     
                     var appointments = snapshot.data ?? [];
-                    
-                    // Filter out completed and cancelled if needed, or show them with status
-                    // For now, let's keep all and show status, but focus on 'Pending' (assumed empty or 'Pending')
                     
                     // Sorting logic: Date then Start Time
                     appointments.sort((a, b) {
@@ -216,7 +308,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: ElevatedButton(
-                                        onPressed: _isProcessing ? null : () => _updateStatus(appointment.appointmentId, true),
+                                        onPressed: _isProcessing ? null : () => _updateStatus(appointment.appointmentId, true, appointment: appointment),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.green,
                                           foregroundColor: Colors.white,

@@ -1,28 +1,69 @@
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
+
 class DoctorModel {
   final String id;
+  final String? profilePictureUrl;
   final String firstName;
   final String lastName;
-  final String gender;
-  final double experienceYears;
   final String specializationName;
+  final double experienceYears;
+  final String biography;
+  final double consultationFee;
+  final String dateOfBirth;
+  final String gender;
+  final bool isAppleToAppointment;
+  final List<DoctorScheduleModel> doctorSchedules;
 
   DoctorModel({
     required this.id,
+    this.profilePictureUrl,
     required this.firstName,
     required this.lastName,
-    required this.gender,
-    required this.experienceYears,
     required this.specializationName,
+    required this.experienceYears,
+    required this.biography,
+    required this.consultationFee,
+    required this.dateOfBirth,
+    required this.gender,
+    required this.isAppleToAppointment,
+    this.doctorSchedules = const [],
   });
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     return DoctorModel(
       id: json['id'] ?? '',
+      profilePictureUrl: json['profilePictureUrl'],
       firstName: json['firstName'] ?? '',
       lastName: json['lastName'] ?? '',
-      gender: json['gender'] ?? '',
+      specializationName: json['specializationName'] ?? '',
       experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
-      specializationName: json['specializationName'] ?? 'General',
+      biography: json['biography'] ?? '',
+      consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,
+      dateOfBirth: json['dateOfBirth'] ?? '',
+      gender: json['gender'] ?? '',
+      isAppleToAppointment: json['isAppleToAppointment'] ?? false,
+      doctorSchedules: json['doctorSchedules'] != null
+          ? (json['doctorSchedules'] as List)
+              .map((i) => DoctorScheduleModel.fromJson(i))
+              .toList()
+          : [],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'profilePictureUrl': profilePictureUrl,
+      'firstName': firstName,
+      'lastName': lastName,
+      'specializationName': specializationName,
+      'experienceYears': experienceYears,
+      'biography': biography,
+      'consultationFee': consultationFee,
+      'dateOfBirth': dateOfBirth,
+      'gender': gender,
+      'isAppleToAppointment': isAppleToAppointment,
+      'doctorSchedules': doctorSchedules.map((s) => s.toJson()).toList(),
+    };
   }
 }

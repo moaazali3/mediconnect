@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/SpecializationModel.dart';
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -13,71 +14,203 @@ class ManageBookingsPage extends StatefulWidget {
 
 class _ManageBookingsPageState extends State<ManageBookingsPage> {
   final _apiService = ApiService();
-  List<DoctorModel> _doctors = [];
+  final TextEditingController _searchController = TextEditingController();
+  
+  List<DoctorModel> _allDoctors = [];
+  List<DoctorModel> _filteredDoctors = [];
+  List<SpecializationModel> _specializations = [];
+  
+  String _selectedSpec = "All";
+  String _searchQuery = "";
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDoctors();
+    _loadInitialData();
   }
 
-  Future<void> _loadDoctors() async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
     try {
-      final doctors = await _apiService.getAllDoctors();
+      final specs = await _apiService.getAllSpecializations();
       setState(() {
-        _doctors = doctors;
+        _specializations = specs;
+      });
+      await _fetchDoctors();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error loading data: $e")),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchDoctors() async {
+    setState(() => _isLoading = true);
+    try {
+      final doctors = await _apiService.getAllDoctors(specializationName: _selectedSpec);
+      setState(() {
+        _allDoctors = doctors;
+        _applySearch();
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading doctors: $e")),
+          SnackBar(content: Text("Error fetching doctors: $e")),
         );
       }
     }
+  }
+
+  void _applySearch() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _filteredDoctors = _allDoctors;
+      } else {
+        _filteredDoctors = _allDoctors.where((doctor) {
+          final fullName = "${doctor.firstName} ${doctor.lastName}".toLowerCase();
+          return fullName.contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Manage Bookings", style: TextStyle(color: Colors.white)),
+        title: const Text("Manage Bookings", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _doctors.length,
-              padding: const EdgeInsets.all(10),
-              itemBuilder: (context, index) {
-                final doctor = _doctors[index];
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.only(bottom: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: primaryColor.withOpacity(0.1),
-                      child: const Icon(Icons.person, color: primaryColor),
-                    ),
-                    title: Text("${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(doctor.specializationName),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => DoctorBookingsDetail(doctor: doctor),
-                        ),
-                      ).then((_) => setState(() {})); // Refresh when returning
-                    },
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          _buildFilterBar(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                : RefreshIndicator(
+                    onRefresh: _fetchDoctors,
+                    child: _filteredDoctors.isEmpty
+                        ? const Center(child: Text("No doctors found"))
+                        : ListView.builder(
+                            itemCount: _filteredDoctors.length,
+                            padding: const EdgeInsets.all(10),
+                            itemBuilder: (context, index) {
+                              final doctor = _filteredDoctors[index];
+                              return Card(
+                                elevation: 3,
+                                margin: const EdgeInsets.only(bottom: 15),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: primaryColor.withOpacity(0.1),
+                                    child: const Icon(Icons.person, color: primaryColor),
+                                  ),
+                                  title: Text("${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text(doctor.specializationName),
+                                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => DoctorBookingsDetail(doctor: doctor),
+                                      ),
+                                    ).then((_) => _fetchDoctors()); // Refresh when returning
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                   ),
-                );
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(15, 10, 15, 0),
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: "Search doctor by name...",
+          prefixIcon: const Icon(Icons.search, color: primaryColor),
+          suffixIcon: _searchQuery.isNotEmpty 
+              ? IconButton(
+                  icon: const Icon(Icons.clear), 
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = "";
+                      _applySearch();
+                    });
+                  }) 
+              : null,
+          filled: true,
+          fillColor: Colors.grey[100],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+            _applySearch();
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      height: 60,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        itemCount: _specializations.length + 1,
+        itemBuilder: (context, index) {
+          String name = index == 0 ? "All" : _specializations[index - 1].name;
+          bool isSelected = _selectedSpec == name;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: ChoiceChip(
+              label: Text(name),
+              selected: isSelected,
+              selectedColor: primaryColor,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedSpec = name;
+                  });
+                  _fetchDoctors();
+                }
               },
             ),
+          );
+        },
+      ),
     );
   }
 }

@@ -16,13 +16,13 @@ class AddDoctorPage extends StatefulWidget {
 class _AddDoctorPageState extends State<AddDoctorPage> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
-
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _biographyController = TextEditingController();
   final _experienceController = TextEditingController();
   final _feeController = TextEditingController();
   final _dobController = TextEditingController();
@@ -47,6 +47,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     _passwordController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _biographyController.dispose();
     _experienceController.dispose();
     _feeController.dispose();
     _dobController.dispose();
@@ -96,6 +97,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         gender: _gender,
         dateOfBirth: dob,
         address: _addressController.text,
+        biography: _biographyController.text,
         experienceYears: double.tryParse(_experienceController.text) ?? 0,
         consultationFee: double.tryParse(_feeController.text) ?? 0,
         specializationId: _selectedSpecializationId!,
@@ -147,8 +149,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -179,7 +179,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600), // لمنع التمدد في الشاشات الكبيرة
+                  constraints: const BoxConstraints(maxWidth: 600),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child: BackdropFilter(
@@ -211,7 +211,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                               ),
                               const SizedBox(height: 25),
 
-                              // استخدام LayoutBuilder لجعل الصفوف متجاوبة
                               LayoutBuilder(
                                 builder: (context, constraints) {
                                   bool isSmall = constraints.maxWidth < 400;
@@ -266,6 +265,14 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                                 controller: _addressController,
                                 label: "Address",
                                 icon: Icons.location_on_outlined,
+                              ),
+                              const SizedBox(height: 12),
+
+                              _buildTextField(
+                                controller: _biographyController,
+                                label: "Biography",
+                                icon: Icons.description_outlined,
+                                maxLines: 3,
                               ),
                               const SizedBox(height: 12),
 
@@ -410,6 +417,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     bool readOnly = false,
     VoidCallback? onTap,
     String? Function(String?)? validator,
+    int? maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
@@ -417,6 +425,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       keyboardType: keyboardType,
       readOnly: readOnly,
       onTap: onTap,
+      maxLines: maxLines,
       style: const TextStyle(fontSize: 13),
       decoration: InputDecoration(
         labelText: label,

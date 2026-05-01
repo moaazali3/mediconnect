@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
-import 'package:mediconnect/admin/today_appointments_page.dart';
+import 'package:mediconnect/admin/manage_doctors_page.dart'; // أضفنا هذا الاستيراد
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:mediconnect/admin/analytics_page.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -31,7 +33,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  void _signOut() {
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    await prefs.remove('user_role');
+    await prefs.remove('user_id');
+
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -70,9 +78,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Gradient Section
               _buildHeader(),
-
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -80,7 +86,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     _buildSectionTitle("System Statistics"),
                     const SizedBox(height: 15),
-                    
                     FutureBuilder<AdminDashboardModel>(
                       future: _statsFuture,
                       builder: (context, snapshot) {
@@ -99,7 +104,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         return _buildStatsGrid(snapshot.data!);
                       },
                     ),
-
                     const SizedBox(height: 30),
                     _buildSectionTitle("Management Console"),
                     const SizedBox(height: 15),
@@ -166,7 +170,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Icons.people_rounded,
                 Colors.blue,
               ),
-            ),
+            ), 
             const SizedBox(width: 15),
             Expanded(
               child: _buildStatCard(
@@ -183,7 +187,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             Expanded(
               child: _buildStatCard(
-                "Total Appts",
+                "Appointments",
                 stats.totalAppointments.toString(),
                 Icons.event_note_rounded,
                 Colors.indigo,
@@ -191,98 +195,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             const SizedBox(width: 15),
             Expanded(
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()),
-                  );
-                },
-                child: _buildStatCard(
-                  "Today's Appts",
-                  stats.totalAppointmentsToday.toString(),
-                  Icons.today_rounded,
-                  Colors.pink,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
               child: _buildStatCard(
-                "Today Revenue",
-                "${stats.totalRevenueToday.toStringAsFixed(0)} EGP",
-                Icons.payments_rounded,
-                Colors.green,
-              ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: _buildStatCard(
-                "Total Revenue",
+                "Revenue",
                 "${stats.totalRevenue.toStringAsFixed(0)} EGP",
-                Icons.account_balance_wallet_rounded,
+                Icons.payments_rounded,
                 Colors.orange.shade800,
               ),
             ),
           ],
         ),
         const SizedBox(height: 15),
-        
-        // Today breakdown card
-        _buildBreakdownCard(
-          "Today's Appointment Status",
-          stats.totalCompletedAppointmentsToday,
-          stats.totalPendingAppointmentsToday,
-          stats.totalCancelledAppointmentsToday,
-        ),
-        
-        const SizedBox(height: 15),
-        
-        // Total breakdown card
-        _buildBreakdownCard(
-          "Overall Appointment Status",
-          stats.totalCompletedAppointments,
-          stats.totalPendingAppointments,
-          stats.totalCancelledAppointments,
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Column(
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
+                  SizedBox(width: 10),
+                  Text("Appointment Breakdown", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatusInfo("Completed", stats.totalCompletedAppointments, Colors.green),
+                  _buildStatusInfo("Pending", stats.totalPendingAppointments, Colors.orange),
+                  _buildStatusInfo("Cancelled", stats.totalCancelledAppointments, Colors.red),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBreakdownCard(String title, int completed, int pending, int cancelled) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
-              const SizedBox(width: 10),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatusInfo("Completed", completed, Colors.green),
-              _buildStatusInfo("Pending", pending, Colors.orange),
-              _buildStatusInfo("Cancelled", cancelled, Colors.red),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -293,7 +246,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -303,7 +256,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 15),
           Text(
             value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 5),
           Text(
@@ -343,15 +296,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _buildActionCard(
           context,
           "Add Doctor",
-          "Register new staff",
+          "Register staff",
           Icons.person_add_alt_1_rounded,
           Colors.blue.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())).then((_) => _refreshData()),
         ),
         _buildActionCard(
           context,
+          "Doctors List", // تم تغيير المسمى ليدل على الإدارة الكاملة
+          "Schedules & Fees",
+          Icons.medical_services_rounded,
+          Colors.teal.shade600,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())).then((_) => _refreshData()),
+        ),
+        _buildActionCard(
+          context,
           "Bookings",
-          "View schedules",
+          "View appointments",
           Icons.calendar_today_rounded,
           Colors.green.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageBookingsPage())).then((_) => _refreshData()),
@@ -367,10 +328,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _buildActionCard(
           context,
           "Analytics",
-          "Full reports",
+          "Reports",
           Icons.bar_chart_rounded,
           Colors.purple.shade600,
-          () {},
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AnalyticsPage())),
         ),
       ],
     );
@@ -386,7 +347,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -396,7 +357,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),

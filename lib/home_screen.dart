@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: currentIndex == 0 ? AppBar(
+      appBar: currentIndex == 2 ? null : AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         toolbarHeight: 70,
@@ -77,13 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 15),
-            child: CircleAvatar(
-              backgroundColor: primaryColor.withOpacity(0.1),
-              child: const Icon(Icons.notifications_none_rounded, color: primaryColor),
+            child: SizedBox(
+              width: 50,
+              height: 50,
+              child: Image.asset(
+                "assets/images/img.png",
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35),
+              ),
             ),
           )
         ],
-      ) : null,
+      ),
       body: pages[currentIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),

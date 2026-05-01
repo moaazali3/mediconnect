@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
+import 'package:mediconnect/models/UpdateDoctorModel.dart';
+import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:intl/intl.dart';
 
 class EditDoctorProfile extends StatefulWidget {
@@ -26,9 +28,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   final dobController = TextEditingController();
   String? selectedGender;
   
-  String specializationName = "";
-  double experienceYears = 0;
-  double consultationFee = 0;
+  // حقول إضافية للحفاظ على البيانات القديمة
+  int? _currentSpecializationId;
+  double _currentExperienceYears = 0;
+  double _currentConsultationFee = 0;
 
   @override
   void initState() {
@@ -39,7 +42,13 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   Future<void> _loadProfileData() async {
     try {
       final String targetId = widget.doctorId ?? "1";
+      
+      // جلب البيانات والتخصصات معاً
+      final specs = await _apiService.getAllSpecializations();
       final doctor = await _apiService.getDoctorProfile(targetId);
+      
+      final spec = specs.where((s) => s.name == doctor.specializationName).firstOrNull;
+
       setState(() {
         fNameController.text = doctor.firstName;
         lNameController.text = doctor.lastName;
@@ -50,18 +59,16 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         dobController.text = doctor.dateOfBirth;
         selectedGender = doctor.gender;
         
-        specializationName = doctor.specializationName;
-        experienceYears = doctor.experienceYears;
-        consultationFee = doctor.consultationFee;
+        _currentSpecializationId = spec?.id;
+        _currentExperienceYears = doctor.experienceYears;
+        _currentConsultationFee = doctor.consultationFee;
         
         isLoading = false;
       });
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading doctor profile: $e")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading profile: $e")));
       }
     }
   }
@@ -72,68 +79,45 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     setState(() => isLoading = true);
     final String targetId = widget.doctorId ?? "1";
 
-    final DoctorProfileModel updatedDoctor = DoctorProfileModel(
-      firstName: fNameController.text,
-      lastName: lNameController.text,
-      email: emailController.text,
-      dateOfBirth: dobController.text,
-      gender: selectedGender ?? '',
-      address: addressController.text,
-      phoneNumber: phoneController.text,
-      biography: bioController.text,
-      specializationName: specializationName,
-      experienceYears: experienceYears,
-      consultationFee: consultationFee
-    );
-
     try {
-      final success = await _apiService.updateDoctorProfile(targetId, updatedDoctor);
-      setState(() => isLoading = false);
+      // 1. جلب أحدث البيانات من السيرفر قبل التعديل لضمان عدم فقدان أي حقل (مثل الخبرة أو السعر)
+      final latestProfile = await _apiService.getDoctorProfile(targetId);
+      final specs = await _apiService.getAllSpecializations();
+      final spec = specs.firstWhere((s) => s.name == latestProfile.specializationName);
 
+      // 2. بناء كائن التحديث بناءً على البيانات القديمة ودمج التغييرات الجديدة من النموذج
+      final updateModel = UpdateDoctorModel.fromProfile(latestProfile, spec.id).copyWith(
+        firstName: fNameController.text,
+        lastName: lNameController.text,
+        phoneNumber: phoneController.text,
+        gender: selectedGender,
+        dateOfBirth: dobController.text,
+        biography: bioController.text,
+        // الحفاظ على التخصص والسعر والخبرة كما هي إذا لم يتم تغييرها في هذه الشاشة
+        specializationId: _currentSpecializationId ?? spec.id,
+        consultationFee: _currentConsultationFee,
+        experienceYears: _currentExperienceYears,
+      );
+
+      // 3. إرسال طلب التحديث
+      final success = await _apiService.updateDoctor(targetId, updateModel);
+      
       if (mounted) {
+        setState(() => isLoading = false);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Doctor Profile Updated Successfully!'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
           );
           Navigator.pop(context, true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
-          );
+          throw "Update failed. Please verify your information.";
         }
       }
     } catch (e) {
-      setState(() => isLoading = false);
       if (mounted) {
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  Future<void> _changePassword(String oldP, String newP) async {
-    setState(() => isLoading = true);
-    final String targetId = widget.doctorId ?? "1";
-    try {
-      final success = await _apiService.changePassword(targetId, oldP, newP);
-      setState(() => isLoading = false);
-      if (mounted) {
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
-          );
-        }
-      }
-    } catch (e) {
-      setState(() => isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
     }
@@ -144,7 +128,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
-        title: const Text("Edit Doctor Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.white,
         elevation: 0.5,
         centerTitle: true,
@@ -163,74 +147,32 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Center(
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: primaryColor,
-                        child: CircleAvatar(
-                          radius: 47,
-                          backgroundColor: Colors.white,
-                          child: Icon(Icons.medical_services_rounded, size: 50, color: primaryColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-
                     _buildSectionTitle("Personal Information"),
                     _buildEditCard([
-                      _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
+                      _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline),
                       _buildDivider(),
-                      Row(
-                        children: [
-                          Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
-                        ],
-                      ),
+                      _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline),
                       _buildDivider(),
                       _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
                       _buildDivider(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDropdownField(
-                              label: "Gender",
-                              icon: Icons.wc_rounded,
-                              value: selectedGender,
-                              items: ['Male', 'Female'],
-                              onChanged: (val) => setState(() => selectedGender = val),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildEditRow(
-                              label: "Birth Date",
-                              controller: dobController,
-                              icon: Icons.calendar_month_rounded,
-                              isReadOnly: true,
-                              onTap: () async {
-                                DateTime? picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
-                                  firstDate: DateTime(1900),
-                                  lastDate: DateTime.now(),
-                                );
-                                if (picked != null) {
-                                  setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                }
-                              },
-                            ),
-                          ),
-                        ],
+                      _buildDropdownField(
+                        label: "Gender",
+                        icon: Icons.wc_rounded,
+                        value: selectedGender,
+                        items: ['Male', 'Female'],
+                        onChanged: (val) => setState(() => selectedGender = val),
                       ),
                     ]),
 
                     const SizedBox(height: 20),
-                    _buildSectionTitle("Profile Details"),
+                    _buildSectionTitle("Professional Biography"),
                     _buildEditCard([
-                      _buildEditRow(label: "Clinic Address", controller: addressController, icon: Icons.location_on_outlined),
-                      _buildDivider(),
-                      _buildEditRow(label: "Biography", controller: bioController, icon: Icons.description_rounded, maxLines: 4),
+                      _buildEditRow(
+                        label: "Biography", 
+                        controller: bioController, 
+                        icon: Icons.description_rounded, 
+                        maxLines: 5
+                      ),
                     ]),
 
                     const SizedBox(height: 30),
@@ -238,24 +180,15 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                     SizedBox(
                       width: double.infinity,
                       height: 55,
-                      child: ElevatedButton.icon(
+                      child: ElevatedButton(
                         onPressed: _updateProfile,
-                        icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
-                        label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
+                        child: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                       ),
                     ),
-                    const SizedBox(height: 15),
-                    Center(
-                      child: TextButton(
-                        onPressed: () => _showChangePasswordDialog(context),
-                        child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -282,38 +215,33 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     );
   }
 
-  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, int maxLines = 1, VoidCallback? onTap}) {
+  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, int maxLines = 1}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: TextFormField(
         controller: controller,
         readOnly: isReadOnly,
-        onTap: onTap,
         maxLines: maxLines,
-        keyboardType: keyboardType,
-        style: TextStyle(color: (isReadOnly && onTap == null) ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
           prefixIcon: Icon(icon, color: primaryColor, size: 20),
           border: InputBorder.none,
-          isDense: true,
         ),
-        validator: (isReadOnly && onTap == null) ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
+        validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
       ),
     );
   }
 
   Widget _buildDropdownField({required String label, required IconData icon, required String? value, required List<String> items, required Function(String?) onChanged}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: DropdownButtonFormField<String>(
         value: value,
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
+        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
           prefixIcon: Icon(icon, color: primaryColor, size: 20),
           border: InputBorder.none,
         ),
@@ -321,73 +249,5 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
-  }
-
-  void _showChangePasswordDialog(BuildContext context) {
-    final oldPass = TextEditingController();
-    final newPass = TextEditingController();
-    final passKey = GlobalKey<FormState>();
-    bool isObscured = true;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-          content: Form(
-            key: passKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
-                const SizedBox(height: 10),
-                _buildPopupField(
-                  controller: newPass, 
-                  label: "New Password", 
-                  icon: Icons.lock_reset_rounded, 
-                  isObscured: isObscured,
-                  suffix: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
-                    onPressed: () => setModalState(() => isObscured = !isObscured),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-            ElevatedButton(
-              onPressed: () { 
-                if (passKey.currentState!.validate()) {
-                  _changePassword(oldPass.text, newPass.text);
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-              child: const Text("Update", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix}) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isObscured,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: primaryColor, size: 20),
-        suffixIcon: suffix,
-        filled: true,
-        fillColor: Colors.grey[100],
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      ),
-      validator: (val) => (val == null || val.isEmpty) ? "Required" : null,
-    );
-  }
+  Widget _buildDivider() => Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
 }

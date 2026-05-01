@@ -58,29 +58,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final profile = snapshot.data!;
 
-          return CustomScrollView(
-            slivers: [
-              _buildAppBar(profile),
-              SliverToBoxAdapter(
-                child: Container(
+          return Column(
+            children: [
+              _buildFixedHeader(profile),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Center(
-                        child: Text(
-                          "${profile.firstName} ${profile.lastName}",
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
-                        ),
-                      ),
-                      const Center(
-                        child: Text(
-                          "Patient Account",
-                          style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      
                       SizedBox(
                         width: double.infinity,
                         height: 55,
@@ -115,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildProfileCard([
                         _buildInfoRow(Icons.bloodtype_outlined, "Blood Type", profile.bloodType),
                         _buildDivider(),
-                        _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(profile.dateOfBirth)} Years"),
+                        _buildInfoRow(Icons.cake_rounded, "Age", "${_calculateAge(profile.dateOfBirth)} Years"),
                         _buildDivider(),
                         _buildInfoRow(Icons.height_rounded, "Height", "${profile.height} cm"),
                         _buildDivider(),
@@ -139,6 +126,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildFixedHeader(PatientProfileModel profile) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primaryColor, Color(0xFF1E88E5)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      padding: const EdgeInsets.only(top: 60, bottom: 25, left: 20, right: 20),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
+                  size: 50, 
+                  color: primaryColor
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${profile.firstName} ${profile.lastName}",
+                    style: const TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white
+                    ),
+                  ),
+                  const Text(
+                    "Patient Account",
+                    style: TextStyle(
+                      fontSize: 14, 
+                      color: Colors.white70, 
+                      fontWeight: FontWeight.w500
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   int _calculateAge(String dob) {
     try {
       final birthDate = DateTime.parse(dob);
@@ -151,46 +204,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       return 0;
     }
-  }
-
-  Widget _buildAppBar(PatientProfileModel profile) {
-    return SliverAppBar(
-      expandedHeight: 180,
-      pinned: true,
-      backgroundColor: primaryColor,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [primaryColor, Color(0xFF1E88E5)],
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 46,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-                      size: 60, 
-                      color: primaryColor
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildActionButtons(BuildContext context, String targetId) {

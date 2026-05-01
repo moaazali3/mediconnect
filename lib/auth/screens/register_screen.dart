@@ -199,9 +199,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), shape: BoxShape.circle),
-                              child: const Icon(Icons.person_add_alt_1_rounded, size: 50, color: primaryColor),
+                              padding: const EdgeInsets.all(5),
+                              decoration: const BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle
+                              ),
+                              child: Image.asset(
+                                "assets/images/img.png",
+                                height: 80,
+                                width: 80,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person_add_alt_1_rounded, size: 60, color: primaryColor),
+                              ),
                             ),
                             const SizedBox(height: 10),
                             Text(_getStepTitle(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),

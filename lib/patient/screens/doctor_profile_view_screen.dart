@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/models/DoctorProfileModel.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:mediconnect/models/DoctorFullModel.dart';
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/models/PaymentModel.dart';
 
 class DoctorProfileViewScreen extends StatefulWidget {
   final String doctorId;
-  const DoctorProfileViewScreen({super.key, required this.doctorId});
+  final String? patientId;
+
+  const DoctorProfileViewScreen({super.key, required this.doctorId, this.patientId});
 
   @override
   State<DoctorProfileViewScreen> createState() => _DoctorProfileViewScreenState();
@@ -16,12 +19,12 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   final ApiService _apiService = ApiService();
 
   int _calculateAge(String dobString) {
+    if (dobString.isEmpty) return 0;
     try {
       DateTime dob = DateTime.parse(dobString);
       DateTime today = DateTime.now();
       int age = today.year - dob.year;
-      if (today.month < dob.month ||
-          (today.month == dob.month && today.day < dob.day)) {
+      if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
         age--;
       }
       return age;
@@ -30,85 +33,116 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     }
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
+  Future<void> _handlePaymentAndBooking(DoctorFullModel doctor) async {
+    if (widget.patientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login first to book an appointment.")),
+      );
+      return;
     }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+    );
+
+    try {
+      final payment = PaymentModel(
+        paymentId: "",
+        appointmentId: "",
+        createdDate: DateTime.now().toIso8601String(),
+        paymentMethod: "Online",
+        paymentStatus: "Completed",
+        amount: doctor.consultationFee,
+      );
+
+      final success = await _apiService.createPayment(payment);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (success) {
+        _showSuccessDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Payment failed. Please try again."), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+        content: const Text("Success!\nYour appointment and payment were successful.", textAlign: TextAlign.center),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Great!"),
+            ),
+          )
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DoctorProfileModel>(
-      future: _apiService.getDoctorProfile(widget.doctorId),
+    return FutureBuilder<DoctorFullModel>(
+      future: _apiService.getDoctorDetails(widget.doctorId, widget.patientId ?? ""),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF8FAFF),
-            body: Center(child: CircularProgressIndicator(color: primaryColor)),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
         }
-        if (snapshot.hasError) {
+
+        if (snapshot.hasError || !snapshot.hasData) {
           return Scaffold(
-            backgroundColor: const Color(0xFFF8FAFF),
-            body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
-              ),
-            ),
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFF8FAFF),
-            body: Center(child: Text("No Data Found")),
+            appBar: AppBar(title: const Text("Error")),
+            body: Center(child: Text("Error: ${snapshot.error ?? 'Doctor details not found.'}")),
           );
         }
 
         final doctor = snapshot.data!;
-        const String dummyImageUrl = "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg";
-        final int age = _calculateAge(doctor.dateOfBirth);
+        final age = _calculateAge(doctor.dateOfBirth);
+        final String displayImage = (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty)
+            ? doctor.profilePictureUrl!
+            : "https://via.placeholder.com/150";
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFF),
           appBar: AppBar(
             backgroundColor: primaryColor,
             elevation: 0,
-            toolbarHeight: 60,
+            title: const Text("Doctor Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            iconTheme: const IconThemeData(color: Colors.white),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded),
               onPressed: () => Navigator.pop(context),
             ),
-            title: const Text(
-              "Doctor Profile",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            centerTitle: true,
           ),
-          bottomNavigationBar: _buildBottomAction(doctor.phoneNumber),
+          bottomNavigationBar: _buildBottomBar(doctor),
           body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildIdentityCard(doctor, dummyImageUrl),
+                _buildIdentityCard(doctor, displayImage),
                 const SizedBox(height: 25),
                 _buildStatsRow(doctor, age),
                 const SizedBox(height: 30),
-                _buildSectionTitle("Professional Biography"),
+                _buildSectionTitle("Biography"),
                 _buildInfoCard(doctor.biography),
                 const SizedBox(height: 25),
-                _buildSectionTitle("Professional Details"),
-                _buildProfileCard([
-                  _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
-                  _buildDivider(),
-                  _buildInfoRow(Icons.phone_rounded, "Phone Number", doctor.phoneNumber),
-                ]),
+                _buildSectionTitle("Work Schedule"),
+                _buildScheduleList(doctor.doctorSchedules),
                 const SizedBox(height: 30),
               ],
             ),
@@ -118,48 +152,33 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     );
   }
 
-  Widget _buildIdentityCard(DoctorProfileModel doctor, String imageUrl) {
+  Widget _buildIdentityCard(DoctorFullModel doctor, String imageUrl) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
-            ),
-            child: CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.white,
-              backgroundImage: NetworkImage(imageUrl),
-            ),
+          CircleAvatar(
+            radius: 40,
+            backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
+                ? NetworkImage(imageUrl)
+                : null,
+            backgroundColor: Colors.grey[200],
+            child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+                ? const Icon(Icons.person, size: 40, color: primaryColor)
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  style: TextStyle(fontSize: 15, color: primaryColor.withOpacity(0.8), fontWeight: FontWeight.w600),
-                ),
+                Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(doctor.specializationName, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -168,12 +187,12 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     );
   }
 
-  Widget _buildStatsRow(DoctorProfileModel doctor, int age) {
+  Widget _buildStatsRow(DoctorFullModel doctor, int age) {
     return Row(
       children: [
-        _buildStatItem("Experience", "${doctor.experienceYears} Yrs", Icons.work_history_rounded, Colors.blue),
-        _buildStatItem("Gender", doctor.gender, Icons.wc_rounded, Colors.green),
-        _buildStatItem("Age", age > 0 ? "$age Yrs" : "N/A", Icons.calendar_month_rounded, Colors.orange),
+        _buildStatItem("Experience", "${doctor.experienceYears.toStringAsFixed(0)} Yrs", Icons.work, Colors.blue),
+        _buildStatItem("Fee", "${doctor.consultationFee.toStringAsFixed(0)} EGP", Icons.payments, Colors.green),
+        _buildStatItem("Age", age > 0 ? "$age Yrs" : "N/A", Icons.calendar_month, Colors.orange),
       ],
     );
   }
@@ -183,133 +202,83 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade100)),
         child: Column(
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoCard(String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: Colors.grey.shade700, height: 1.6, fontSize: 14),
-      ),
+  Widget _buildScheduleList(List<DoctorScheduleModel> schedules) {
+    if (schedules.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+        child: const Text("No schedule available.", style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+      );
+    }
+    return Column(
+      children: schedules.map((s) => Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          leading: const Icon(Icons.access_time, color: primaryColor),
+          title: Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.bold)),
+          trailing: Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: Colors.grey)),
+          subtitle: Text(s.isAvailable ? "Available" : "Unavailable", style: TextStyle(color: s.isAvailable ? Colors.green : Colors.red, fontSize: 11)),
+        ),
+      )).toList(),
     );
   }
 
   Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 5, bottom: 15),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87),
-      ),
-    );
+    return Padding(padding: const EdgeInsets.only(bottom: 12, left: 4), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)));
   }
 
-  Widget _buildProfileCard(List<Widget> children) {
+  Widget _buildInfoCard(String text) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
+      width: double.infinity,
       padding: const EdgeInsets.all(15),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: primaryColor, size: 20),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(color: Colors.black87, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+      child: Text(text.isNotEmpty ? text : "No biography provided.", style: const TextStyle(color: Colors.grey, height: 1.5)),
     );
   }
 
-  Widget _buildDivider() {
-    return Divider(height: 1, indent: 60, endIndent: 20, color: Colors.grey.shade100);
-  }
-
-  Widget _buildBottomAction(String phoneNumber) {
+  Widget _buildBottomBar(DoctorFullModel doctor) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
+      decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFEEEEEE)))),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 55,
-          child: ElevatedButton.icon(
-            onPressed: () => _makePhoneCall(phoneNumber),
-            icon: const Icon(Icons.phone_in_talk_rounded),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              elevation: 0,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Booking Fee", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                  Text("${doctor.consultationFee.toStringAsFixed(0)} EGP", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                ],
+              ),
             ),
-            label: const Text(
-              "CALL DOCTOR NOW",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+            ElevatedButton(
+              onPressed: doctor.isAppleToAppointment ? () => _handlePaymentAndBooking(doctor) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: doctor.isAppleToAppointment ? primaryColor : Colors.grey,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+              child: Text(doctor.isAppleToAppointment ? "BOOK & PAY NOW" : "UNAVAILABLE"),
             ),
-          ),
+          ],
         ),
       ),
     );
