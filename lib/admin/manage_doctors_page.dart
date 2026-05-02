@@ -306,6 +306,14 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   }
 
   Widget _buildDoctorCard(DoctorModel doctor) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    String? fullImageUrl;
+    if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
+      fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
+          ? doctor.profilePictureUrl 
+          : "$imageBaseUrl${doctor.profilePictureUrl}";
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(16),
@@ -331,10 +339,8 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
             child: CircleAvatar(
               radius: 30,
               backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
-              backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
-                  ? NetworkImage(doctor.profilePictureUrl!)
-                  : null,
-              child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+              child: fullImageUrl == null
                   ? Icon(
                       doctor.gender == "Male" ? Icons.male : Icons.female, 
                       size: 35, 

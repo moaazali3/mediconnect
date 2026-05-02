@@ -138,9 +138,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
       final doctorId = await _apiService.createDoctor(doctor);
 
-      if (doctorId != null) {
-        // Create Schedule
-        await _apiService.createDoctorSchedule(doctorId, {
+      // التحقق مما إذا كان الـ ID المسترجع صالحاً (GUID حقيقي)
+      bool hasValidId = doctorId != null && doctorId != "SUCCESS_NO_ID" && doctorId.length > 20;
+
+      if (hasValidId) {
+        // محاولة إنشاء الجدول
+        final scheduleRes = await _apiService.createDoctorSchedule(doctorId, {
           "dayOfWeek": _selectedDay,
           "startTime": _startTimeController.text,
           "endTime": _endTimeController.text,
@@ -148,20 +151,38 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         });
 
         if (!mounted) return;
-        Navigator.pop(context); // Close loading dialog
-        _showSuccessDialog();
+        Navigator.pop(context); // إغلاق الـ Loading
+
+        if (scheduleRes.success) {
+          _showSuccessDialog();
+        } else {
+          // نجاح إنشاء الحساب ولكن فشل الجدول
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Doctor added, but schedule failed: ${scheduleRes.message}"), 
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          _showSuccessDialog();
+        }
       } else {
+        // نجاح العملية بدون ID (أو بـ ID غير صالح للجدول)
         if (!mounted) return;
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add doctor. Check logs."), backgroundColor: Colors.red),
-        );
+        Navigator.pop(context);
+        _showSuccessDialog();
       }
     } catch (e) {
+      print("ADD_DOCTOR_ERROR: $e");
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text("Error: $e"), 
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }
@@ -173,15 +194,16 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
-        content: const Text("Doctor and schedule added successfully!", textAlign: TextAlign.center),
+        content: const Text("Doctor added successfully!", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           Center(
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.pop(context);
+                Navigator.pop(context, true);
               },
-              child: const Text("Continue"),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              child: const Text("Continue", style: TextStyle(color: Colors.white)),
             ),
           )
         ],

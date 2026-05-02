@@ -1,10 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
-import 'package:intl/intl.dart';
 
 class EditDoctorProfile extends StatefulWidget {
   final String? doctorId;
@@ -17,18 +18,19 @@ class EditDoctorProfile extends StatefulWidget {
 class _EditDoctorProfileState extends State<EditDoctorProfile> {
   final formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
+  
   bool isLoading = true;
+  bool isUploadingImage = false;
 
   final fNameController = TextEditingController();
   final lNameController = TextEditingController();
   final phoneController = TextEditingController();
-  final addressController = TextEditingController();
   final bioController = TextEditingController();
-  final emailController = TextEditingController();
   final dobController = TextEditingController();
   String? selectedGender;
+  String? currentImageUrl;
   
-  // حقول إضافية للحفاظ على البيانات القديمة
   int? _currentSpecializationId;
   double _currentExperienceYears = 0;
   double _currentConsultationFee = 0;
@@ -42,8 +44,6 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   Future<void> _loadProfileData() async {
     try {
       final String targetId = widget.doctorId ?? "1";
-      
-      // جلب البيانات والتخصصات معاً
       final specs = await _apiService.getAllSpecializations();
       final doctor = await _apiService.getDoctorProfile(targetId);
       
@@ -52,12 +52,11 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       setState(() {
         fNameController.text = doctor.firstName;
         lNameController.text = doctor.lastName;
-        emailController.text = doctor.email;
         phoneController.text = doctor.phoneNumber;
-        addressController.text = doctor.address ?? "";
         bioController.text = doctor.biography;
         dobController.text = doctor.dateOfBirth;
         selectedGender = doctor.gender;
+        currentImageUrl = doctor.imageUrl;
         
         _currentSpecializationId = spec?.id;
         _currentExperienceYears = doctor.experienceYears;
@@ -73,6 +72,40 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     }
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    setState(() => isUploadingImage = true);
+    final String targetId = widget.doctorId ?? "1";
+
+    try {
+      final success = await _apiService.uploadProfilePicture(targetId, image.path);
+      if (success) {
+        // Refresh profile to get the new image URL
+        final doctor = await _apiService.getDoctorProfile(targetId);
+        setState(() {
+          currentImageUrl = doctor.imageUrl;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile picture updated!'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        throw "Upload failed";
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      setState(() => isUploadingImage = false);
+    }
+  }
+
   Future<void> _updateProfile() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -80,12 +113,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     final String targetId = widget.doctorId ?? "1";
 
     try {
-      // 1. جلب أحدث البيانات من السيرفر قبل التعديل لضمان عدم فقدان أي حقل (مثل الخبرة أو السعر)
       final latestProfile = await _apiService.getDoctorProfile(targetId);
       final specs = await _apiService.getAllSpecializations();
       final spec = specs.firstWhere((s) => s.name == latestProfile.specializationName);
 
-      // 2. بناء كائن التحديث بناءً على البيانات القديمة ودمج التغييرات الجديدة من النموذج
       final updateModel = UpdateDoctorModel.fromProfile(latestProfile, spec.id).copyWith(
         firstName: fNameController.text,
         lastName: lNameController.text,
@@ -93,13 +124,11 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         gender: selectedGender,
         dateOfBirth: dobController.text,
         biography: bioController.text,
-        // الحفاظ على التخصص والسعر والخبرة كما هي إذا لم يتم تغييرها في هذه الشاشة
         specializationId: _currentSpecializationId ?? spec.id,
         consultationFee: _currentConsultationFee,
         experienceYears: _currentExperienceYears,
       );
 
-      // 3. إرسال طلب التحديث
       final success = await _apiService.updateDoctor(targetId, updateModel);
       
       if (mounted) {
@@ -110,7 +139,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
           );
           Navigator.pop(context, true);
         } else {
-          throw "Update failed. Please verify your information.";
+          throw "Update failed.";
         }
       }
     } catch (e) {
@@ -125,6 +154,8 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
 
   @override
   Widget build(BuildContext context) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
@@ -145,9 +176,48 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
               child: Form(
                 key: formKey,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _buildSectionTitle("Personal Information"),
+                    // Profile Picture Section
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: primaryColor.withOpacity(0.1),
+                          backgroundImage: currentImageUrl != null && currentImageUrl!.isNotEmpty
+                              ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "$imageBaseUrl$currentImageUrl")
+                              : null,
+                          child: currentImageUrl == null || currentImageUrl!.isEmpty
+                              ? const Icon(Icons.person, size: 60, color: primaryColor)
+                              : null,
+                        ),
+                        if (isUploadingImage)
+                          const Positioned.fill(
+                            child: CircularProgressIndicator(color: primaryColor),
+                          ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: isUploadingImage ? null : _pickAndUploadImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: primaryColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildSectionTitle("Personal Information"),
+                    ),
                     _buildEditCard([
                       _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline),
                       _buildDivider(),
@@ -165,7 +235,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                     ]),
 
                     const SizedBox(height: 20),
-                    _buildSectionTitle("Professional Biography"),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: _buildSectionTitle("Professional Biography"),
+                    ),
                     _buildEditCard([
                       _buildEditRow(
                         label: "Biography", 

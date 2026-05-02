@@ -89,6 +89,8 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Manage Bookings", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -111,14 +113,29 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                             padding: const EdgeInsets.all(10),
                             itemBuilder: (context, index) {
                               final doctor = _filteredDoctors[index];
+                              
+                              String? fullImageUrl;
+                              if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
+                                fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
+                                    ? doctor.profilePictureUrl 
+                                    : "$imageBaseUrl${doctor.profilePictureUrl}";
+                              }
+
                               return Card(
                                 elevation: 3,
                                 margin: const EdgeInsets.only(bottom: 15),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: primaryColor.withOpacity(0.1),
-                                    child: const Icon(Icons.person, color: primaryColor),
+                                    backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+                                    backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+                                    child: fullImageUrl == null
+                                        ? Icon(
+                                            doctor.gender == "Male" ? Icons.male : Icons.female, 
+                                            color: doctor.gender == "Male" ? Colors.blue : Colors.pink,
+                                            size: 25,
+                                          )
+                                        : null,
                                   ),
                                   title: Text("${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
                                   subtitle: Text(doctor.specializationName),
@@ -262,9 +279,34 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
 
   @override
   Widget build(BuildContext context) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    String? fullImageUrl;
+    if (widget.doctor.profilePictureUrl != null && widget.doctor.profilePictureUrl!.isNotEmpty) {
+      fullImageUrl = widget.doctor.profilePictureUrl!.startsWith('http') 
+          ? widget.doctor.profilePictureUrl 
+          : "$imageBaseUrl${widget.doctor.profilePictureUrl}";
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Bookings: ${widget.doctor.firstName}", style: const TextStyle(color: Colors.white)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: (widget.doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.2),
+              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+              child: fullImageUrl == null 
+                  ? Icon(
+                      widget.doctor.gender == "Male" ? Icons.male : Icons.female, 
+                      color: Colors.white, 
+                      size: 20
+                    ) 
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text("Bookings: ${widget.doctor.firstName}", style: const TextStyle(color: Colors.white, fontSize: 16))),
+          ],
+        ),
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),

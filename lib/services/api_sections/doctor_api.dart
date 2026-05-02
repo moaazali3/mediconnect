@@ -24,7 +24,6 @@ mixin DoctorApi {
 
   Future<DoctorFullModel> getDoctorDetails(String doctorId, String? patientId) async {
     final ApiService parent = this as ApiService;
-    // التأكد من وجود قيمة للـ patientId لتجنب خطأ 404 في المسار
     final String pId = (patientId == null || patientId.isEmpty) ? "00000000-0000-0000-0000-000000000000" : patientId;
 
     final response = await http.get(
@@ -40,19 +39,63 @@ mixin DoctorApi {
 
   Future<String?> createDoctor(CreateDoctorModel doctor) async {
     final ApiService parent = this as ApiService;
-    try {
-      final response = await http.post(
-        Uri.parse('${parent.baseUrl}/Doctor'),
-        headers: parent._headers,
-        body: jsonEncode(doctor.toJson()),
-      );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        return data['id']?.toString() ?? data['Id']?.toString();
+    final response = await http.post(
+      Uri.parse('${parent.baseUrl}/Doctor'),
+      headers: parent._headers,
+      body: jsonEncode(doctor.toJson()),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      String? bodyStr = response.body.trim();
+      
+      if (bodyStr.isEmpty) {
+        final location = response.headers['location'];
+        if (location != null) {
+          final id = location.split('/').last;
+          if (id.length > 10) return id;
+        }
+        return "SUCCESS_NO_ID"; // Return a placeholder to indicate success
       }
-      return null;
-    } catch (e) {
-      return null;
+      
+      try {
+        final data = jsonDecode(bodyStr);
+        if (data is Map) {
+          final id = data['id'] ?? data['Id'] ?? 
+                     data['doctorId'] ?? data['DoctorId'] ?? 
+                     data['userId'] ?? data['UserId'] ??
+                     (data['data'] is Map ? (data['data']['id'] ?? data['data']['Id']) : data['data']);
+          return id?.toString();
+        } else if (data is String) {
+          return data;
+        }
+        return "SUCCESS_NO_ID";
+      } catch (e) {
+        if (bodyStr.length > 10) return bodyStr; 
+        return "SUCCESS_NO_ID";
+      }
+    } else {
+      String errorMessage = "Failed to add doctor";
+      try {
+        final errorBody = jsonDecode(response.body);
+        if (errorBody is Map) {
+          if (errorBody['errors'] != null) {
+            final errors = errorBody['errors'];
+            if (errors is Map) {
+              errorMessage = errors.values
+                  .expand((e) => e is List ? e : [e])
+                  .map((e) => e.toString())
+                  .join("\n");
+            } else {
+              errorMessage = errors.toString();
+            }
+          } else {
+            errorMessage = errorBody['message'] ?? errorBody['title'] ?? errorMessage;
+          }
+        }
+      } catch (e) {
+        errorMessage = "Server error: ${response.statusCode}";
+      }
+      throw errorMessage;
     }
   }
 
@@ -93,6 +136,25 @@ mixin DoctorApi {
     }
   }
 
+  Future<bool> uploadProfilePicture(String doctorId, String filePath) async {
+    final ApiService parent = this as ApiService;
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${parent.baseUrl}/Doctor/$doctorId/upload-profile-picture'),
+      );
+      request.headers.addAll({
+        'ngrok-skip-browser-warning': 'true',
+      });
+      request.files.add(await http.MultipartFile.fromPath('File', filePath));
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<List<SpecializationModel>> getAllSpecializations() async {
     final ApiService parent = this as ApiService;
     final response = await http.get(Uri.parse('${parent.baseUrl}/Specialization'), headers: parent._headers);
@@ -127,6 +189,19 @@ mixin DoctorApi {
         body: jsonEncode(specialization.toJson()),
       );
       return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteDoctor(String id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.delete(
+        Uri.parse('${parent.baseUrl}/Doctor/$id'),
+        headers: parent._headers,
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
       return false;
     }
