@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -92,11 +93,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text("Advanced Analytics", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
+      appBar: const CommonAppBar(
+        title: "Advanced Analytics",
+        showBackButton: true,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))

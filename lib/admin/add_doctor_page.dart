@@ -5,6 +5,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/CreateDoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class AddDoctorPage extends StatefulWidget {
   const AddDoctorPage({super.key});
@@ -215,13 +216,9 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: const CommonAppBar(
+        title: "Add New Doctor",
+        showBackButton: true,
       ),
       body: Stack(
         children: [

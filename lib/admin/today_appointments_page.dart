@@ -5,6 +5,7 @@ import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:intl/intl.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class TodayAppointmentsPage extends StatefulWidget {
   const TodayAppointmentsPage({super.key});
@@ -119,11 +120,9 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: AppBar(
-        title: const Text("Today's Overview", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Today's Appointments",
+        showBackButton: true,
       ),
       body: FutureBuilder(
         future: Future.wait([_specializationsFuture, _doctorsFuture, _allAppointmentsFuture]),
