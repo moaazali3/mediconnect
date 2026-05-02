@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
+import 'package:mediconnect/patient/screens/appointments_page.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -11,7 +13,6 @@ class BookingScreen extends StatefulWidget {
   final String doctorName;
   final String specialty;
   final String fee;
-  final List<String> availableDays;
   final String? doctorImageUrl;
   final String? patientId; 
 
@@ -21,7 +22,6 @@ class BookingScreen extends StatefulWidget {
     required this.doctorName,
     required this.specialty,
     this.fee = "500",
-    this.availableDays = const ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     this.doctorImageUrl,
     this.patientId,
   });
@@ -35,27 +35,68 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? selectedDate;
   int? selectedPaymentIndex;
   bool isLoading = false;
+  
+  // متغيرات الجدول والبيانات
+  List<DoctorScheduleModel> _doctorSchedule = [];
+  double? _fetchedFee;
+  bool _isFetchingSchedule = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctorData();
+  }
+
+  Future<void> _fetchDoctorData() async {
+    try {
+      // جلب الجدول والملف الشخصي للحصول على السعر الفعلي من الباك اند
+      final scheduleFuture = _apiService.getDoctorSchedule(widget.doctorId);
+      final profileFuture = _apiService.getDoctorProfile(widget.doctorId);
+      
+      final results = await Future.wait([scheduleFuture, profileFuture]);
+      
+      final schedule = results[0] as List<DoctorScheduleModel>;
+      final profile = results[1] as dynamic; // DoctorProfileModel
+
+      if (mounted) {
+        setState(() {
+          _doctorSchedule = schedule;
+          _fetchedFee = profile.consultationFee;
+          _isFetchingSchedule = false;
+          
+          // تحديد أول تاريخ متاح تلقائياً
+          List<DateTime> available = getAvailableDates();
+          if (available.isNotEmpty) {
+            selectedDate = available.first;
+          }
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isFetchingSchedule = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching data: $e")),
+        );
+      }
+    }
+  }
 
   List<DateTime> getAvailableDates() {
+    if (_doctorSchedule.isEmpty) return [];
+    
+    // استخراج أسماء الأيام المتاحة من الجدول
+    List<String> availableDays = _doctorSchedule.map((s) => s.getDayName()).toList();
+    
     List<DateTime> dates = [];
     DateTime now = DateTime.now();
     for (int i = 0; i < 30; i++) {
       DateTime date = now.add(Duration(days: i));
       String dayName = DateFormat('EEEE').format(date);
-      if (widget.availableDays.contains(dayName)) {
+      if (availableDays.contains(dayName)) {
         dates.add(date);
       }
     }
     return dates;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    List<DateTime> available = getAvailableDates();
-    if (available.isNotEmpty) {
-      selectedDate = available.first;
-    }
   }
 
   Future<void> _performBooking() async {
@@ -94,13 +135,15 @@ class _BookingScreenState extends State<BookingScreen> {
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
         
+        final double currentFee = _fetchedFee ?? double.parse(widget.fee);
+        
         final paymentInfo = PaymentModel(
           paymentId: "", 
           appointmentId: "", 
           createdDate: DateTime.now().toIso8601String(),
           paymentMethod: paymentMethods[selectedPaymentIndex!],
           paymentStatus: paymentStatus,
-          amount: double.parse(widget.fee) + 50,
+          amount: currentFee + 50,
         );
 
         await _apiService.createPayment(paymentInfo);
@@ -127,6 +170,7 @@ class _BookingScreenState extends State<BookingScreen> {
   void _showSuccessBooking() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
@@ -142,11 +186,14 @@ class _BookingScreenState extends State<BookingScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
+                  Navigator.pop(context); 
+                  Navigator.pop(context); 
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                child: const Text("GO TO APPOINTMENTS", style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor, 
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("DONE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -184,7 +231,17 @@ class _BookingScreenState extends State<BookingScreen> {
                   const SizedBox(height: 25),
                   _buildSectionTitle("Select Date"),
                   const SizedBox(height: 12),
-                  _buildDateSelector(availableDates),
+                  _isFetchingSchedule 
+                    ? const Center(child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(color: primaryColor),
+                      ))
+                    : (availableDates.isEmpty 
+                        ? const Center(child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: Text("No available dates found in doctor schedule."),
+                          ))
+                        : _buildDateSelector(availableDates)),
                   const SizedBox(height: 25),
                   if (selectedDate != null) ...[
                     _buildSectionTitle("Appointment Info"),
@@ -326,16 +383,17 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildPaymentSummary() {
+    final double currentFee = _fetchedFee ?? double.tryParse(widget.fee) ?? 0.0;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
       child: Column(
         children: [
-          _buildSummaryRow("Consultation Fee", "${widget.fee} EGP"),
+          _buildSummaryRow("Consultation Fee", "${currentFee.toStringAsFixed(0)} EGP"),
           const SizedBox(height: 10),
           _buildSummaryRow("Booking Fee", "50 EGP"),
           const Divider(height: 25),
-          _buildSummaryRow("Total Amount", "${int.parse(widget.fee) + 50} EGP", isTotal: true),
+          _buildSummaryRow("Total Amount", "${(currentFee + 50).toStringAsFixed(0)} EGP", isTotal: true),
         ],
       ),
     );

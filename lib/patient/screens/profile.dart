@@ -9,7 +9,9 @@ import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
-  const ProfileScreen({super.key, this.userId});
+  final bool readOnly; 
+
+  const ProfileScreen({super.key, this.userId, this.readOnly = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -17,6 +19,18 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
+  late Future<PatientProfileModel> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  void _loadProfile() {
+    final String targetId = (widget.userId == null || widget.userId!.isEmpty) ? "1" : widget.userId!;
+    _profileFuture = _apiService.getPatientProfile(targetId);
+  }
 
   Future<void> _launchWhatsApp() async {
     const String phoneNumber = "201000000000";
@@ -36,31 +50,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String targetId = widget.userId ?? "1"; 
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
+      appBar: widget.readOnly ? AppBar(
+        title: const Text("Patient Profile", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: primaryColor,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ) : null,
       body: FutureBuilder<PatientProfileModel>(
-        future: _apiService.getPatientProfile(targetId),
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: primaryColor));
           }
           if (snapshot.hasError) {
-            return Center(child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
-            ));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Error: ${snapshot.error}",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => setState(() => _loadProfile()),
+                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                      child: const Text("Try Again", style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           if (!snapshot.hasData) {
             return const Center(child: Text("No Profile Data Found"));
           }
 
           final profile = snapshot.data!;
+          final String targetId = widget.userId ?? "1"; 
 
           return Column(
             children: [
-              _buildFixedHeader(profile),
+              if (!widget.readOnly) _buildFixedHeader(profile),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -68,6 +106,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (widget.readOnly) _buildReadOnlySimpleHeader(profile),
+                      
                       SizedBox(
                         width: double.infinity,
                         height: 55,
@@ -112,8 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ]),
                       
                       const SizedBox(height: 40),
-                      
-                      _buildActionButtons(context, targetId),
+                      if (!widget.readOnly) _buildActionButtons(context, targetId),
                       const SizedBox(height: 30),
                     ],
                   ),
@@ -122,6 +161,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildReadOnlySimpleHeader(PatientProfileModel profile) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 25),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 35,
+            backgroundColor: primaryColor.withOpacity(0.1),
+            child: Icon(
+              profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
+              size: 45, 
+              color: primaryColor
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${profile.firstName} ${profile.lastName}",
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                Text(
+                  profile.gender,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -219,6 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (context) => EditPatientProfile(userId: targetId,)),
               );
               if (result == true) {
+                _loadProfile();
                 setState(() {});
               }
             },

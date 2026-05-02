@@ -3,7 +3,6 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
-import 'package:mediconnect/models/PaymentModel.dart';
 
 class DoctorProfileViewScreen extends StatefulWidget {
   final String doctorId;
@@ -31,67 +30,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     } catch (e) {
       return 0;
     }
-  }
-
-  Future<void> _handlePaymentAndBooking(DoctorFullModel doctor) async {
-    if (widget.patientId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login first to book an appointment.")),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
-    );
-
-    try {
-      final payment = PaymentModel(
-        paymentId: "",
-        appointmentId: "",
-        createdDate: DateTime.now().toIso8601String(),
-        paymentMethod: "Online",
-        paymentStatus: "Completed",
-        amount: doctor.consultationFee,
-      );
-
-      final success = await _apiService.createPayment(payment);
-
-      if (!mounted) return;
-      Navigator.pop(context);
-
-      if (success) {
-        _showSuccessDialog();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Payment failed. Please try again."), backgroundColor: Colors.red),
-        );
-      }
-    } catch (e) {
-      if (mounted) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-    }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: const Text("Success!\nYour appointment and payment were successful.", textAlign: TextAlign.center),
-        actions: [
-          Center(
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Great!"),
-            ),
-          )
-        ],
-      ),
-    );
   }
 
   @override
@@ -128,7 +66,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          bottomNavigationBar: _buildBottomBar(doctor),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -192,7 +129,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       children: [
         _buildStatItem("Experience", "${doctor.experienceYears.toStringAsFixed(0)} Yrs", Icons.work, Colors.blue),
         _buildStatItem("Fee", "${doctor.consultationFee.toStringAsFixed(0)} EGP", Icons.payments, Colors.green),
-        _buildStatItem("Age", age > 0 ? "$age Yrs" : "N/A", Icons.calendar_month, Colors.orange),
+        _buildStatItem("Age", age > 0 ? "$age Yrs" : "N/A", Icons.cake, Colors.orange),
       ],
     );
   }
@@ -248,39 +185,6 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
       child: Text(text.isNotEmpty ? text : "No biography provided.", style: const TextStyle(color: Colors.grey, height: 1.5)),
-    );
-  }
-
-  Widget _buildBottomBar(DoctorFullModel doctor) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Color(0xFFEEEEEE)))),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Booking Fee", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text("${doctor.consultationFee.toStringAsFixed(0)} EGP", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: doctor.isAppleToAppointment ? () => _handlePaymentAndBooking(doctor) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: doctor.isAppleToAppointment ? primaryColor : Colors.grey,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              ),
-              child: Text(doctor.isAppleToAppointment ? "BOOK & PAY NOW" : "UNAVAILABLE"),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

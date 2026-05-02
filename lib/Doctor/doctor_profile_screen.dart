@@ -71,19 +71,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
-  void _manageSchedule() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
-      builder: (context) => _ScheduleManagerSheet(
-        doctorId: widget.doctorId,
-        existingSchedules: _doctor?.doctorSchedules ?? [],
-        onSaved: _fetchProfile,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,7 +127,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       ]),
 
                       const SizedBox(height: 25),
-                      _buildSectionTitleWithAction("Work Schedule", Icons.edit_calendar_rounded, _manageSchedule),
+                      _buildSectionTitle("Work Schedule"),
                       _buildScheduleCard(_doctor?.doctorSchedules ?? []),
 
                       const SizedBox(height: 40),
@@ -307,83 +294,4 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) => ListTile(leading: Icon(icon, color: primaryColor, size: 20), title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)), subtitle: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)));
 
   Widget _buildDivider() => Divider(height: 1, indent: 50, endIndent: 20, color: Colors.grey.shade100);
-}
-
-class _ScheduleManagerSheet extends StatefulWidget {
-  final String doctorId;
-  final List<DoctorScheduleModel> existingSchedules;
-  final VoidCallback onSaved;
-  const _ScheduleManagerSheet({required this.doctorId, required this.existingSchedules, required this.onSaved});
-
-  @override
-  State<_ScheduleManagerSheet> createState() => _ScheduleManagerSheetState();
-}
-
-class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
-  final ApiService _apiService = ApiService();
-  bool _isSaving = false;
-  int _selectedDay = 1;
-  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 17, minute: 0);
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.existingSchedules.isNotEmpty) {
-      final first = widget.existingSchedules.first;
-      _selectedDay = (first.dayOfWeek is int) ? first.dayOfWeek : 0;
-      _startTime = _parseTime(first.startTime);
-      _endTime = _parseTime(first.endTime);
-    }
-  }
-
-  TimeOfDay _parseTime(String time) {
-    try {
-      final parts = time.split(':');
-      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-    } catch (_) { return const TimeOfDay(hour: 9, minute: 0); }
-  }
-
-  Future<void> _save() async {
-    setState(() => _isSaving = true);
-    final data = {
-      "dayOfWeek": _selectedDay,
-      "startTime": "${_startTime.hour.toString().padLeft(2, '0')}:${_startTime.minute.toString().padLeft(2, '0')}:00",
-      "endTime": "${_endTime.hour.toString().padLeft(2, '0')}:${_endTime.minute.toString().padLeft(2, '0')}:00",
-      "isAvailable": true
-    };
-
-    final response = widget.existingSchedules.isEmpty
-      ? await _apiService.createDoctorSchedule(widget.doctorId, data)
-      : await _apiService.updateDoctorSchedule(widget.doctorId, data);
-
-    if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message), backgroundColor: response.success ? Colors.green : Colors.red));
-      if (response.success) { widget.onSaved(); Navigator.pop(context); }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text(widget.existingSchedules.isEmpty ? "Set Work Schedule" : "Update Schedule", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
-        const SizedBox(height: 20),
-        DropdownButtonFormField<int>(
-          value: _selectedDay, decoration: const InputDecoration(labelText: "Day of Week"),
-          items: const [DropdownMenuItem(value: 0, child: Text("Sunday")), DropdownMenuItem(value: 1, child: Text("Monday")), DropdownMenuItem(value: 2, child: Text("Tuesday")), DropdownMenuItem(value: 3, child: Text("Wednesday")), DropdownMenuItem(value: 4, child: Text("Thursday")), DropdownMenuItem(value: 5, child: Text("Friday")), DropdownMenuItem(value: 6, child: Text("Saturday"))],
-          onChanged: (v) => setState(() => _selectedDay = v!),
-        ),
-        Row(children: [
-          Expanded(child: ListTile(title: const Text("From"), subtitle: Text(_startTime.format(context)), onTap: () async { final t = await showTimePicker(context: context, initialTime: _startTime); if (t != null) setState(() => _startTime = t); })),
-          Expanded(child: ListTile(title: const Text("To"), subtitle: Text(_endTime.format(context)), onTap: () async { final t = await showTimePicker(context: context, initialTime: _endTime); if (t != null) setState(() => _endTime = t); })),
-        ]),
-        const SizedBox(height: 25),
-        SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _isSaving ? null : _save, style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white), child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : Text(widget.existingSchedules.isEmpty ? "CREATE" : "UPDATE"))),
-        const SizedBox(height: 20),
-      ]),
-    );
-  }
 }

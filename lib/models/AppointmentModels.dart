@@ -23,9 +23,9 @@ class AppointmentModel {
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
     return AppointmentModel(
-      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
-      patientId: json['patientId'] ?? '',
-      doctorId: json['doctorId'] ?? '',
+      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
+      patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
+      doctorId: (json['doctorId'] ?? '').toString(),
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',
       startTime: json['startTime'] ?? '',
@@ -86,9 +86,9 @@ class DoctorAppointmentModel {
 
   factory DoctorAppointmentModel.fromJson(Map<String, dynamic> json) {
     return DoctorAppointmentModel(
-      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
-      patientId: json['patientId'] ?? '',
-      doctorId: json['doctorId'] ?? '',
+      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
+      patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
+      doctorId: (json['doctorId'] ?? '').toString(),
       patientName: json['patientName'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',
@@ -123,7 +123,7 @@ class PatientAppointmentModel {
 
   factory PatientAppointmentModel.fromJson(Map<String, dynamic> json) {
     return PatientAppointmentModel(
-      appointmentId: json['appointmentId'] ?? json['id'] ?? '',
+      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
       doctorName: json['doctorName'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',
