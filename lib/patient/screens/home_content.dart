@@ -69,6 +69,7 @@ class _HomeContentState extends State<HomeContent> {
         if (cachedDoctors != null) {
           Iterable l = json.decode(cachedDoctors);
           _doctors = List<DoctorModel>.from(l.map((model) => DoctorModel.fromJson(model)));
+          _apiService.cacheDoctorImages(_doctors); // تخزين الصور من الكاش أيضاً
           _isLoadingDoctors = false;
         }
       });
@@ -95,6 +96,7 @@ class _HomeContentState extends State<HomeContent> {
     if (mounted) setState(() => _isLoadingDoctors = true);
     try {
       final docs = await _apiService.getAllDoctors(specializationName: selectedSpecialization);
+      _apiService.cacheDoctorImages(docs); // تخزين الصور في الذاكرة
       final prefs = await SharedPreferences.getInstance();
       if (selectedSpecialization == "All") {
         await prefs.setString('cached_doctors', json.encode(docs.map((d) => d.toJson()).toList()));
@@ -201,6 +203,7 @@ class _HomeContentState extends State<HomeContent> {
           spec: doc.specializationName ?? "General Doctor",
           gender: doc.gender,
           experience: doc.experienceYears,
+          imageUrl: doc.profilePictureUrl,
           patientId: widget.userId,
         )).toList(),
       ),
