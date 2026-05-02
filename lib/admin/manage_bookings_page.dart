@@ -4,7 +4,8 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
-import 'package:mediconnect/patient/screens/profile.dart'; // استيراد صفحة البروفايل
+import 'package:mediconnect/patient/screens/profile.dart'; 
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -92,10 +93,9 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
     const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Bookings", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Manage Bookings",
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -146,7 +146,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                       MaterialPageRoute(
                                         builder: (context) => DoctorBookingsDetail(doctor: doctor),
                                       ),
-                                    ).then((_) => _fetchDoctors()); // Refresh when returning
+                                    ).then((_) => _fetchDoctors()); 
                                   },
                                 ),
                               );
@@ -263,7 +263,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
               backgroundColor: isAccept ? Colors.green : Colors.red,
             ),
           );
-          setState(() {}); // Refresh list
+          setState(() {}); 
         }
       }
     } catch (e) {
@@ -288,27 +288,9 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: (widget.doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.2),
-              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
-              child: fullImageUrl == null 
-                  ? Icon(
-                      widget.doctor.gender == "Male" ? Icons.male : Icons.female, 
-                      color: Colors.white, 
-                      size: 20
-                    ) 
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Text("Bookings: ${widget.doctor.firstName}", style: const TextStyle(color: Colors.white, fontSize: 16))),
-          ],
-        ),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: CommonAppBar(
+        title: "Bookings: ${widget.doctor.firstName}",
+        showBackButton: true,
       ),
       body: Stack(
         children: [

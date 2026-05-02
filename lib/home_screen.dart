@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/patient/screens/home_content.dart';
 import 'package:mediconnect/patient/screens/appointments_page.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userId;
@@ -49,10 +51,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      appBar: currentIndex == 2 ? null : CommonAppBar(
+        title: currentIndex == 0 ? "Hello," : "My Appointments",
+        subtitle: currentIndex == 0 ? (userName ?? "Loading...") : "MediConnect Patient",
+        onRefresh: () => setState(() { _loadUserName(); }),
+        onLogout: _signOut,
+      ),
       body: pages[currentIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
