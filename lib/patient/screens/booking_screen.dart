@@ -7,6 +7,7 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class BookingScreen extends StatefulWidget {
   final String doctorId;
@@ -36,7 +37,7 @@ class _BookingScreenState extends State<BookingScreen> {
   int? selectedPaymentIndex;
   bool isLoading = false;
   
-  // متغيرات الجدول والبيانات
+  // Schedule and data variables
   List<DoctorScheduleModel> _doctorSchedule = [];
   double? _fetchedFee;
   bool _isFetchingSchedule = true;
@@ -49,7 +50,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _fetchDoctorData() async {
     try {
-      // جلب الجدول والملف الشخصي للحصول على السعر الفعلي من الباك اند
+      // Fetch schedule and profile to get the actual fee from backend
       final scheduleFuture = _apiService.getDoctorSchedule(widget.doctorId);
       final profileFuture = _apiService.getDoctorProfile(widget.doctorId);
       
@@ -64,7 +65,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _fetchedFee = profile.consultationFee;
           _isFetchingSchedule = false;
           
-          // تحديد أول تاريخ متاح تلقائياً
+          // Select first available date by default
           List<DateTime> available = getAvailableDates();
           if (available.isNotEmpty) {
             selectedDate = available.first;
@@ -84,7 +85,7 @@ class _BookingScreenState extends State<BookingScreen> {
   List<DateTime> getAvailableDates() {
     if (_doctorSchedule.isEmpty) return [];
     
-    // استخراج أسماء الأيام المتاحة من الجدول
+    // Extract available day names from schedule
     List<String> availableDays = _doctorSchedule.map((s) => s.getDayName()).toList();
     
     List<DateTime> dates = [];
@@ -208,16 +209,9 @@ class _BookingScreenState extends State<BookingScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      appBar: AppBar(
-        title: const Text("Book Appointment",
-            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: const CommonAppBar(
+        title: "Book Appointment",
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -271,6 +265,7 @@ class _BookingScreenState extends State<BookingScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 35,
@@ -282,33 +277,28 @@ class _BookingScreenState extends State<BookingScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(widget.doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          Text(widget.specialty, style: const TextStyle(color: Colors.grey, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.info_outline, color: primaryColor),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId))),
-                    ),
-                  ],
+                Text(
+                  widget.doctorName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  softWrap: true, // Allow name to wrap to show fully
                 ),
-                const Row(
-                  children: [
-                    Icon(Icons.star_rounded, color: Colors.orange, size: 18),
-                    Text(" 4.8", style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text(" (120 Reviews)", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  widget.specialty,
+                  style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  softWrap: true, // Allow specialty to wrap
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 5),
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: primaryColor),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId)),
             ),
           ),
         ],
@@ -363,20 +353,26 @@ class _BookingScreenState extends State<BookingScreen> {
         gradient: LinearGradient(colors: [primaryColor, primaryColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.white70, size: 20),
-              SizedBox(width: 8),
-              Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const Icon(Icons.info_outline, color: Colors.white70, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Estimated Turn",
+                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+                  softWrap: true,
+                ),
+              ),
             ],
           ),
-          SizedBox(height: 10),
-          Text("Generating...", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
+          const SizedBox(height: 10),
+          const Text("Generating...", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          const Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       ),
     );
@@ -403,8 +399,26 @@ class _BookingScreenState extends State<BookingScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: isTotal ? Colors.black87 : Colors.grey, fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(color: isTotal ? primaryColor : Colors.black87, fontSize: isTotal ? 18 : 15, fontWeight: FontWeight.bold)),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isTotal ? Colors.black87 : Colors.grey,
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            ),
+            softWrap: true,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          value,
+          style: TextStyle(
+            color: isTotal ? primaryColor : Colors.black87,
+            fontSize: isTotal ? 18 : 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
@@ -487,8 +501,8 @@ class _BookingScreenState extends State<BookingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87)),
-                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87), softWrap: true),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey), softWrap: true),
                 ],
               ),
             ),

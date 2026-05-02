@@ -4,6 +4,7 @@ import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/edit_doctor_management_page.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class ManageDoctorsPage extends StatefulWidget {
   const ManageDoctorsPage({super.key});
@@ -192,11 +193,9 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text("Manage Doctors", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Manage Doctors",
+        showBackButton: true,
       ),
       body: Column(
         children: [

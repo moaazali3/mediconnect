@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'doctor_appointments_page.dart';
 import 'doctor_profile_screen.dart';
 
@@ -47,50 +50,26 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: currentIndex == 1 ? null : AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white, // يمنع تغيير اللون في Material 3
-        scrolledUnderElevation: 0, // يمنع الظل واللون المتغير عند السكرول
-        elevation: 0,
-        toolbarHeight: 70,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Colors.white, // تثبيت لون منطقة الـ Safe Area (Status Bar)
-          statusBarIconBrightness: Brightness.dark, // جعل الأيقونات (الساعة والبطارية) سوداء
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(left: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Hello,",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400),
-              ),
-              Text(
-                doctorName ?? "Loading...",
-                style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 15),
-            child: SizedBox(
-              width: 50,
-              height: 50,
-              child: Image.asset(
-                "assets/images/img.png",
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35),
-              ),
-            ),
-          )
-        ],
+      appBar: currentIndex == 1 ? null : CommonAppBar(
+        title: "Hello,",
+        subtitle: doctorName ?? "Loading...",
+        onRefresh: _loadDoctorName,
+        onLogout: _signOut,
       ),
       body: pages[currentIndex],
       bottomNavigationBar: Container(

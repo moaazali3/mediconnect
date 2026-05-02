@@ -98,6 +98,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 40,
@@ -113,9 +114,19 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text(doctor.specializationName, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600)),
+                Text(
+                  "Dr. ${doctor.firstName} ${doctor.lastName}",
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  softWrap: true, // Ensures full name is displayed by wrapping
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  doctor.specializationName.isEmpty ? "Specialist" : doctor.specializationName,
+                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
+                  softWrap: true, // Allows specialty to wrap if long
+                ),
               ],
             ),
           ),
@@ -144,7 +155,10 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
