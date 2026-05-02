@@ -32,3 +32,43 @@ class MedicalRecordModel {
     );
   }
 }
+
+class CreateMedicalRecordModel {
+  final String appointmentId;
+  final String diagnosis;
+  final String prescription;
+
+  CreateMedicalRecordModel({
+    required this.appointmentId,
+    required this.diagnosis,
+    required this.prescription,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      "appointmentId": appointmentId,
+      "diagnosis": diagnosis,
+      "prescription": prescription,
+    };
+  }
+}
+
+class CreateMedicalRecordModel {
+  final String appointmentId;
+  final String diagnosis;
+  final String prescription;
+
+  CreateMedicalRecordModel({
+    required this.appointmentId,
+    required this.diagnosis,
+    required this.prescription,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      "appointmentId": appointmentId,
+      "diagnosis": diagnosis,
+      "prescription": prescription,
+    };
+  }
+}
