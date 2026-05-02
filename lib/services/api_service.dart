@@ -33,10 +33,23 @@ class ApiResponse {
 
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
+  
+  // Static cache for doctor images to be used across screens
+  static final Map<String, String?> _doctorImagesCache = {};
 
   // Headers to bypass ngrok warning page if necessary
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
   };
+
+  void cacheDoctorImages(List<DoctorModel> doctors) {
+    for (var doc in doctors) {
+      _doctorImagesCache[doc.id] = doc.profilePictureUrl;
+    }
+  }
+
+  String? getCachedDoctorImage(String doctorId) {
+    return _doctorImagesCache[doctorId];
+  }
 }

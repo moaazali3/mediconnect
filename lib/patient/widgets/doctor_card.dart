@@ -7,6 +7,7 @@ class DoctorCard extends StatelessWidget {
   final String spec;
   final String gender;
   final double experience;
+  final String? imageUrl;
   final String? patientId;
 
   const DoctorCard({
@@ -15,6 +16,7 @@ class DoctorCard extends StatelessWidget {
     required this.spec,
     required this.gender,
     required this.experience,
+    this.imageUrl,
     this.patientId,
     super.key,
   });
@@ -22,6 +24,24 @@ class DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0D47A1);
+    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+
+    Widget profileImage;
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      String fullImageUrl = imageUrl!.startsWith('http') ? imageUrl! : "$baseUrl$imageUrl";
+      profileImage = ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Image.network(
+          fullImageUrl,
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackIcon(),
+        ),
+      );
+    } else {
+      profileImage = _buildFallbackIcon();
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -48,11 +68,7 @@ class DoctorCard extends StatelessWidget {
             child: CircleAvatar(
               radius: 30,
               backgroundColor: (gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
-              child: Icon(
-                gender == "Male" ? Icons.male : Icons.female, 
-                size: 35, 
-                color: gender == "Male" ? Colors.blue : Colors.pink
-              ),
+              child: profileImage,
             ),
           ),
           const SizedBox(width: 15),
@@ -124,6 +140,14 @@ class DoctorCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFallbackIcon() {
+    return Icon(
+      gender == "Male" ? Icons.male : Icons.female, 
+      size: 35, 
+      color: gender == "Male" ? Colors.blue : Colors.pink
     );
   }
 }

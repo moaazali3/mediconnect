@@ -56,6 +56,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   time: "${appointment.startTime} - ${appointment.endTime}",
                   status: appointment.status,
                   queue: appointment.queueNumber,
+                  imageUrl: appointment.doctorImageUrl,
                 );
               },
             );
@@ -74,6 +75,7 @@ class AppointmentCard extends StatelessWidget {
   final String time;
   final String status;
   final int queue;
+  final String? imageUrl;
 
   const AppointmentCard({
     super.key,
@@ -84,10 +86,30 @@ class AppointmentCard extends StatelessWidget {
     required this.time,
     required this.status,
     required this.queue,
+    this.imageUrl,
   });
 
   @override
   Widget build(BuildContext context) {
+    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+
+    Widget profileImage;
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      String fullImageUrl = imageUrl!.startsWith('http') ? imageUrl! : "$baseUrl$imageUrl";
+      profileImage = ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: Image.network(
+          fullImageUrl,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: primaryColor, size: 30),
+        ),
+      );
+    } else {
+      profileImage = const Icon(Icons.person, color: primaryColor, size: 30);
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -109,7 +131,7 @@ class AppointmentCard extends StatelessWidget {
               CircleAvatar(
                 radius: 25,
                 backgroundColor: primaryColor.withOpacity(0.1),
-                child: const Icon(Icons.person, color: primaryColor, size: 30),
+                child: profileImage,
               ),
               const SizedBox(width: 15),
               Expanded(

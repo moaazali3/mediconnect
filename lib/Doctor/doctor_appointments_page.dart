@@ -96,13 +96,9 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   }
 
   Future<void> _updateStatus(String id, bool isAccept, {DoctorAppointmentModel? appointment}) async {
-    if (isAccept && appointment != null) {
-      _showMedicalRecordDialog(appointment);
-      return;
-    }
-
     setState(() => _isProcessing = true);
     try {
+      // تنفيذ القبول أو الإلغاء في السيرفر أولاً
       bool success = isAccept 
           ? await _apiService.completeAppointmentStatus(id)
           : await _apiService.cancelAppointmentStatus(id);
@@ -114,7 +110,13 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
-        _fetchData();
+        
+        await _fetchData(); // تحديث القائمة
+
+        // بعد نجاح القبول (Accept)، نفتح نافذة السجل الطبي
+        if (isAccept && appointment != null) {
+          _showMedicalRecordDialog(appointment);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -152,7 +154,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isEdit ? "Edit Medical Record" : "Record - ${appointment.patientName}"),
+        title: Text(isEdit ? "Edit Medical Record" : "Medical Record - ${appointment.patientName}"),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -175,25 +177,50 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
           ElevatedButton(
             onPressed: () async {
-              if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) return;
+              if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+                return;
+              }
               Navigator.pop(context);
               setState(() => _isProcessing = true);
               try {
-                bool success = isEdit 
-                    ? await _apiService.updateMedicalRecord(existingRecord!.medicalRecordId, _diagnosisController.text, _prescriptionController.text)
-                    : await _apiService.createMedicalRecord(appointmentId: appointment.appointmentId, diagnosis: _diagnosisController.text, prescription: _prescriptionController.text);
-                
-                if (!isEdit && success) await _apiService.completeAppointmentStatus(appointment.appointmentId);
+                bool success;
+                if (isEdit) {
+                  // تحديث سجل موجود
+                  success = await _apiService.updateMedicalRecord(
+                    existingRecord!.medicalRecordId, 
+                    _diagnosisController.text, 
+                    _prescriptionController.text
+                  );
+                } else {
+                  // إضافة سجل جديد - الموعد تم إكماله بالفعل قبل فتح هذا الحوار
+                  success = await _apiService.createMedicalRecord(
+                    CreateMedicalRecordModel(
+                      appointmentId: appointment.appointmentId,
+                      diagnosis: _diagnosisController.text,
+                      prescription: _prescriptionController.text,
+                    ),
+                  );
+                }
                 
                 if (mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Success!"), backgroundColor: Colors.green));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(isEdit ? "Record updated!" : "Medical history added!"), backgroundColor: Colors.green)
+                  );
                   _fetchData();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                  );
                 }
               } finally {
                 if (mounted) setState(() => _isProcessing = false);
               }
             },
-            child: Text(isEdit ? "UPDATE" : "SAVE"),
+            style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white),
+            child: Text(isEdit ? "UPDATE" : "SAVE RECORD"),
           ),
         ],
       ),
@@ -217,13 +244,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                   const SizedBox(height: 20),
                   _buildSearchField(), 
                   const SizedBox(height: 20),
-                  
-                  // قسم الفلتر بنفس ستايل الهوم
                   _buildDayFilterSection(),
-                  
                   const SizedBox(height: 20),
-                  
-                  // قسم المواعيد بنفس ستايل "Top Doctors"
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text("Appointments List", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -254,7 +276,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                         children: apps.map((app) => _buildAppointmentCard(app)).toList(),
                       ),
                     ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
