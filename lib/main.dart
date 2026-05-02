@@ -3,10 +3,13 @@ import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/home_screen.dart';
 import 'package:mediconnect/Doctor/doctor_home_screen.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SecureStorage.init();
+  
   final prefs = await SharedPreferences.getInstance();
   
   String? token = prefs.getString('auth_token');
@@ -40,7 +43,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         primaryColor: const Color(0xFF0D47A1),
       ),
-      home: AdminDashboard(),
+      home: homeWidget,
     );
   }
 }

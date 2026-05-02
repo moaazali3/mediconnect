@@ -4,7 +4,7 @@ import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateDoctorModel.dart';
-import 'package:mediconnect/models/UpdateDoctorModel.dart'; // أضفنا هذا الاستيراد
+import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
@@ -13,6 +13,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 
 // استيراد الأجزاء المقسمة
 part 'api_sections/auth_api.dart';
@@ -34,13 +35,21 @@ class ApiResponse {
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   final String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev/api";
   
-  // Static cache for doctor images to be used across screens
+  // Static cache for doctor images
   static final Map<String, String?> _doctorImagesCache = {};
+  
+  // Static token to be used in headers
+  static String? _token;
 
-  // Headers to bypass ngrok warning page if necessary
+  static void setToken(String? token) {
+    _token = token;
+  }
+
+  // Headers with Authorization token
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',
+    if (_token != null) 'Authorization': 'Bearer $_token',
   };
 
   void cacheDoctorImages(List<DoctorModel> doctors) {
