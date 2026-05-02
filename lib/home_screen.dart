@@ -35,17 +35,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserName() async {
-    if (widget.userId != null) {
+    if (widget.userId != null && widget.userId!.isNotEmpty) {
       try {
         final profile = await _apiService.getPatientProfile(widget.userId!);
-        setState(() {
-          userName = "${profile.firstName} ${profile.lastName}";
-        });
+        if (mounted) {
+          setState(() {
+            userName = "${profile.firstName} ${profile.lastName}";
+          });
+        }
       } catch (e) {
-        debugPrint("Error loading user name: $e");
-        setState(() {
-          userName = "User";
-        });
+        if (mounted) setState(() => userName = "User");
       }
     }
   }
@@ -54,41 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: currentIndex == 2 ? null : AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 70,
-        title: Padding(
-          padding: const EdgeInsets.only(left: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Hello,",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w400),
-              ),
-              Text(
-                userName ?? "Loading...",
-                style: const TextStyle(fontSize: 18, color: Colors.black87, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 15),
-            child: SizedBox(
-              width: 50,
-              height: 50,
-              child: Image.asset(
-                "assets/images/img.png",
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35),
-              ),
-            ),
-          )
-        ],
-      ),
       body: pages[currentIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),

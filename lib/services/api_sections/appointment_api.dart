@@ -101,23 +101,21 @@ mixin AppointmentApi {
     throw "Error fetching medical record for appointment $appointmentId";
   }
 
-  Future<bool> createMedicalRecord({
-    required String appointmentId,
-    required String diagnosis,
-    required String prescription,
-  }) async {
+  Future<bool> createMedicalRecord(CreateMedicalRecordModel record) async {
     final ApiService parent = this as ApiService;
     final response = await http.post(
       Uri.parse('${parent.baseUrl}/MedicalRecord'),
       headers: parent._headers,
-      body: jsonEncode({
-        "appointmentId": appointmentId,
-        "diagnosis": diagnosis,
-        "prescription": prescription,
-      }),
+      body: jsonEncode(record.toJson()),
     );
     
-    return response.statusCode == 200 || response.statusCode == 201;
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to create medical record";
+      throw errorMessage;
+    }
   }
 
   Future<bool> updateMedicalRecord(String medicalRecordId, String diagnosis, String prescription) async {

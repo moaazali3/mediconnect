@@ -41,15 +41,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     // جلب الإحصائيات الأساسية
     final stats = await _apiService.getAdminDashboardStats();
     
-    // جلب الدكاترة لحساب المتاحين اليوم (مع توحيد اللغة للإنجليزية للمقارنة)
+    // جلب الدكاترة لحساب المتاحين اليوم بدقة
     try {
       final allDoctors = await _apiService.getAllDoctors();
-      final String todayNameEn = DateFormat('EEEE', 'en_US').format(DateTime.now());
+      final int currentWeekday = DateTime.now().weekday; // 1=Mon, 7=Sun
       
       int count = 0;
       for (var doctor in allDoctors) {
+        // التحقق باستخدام منطق isScheduledFor المطور
         bool isAvailableToday = doctor.doctorSchedules.any((schedule) {
-          return schedule.getDayName().trim().toLowerCase() == todayNameEn.toLowerCase() && schedule.isAvailable;
+          return schedule.isScheduledFor(currentWeekday) && schedule.isAvailable;
         });
         if (isAvailableToday) count++;
       }
@@ -59,11 +60,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           _calculatedDoctorsToday = count;
         });
       }
+      // إرجاع الموديل محدثاً بالعدد المحسوب
+      return stats.copyWith(totalDoctorsToday: count);
     } catch (e) {
       debugPrint("Error calculating doctors today: $e");
+      return stats;
     }
-    
-    return stats;
   }
 
   Future<void> _loadAdminInfo() async {
@@ -302,7 +304,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 },
                 child: _buildStatCard(
                   "Doctors Today",
-                  _calculatedDoctorsToday.toString(),
+                  stats.totalDoctorsToday.toString(),
                   Icons.person_search_rounded,
                   Colors.blue,
                 ),

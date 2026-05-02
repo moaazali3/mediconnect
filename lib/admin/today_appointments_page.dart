@@ -70,7 +70,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: primaryColor.withOpacity(0.1),
+                                  backgroundColor: primaryColor.withValues(alpha: 0.1),
                                   child: Text("${index + 1}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
                                 ),
                                 const SizedBox(width: 15),
@@ -92,7 +92,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.1),
+                                    color: Colors.blue.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -192,7 +192,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Material(
@@ -207,7 +207,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: primaryColor.withOpacity(0.1),
+                              color: primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.medical_services_outlined, color: primaryColor),

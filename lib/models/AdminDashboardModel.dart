@@ -1,7 +1,7 @@
 class AdminDashboardModel {
   final int totalPatients;
   final int totalDoctors;
-  final int totalDoctorsToday; // Added this
+  final int totalDoctorsToday;
   final int totalAppointments;
   final int totalAppointmentsToday;
   final int totalPendingAppointmentsToday;
@@ -29,11 +29,43 @@ class AdminDashboardModel {
     required this.totalRevenue,
   });
 
+  AdminDashboardModel copyWith({
+    int? totalPatients,
+    int? totalDoctors,
+    int? totalDoctorsToday,
+    int? totalAppointments,
+    int? totalAppointmentsToday,
+    int? totalPendingAppointmentsToday,
+    int? totalCompletedAppointmentsToday,
+    int? totalCancelledAppointmentsToday,
+    int? totalPendingAppointments,
+    int? totalCompletedAppointments,
+    int? totalCancelledAppointments,
+    double? totalRevenueToday,
+    double? totalRevenue,
+  }) {
+    return AdminDashboardModel(
+      totalPatients: totalPatients ?? this.totalPatients,
+      totalDoctors: totalDoctors ?? this.totalDoctors,
+      totalDoctorsToday: totalDoctorsToday ?? this.totalDoctorsToday,
+      totalAppointments: totalAppointments ?? this.totalAppointments,
+      totalAppointmentsToday: totalAppointmentsToday ?? this.totalAppointmentsToday,
+      totalPendingAppointmentsToday: totalPendingAppointmentsToday ?? this.totalPendingAppointmentsToday,
+      totalCompletedAppointmentsToday: totalCompletedAppointmentsToday ?? this.totalCompletedAppointmentsToday,
+      totalCancelledAppointmentsToday: totalCancelledAppointmentsToday ?? this.totalCancelledAppointmentsToday,
+      totalPendingAppointments: totalPendingAppointments ?? this.totalPendingAppointments,
+      totalCompletedAppointments: totalCompletedAppointments ?? this.totalCompletedAppointments,
+      totalCancelledAppointments: totalCancelledAppointments ?? this.totalCancelledAppointments,
+      totalRevenueToday: totalRevenueToday ?? this.totalRevenueToday,
+      totalRevenue: totalRevenue ?? this.totalRevenue,
+    );
+  }
+
   factory AdminDashboardModel.fromJson(Map<String, dynamic> json) {
     return AdminDashboardModel(
       totalPatients: json['totalPatients'] ?? 0,
       totalDoctors: json['totalDoctors'] ?? 0,
-      totalDoctorsToday: json['totalDoctorsToday'] ?? 0, // Added this
+      totalDoctorsToday: json['totalDoctorsToday'] ?? 0,
       totalAppointments: json['totalAppointments'] ?? 0,
       totalAppointmentsToday: json['totalAppointmentsToday'] ?? 0,
       totalPendingAppointmentsToday: json['totalPendingAppointmentsToday'] ?? 0,

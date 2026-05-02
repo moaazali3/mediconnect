@@ -33,9 +33,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                 child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
               ));
             }
-            final appointments = snapshot.data ?? [];
+            
+            // فلترة المواعيد لإظهار الحالة "Pending" فقط
+            final appointments = (snapshot.data ?? [])
+                .where((a) => a.status.toLowerCase() == 'pending')
+                .toList();
+                
             if (appointments.isEmpty) {
-              return const Center(child: Text("No appointments found"));
+              return const Center(child: Text("No pending appointments found"));
             }
 
             return ListView.builder(
