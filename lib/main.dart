@@ -36,7 +36,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: homeWidget,
+      theme: ThemeData(
+        useMaterial3: true,
+        primaryColor: const Color(0xFF0D47A1),
+      ),
+      home: AdminDashboard(),
     );
   }
 }

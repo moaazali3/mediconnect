@@ -86,18 +86,125 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
     });
   }
 
+  Future<void> _confirmDelete(DoctorModel doctor) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 50),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              "Delete Doctor",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF263238)),
+            ),
+          ],
+        ),
+        content: Text(
+          "Are you sure you want to delete Dr. ${doctor.firstName} ${doctor.lastName}?\nThis action cannot be undone.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 25),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  child: Text(
+                    "CANCEL",
+                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    "DELETE",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      _deleteDoctor(doctor.id);
+    }
+  }
+
+  Future<void> _deleteDoctor(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await _apiService.deleteDoctor(id);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Doctor deleted successfully")),
+          );
+          _fetchDoctors();
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to delete doctor"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text("Manage Doctors", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
+          const SizedBox(height: 15),
           _buildSearchBar(),
+          const SizedBox(height: 15),
           _buildFilterBar(),
+          const SizedBox(height: 10),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: primaryColor))
@@ -106,38 +213,11 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                     child: _filteredDoctors.isEmpty
                         ? const Center(child: Text("No doctors found"))
                         : ListView.builder(
-                            padding: const EdgeInsets.all(15),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             itemCount: _filteredDoctors.length,
                             itemBuilder: (context, index) {
                               final doctor = _filteredDoctors[index];
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 15),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.all(15),
-                                  leading: CircleAvatar(
-                                    radius: 30,
-                                    backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
-                                        ? NetworkImage(doctor.profilePictureUrl!)
-                                        : null,
-                                    child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
-                                        ? const Icon(Icons.person, size: 30)
-                                        : null,
-                                  ),
-                                  title: Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(doctor.specializationName),
-                                  trailing: const Icon(Icons.edit, color: primaryColor),
-                                  onTap: () async {
-                                    final result = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => EditDoctorManagementPage(doctorId: doctor.id),
-                                      ),
-                                    );
-                                    if (result == true) _fetchDoctors();
-                                  },
-                                ),
-                              );
+                              return _buildDoctorCard(doctor);
                             },
                           ),
                   ),
@@ -149,11 +229,17 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(15, 10, 15, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+            _applySearch();
+          });
+        },
         decoration: InputDecoration(
-          hintText: "Search by name...",
+          hintText: "Search doctor...",
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
               ? IconButton(
@@ -167,55 +253,166 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   }) 
               : null,
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(30),
             borderSide: BorderSide.none,
           ),
         ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
-            _applySearch();
-          });
-        },
       ),
     );
   }
 
   Widget _buildFilterBar() {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 10),
+    return SizedBox(
+      height: 45,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _specializations.length + 1,
         itemBuilder: (context, index) {
           String name = index == 0 ? "All" : _specializations[index - 1].name;
           bool isSelected = _selectedSpec == name;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: ChoiceChip(
-              label: Text(name),
-              selected: isSelected,
-              selectedColor: primaryColor,
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          return GestureDetector(
+            onTap: () {
+              if (_selectedSpec != name) {
+                setState(() => _selectedSpec = name);
+                _fetchDoctors();
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
               ),
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() {
-                    _selectedSpec = name;
-                  });
-                  _fetchDoctors();
-                }
-              },
+              child: Center(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDoctorCard(DoctorModel doctor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 30,
+              backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+              backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
+                  ? NetworkImage(doctor.profilePictureUrl!)
+                  : null,
+              child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+                  ? Icon(
+                      doctor.gender == "Male" ? Icons.male : Icons.female, 
+                      size: 35, 
+                      color: doctor.gender == "Male" ? Colors.blue : Colors.pink
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Dr. ${doctor.firstName} ${doctor.lastName}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Color(0xFF263238),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  doctor.specializationName,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.history_edu, color: primaryColor, size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${doctor.experienceYears} Years Exp.",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              IconButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditDoctorManagementPage(doctorId: doctor.id),
+                    ),
+                  );
+                  if (result == true) _fetchDoctors();
+                },
+                icon: const Icon(Icons.edit, color: primaryColor),
+                style: IconButton.styleFrom(
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              IconButton(
+                onPressed: () => _confirmDelete(doctor),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.red.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -38,7 +38,7 @@ mixin DoctorApi {
     throw "خطأ في تحميل بيانات الدكتور: ${response.statusCode}";
   }
 
-  Future<bool> createDoctor(CreateDoctorModel doctor) async {
+  Future<String?> createDoctor(CreateDoctorModel doctor) async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.post(
@@ -46,9 +46,13 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(doctor.toJson()),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return data['id']?.toString() ?? data['Id']?.toString();
+      }
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 

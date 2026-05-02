@@ -24,4 +24,13 @@ mixin AdminApi {
       throw "Failed to load all appointments";
     }
   }
+
+  Future<bool> deleteDoctor(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.delete(
+      Uri.parse('${parent.baseUrl}/Admin/doctor/$doctorId'),
+      headers: parent._headers,
+    );
+    return response.statusCode == 200 || response.statusCode == 204;
+  }
 }

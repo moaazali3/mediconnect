@@ -64,15 +64,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     _expectedRevenue = 0;
 
     for (var app in _allAppointments) {
-      // 1. شعبية الأطباء (نستخدم ID الطبيب كبديل للاسم إذا لم يتوفر)
+      // 1. شعبية الأطباء
       String doctorId = app.doctorId.isNotEmpty ? app.doctorId : "Unknown";
       _doctorPopularity[doctorId] = (_doctorPopularity[doctorId] ?? 0) + 1;
 
-      // 2. تحليل أوقات الذروة (بناءً على startTime)
+      // 2. تحليل أوقات الذروة
       try {
         if (app.startTime.isNotEmpty) {
           int hour = int.parse(app.startTime.split(':')[0]);
-          // التعامل مع نظام 12 ساعة إذا وجد PM
           if (app.startTime.toUpperCase().contains("PM") && hour != 12) hour += 12;
           _hourlyTraffic[hour] = (_hourlyTraffic[hour] ?? 0) + 1;
         }
@@ -232,8 +231,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
-      childAspectRatio: 2.5,
+      childAspectRatio: 2.2,
       children: [
+        _buildSmallStat("Total Patients", _stats!.totalPatients.toString(), Colors.blue),
+        _buildSmallStat("Active Doctors", _stats!.totalDoctors.toString(), Colors.teal),
+        _buildSmallStat("Total Appts", _stats!.totalAppointments.toString(), Colors.indigo),
+        _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Colors.orange),
         _buildSmallStat("Success Rate", "${(_stats!.totalCompletedAppointments / (_stats!.totalAppointments > 0 ? _stats!.totalAppointments : 1) * 100).toStringAsFixed(0)}%", Colors.green),
         _buildSmallStat("Cancellation", "${(_stats!.totalCancelledAppointments / (_stats!.totalAppointments > 0 ? _stats!.totalAppointments : 1) * 100).toStringAsFixed(0)}%", Colors.red),
       ],
@@ -247,8 +250,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12)),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+          Expanded(child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12))),
+          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
         ],
       ),
     );

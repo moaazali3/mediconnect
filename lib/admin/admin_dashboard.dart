@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
-import 'package:mediconnect/admin/manage_doctors_page.dart'; // أضفنا هذا الاستيراد
+import 'package:mediconnect/admin/manage_doctors_page.dart';
+import 'package:mediconnect/admin/today_appointments_page.dart';
+import 'package:mediconnect/admin/today_doctors_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
@@ -20,16 +23,59 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   final ApiService _apiService = ApiService();
   late Future<AdminDashboardModel> _statsFuture;
+  String _adminName = "Administrator";
+  int _calculatedDoctorsToday = 0;
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = _apiService.getAdminDashboardStats();
+    _loadDashboardData();
+    _loadAdminInfo();
+  }
+
+  void _loadDashboardData() {
+    _statsFuture = _getCombinedStats();
+  }
+
+  Future<AdminDashboardModel> _getCombinedStats() async {
+    // جلب الإحصائيات الأساسية
+    final stats = await _apiService.getAdminDashboardStats();
+    
+    // جلب الدكاترة لحساب المتاحين اليوم (مع توحيد اللغة للإنجليزية للمقارنة)
+    try {
+      final allDoctors = await _apiService.getAllDoctors();
+      final String todayNameEn = DateFormat('EEEE', 'en_US').format(DateTime.now());
+      
+      int count = 0;
+      for (var doctor in allDoctors) {
+        bool isAvailableToday = doctor.doctorSchedules.any((schedule) {
+          return schedule.getDayName().trim().toLowerCase() == todayNameEn.toLowerCase() && schedule.isAvailable;
+        });
+        if (isAvailableToday) count++;
+      }
+
+      if (mounted) {
+        setState(() {
+          _calculatedDoctorsToday = count;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error calculating doctors today: $e");
+    }
+    
+    return stats;
+  }
+
+  Future<void> _loadAdminInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _adminName = prefs.getString('user_name') ?? "Administrator";
+    });
   }
 
   Future<void> _refreshData() async {
     setState(() {
-      _statsFuture = _apiService.getAdminDashboardStats();
+      _loadDashboardData();
     });
   }
 
@@ -38,6 +84,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     await prefs.remove('auth_token');
     await prefs.remove('user_role');
     await prefs.remove('user_id');
+    await prefs.remove('user_name');
 
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
@@ -51,24 +98,89 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: AppBar(
-        title: const Text(
-          "Admin Portal",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(75),
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            automaticallyImplyLeading: false,
+            toolbarHeight: 75,
+            flexibleSpace: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                child: Row(
+                  children: [
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.black12, blurRadius: 4, spreadRadius: 1),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Image.asset(
+                          "assets/images/img.png",
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.local_hospital, color: primaryColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "MediConnect",
+                            style: TextStyle(
+                              color: primaryColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            "Admin Portal • $_adminName",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: primaryColor),
+                      onPressed: _refreshData,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.redAccent),
+                      onPressed: _signOut,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _refreshData,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: _signOut,
-          ),
-          const SizedBox(width: 10),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -84,7 +196,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle("System Statistics"),
+                    _buildSectionTitle("Today's Overview"),
                     const SizedBox(height: 15),
                     FutureBuilder<AdminDashboardModel>(
                       future: _statsFuture,
@@ -122,7 +234,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(25, 10, 25, 40),
+      padding: const EdgeInsets.fromLTRB(25, 20, 25, 45),
       decoration: const BoxDecoration(
         color: primaryColor,
         borderRadius: BorderRadius.only(
@@ -130,16 +242,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
           bottomRight: Radius.circular(30),
         ),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Hello, Administrator",
-            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            "Welcome back, $_adminName",
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
-          Text(
-            "Monitor and manage your hospital operations efficiently.",
+          const SizedBox(height: 8),
+          const Text(
+            "Everything is running smoothly today.",
             style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
@@ -164,89 +276,101 @@ class _AdminDashboardState extends State<AdminDashboard> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(
-                "Total Patients",
-                stats.totalPatients.toString(),
-                Icons.people_rounded,
-                Colors.blue,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()),
+                  );
+                },
+                child: _buildStatCard(
+                  "Today's Appts",
+                  stats.totalAppointmentsToday.toString(),
+                  Icons.today_rounded,
+                  Colors.pink,
+                ),
               ),
-            ), 
+            ),
             const SizedBox(width: 15),
             Expanded(
-              child: _buildStatCard(
-                "Active Doctors",
-                stats.totalDoctors.toString(),
-                Icons.medical_services_rounded,
-                Colors.teal,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TodayDoctorsPage()),
+                  );
+                },
+                child: _buildStatCard(
+                  "Doctors Today",
+                  _calculatedDoctorsToday.toString(),
+                  Icons.person_search_rounded,
+                  Colors.blue,
+                ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 15),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                "Appointments",
-                stats.totalAppointments.toString(),
-                Icons.event_note_rounded,
-                Colors.indigo,
-              ),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: _buildStatCard(
-                "Revenue",
-                "${stats.totalRevenue.toStringAsFixed(0)} EGP",
-                Icons.payments_rounded,
-                Colors.orange.shade800,
-              ),
-            ),
-          ],
+        _buildStatCard(
+          "Today Revenue",
+          "${stats.totalRevenueToday.toStringAsFixed(0)} EGP",
+          Icons.payments_rounded,
+          Colors.green,
+          isFullWidth: true,
         ),
         const SizedBox(height: 15),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-            ],
-          ),
-          child: Column(
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
-                  SizedBox(width: 10),
-                  Text("Appointment Breakdown", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatusInfo("Completed", stats.totalCompletedAppointments, Colors.green),
-                  _buildStatusInfo("Pending", stats.totalPendingAppointments, Colors.orange),
-                  _buildStatusInfo("Cancelled", stats.totalCancelledAppointments, Colors.red),
-                ],
-              ),
-            ],
-          ),
+        _buildBreakdownCard(
+          "Today's Appointment Status",
+          stats.totalCompletedAppointmentsToday,
+          stats.totalPendingAppointmentsToday,
+          stats.totalCancelledAppointmentsToday,
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildBreakdownCard(String title, int completed, int pending, int cancelled) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pie_chart_outline_rounded, size: 20, color: Colors.grey),
+              const SizedBox(width: 10),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatusInfo("Completed", completed, Colors.green),
+              _buildStatusInfo("Pending", pending, Colors.orange),
+              _buildStatusInfo("Cancelled", cancelled, Colors.red),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon, Color color, {bool isFullWidth = false}) {
+    return Container(
+      width: isFullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -256,7 +380,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           const SizedBox(height: 15),
           Text(
             value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 5),
           Text(
@@ -303,7 +427,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         _buildActionCard(
           context,
-          "Doctors List", // تم تغيير المسمى ليدل على الإدارة الكاملة
+          "Doctors List",
           "Schedules & Fees",
           Icons.medical_services_rounded,
           Colors.teal.shade600,
@@ -347,7 +471,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -357,7 +481,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),

@@ -2,6 +2,8 @@ class AppointmentModel {
   final String appointmentId;
   final String patientId;
   final String doctorId;
+  final String patientName; // Added
+  final String doctorName;  // Added
   final String appointmentDate;
   final String dayOfWeek;
   final String startTime;
@@ -13,6 +15,8 @@ class AppointmentModel {
     required this.appointmentId,
     required this.patientId,
     required this.doctorId,
+    this.patientName = "", // Added
+    this.doctorName = "",  // Added
     required this.appointmentDate,
     required this.dayOfWeek,
     required this.startTime,
@@ -26,6 +30,8 @@ class AppointmentModel {
       appointmentId: json['appointmentId'] ?? json['id'] ?? '',
       patientId: json['patientId'] ?? '',
       doctorId: json['doctorId'] ?? '',
+      patientName: json['patientName'] ?? json['PatientName'] ?? '', // Added
+      doctorName: json['doctorName'] ?? json['DoctorName'] ?? '',    // Added
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',
       startTime: json['startTime'] ?? '',

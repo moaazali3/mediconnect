@@ -30,20 +30,23 @@ class DoctorModel {
   });
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
+    // التحقق من قائمة الجداول سواء كانت تبدأ بحرف كبير أو صغير
+    var scheduleList = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    
     return DoctorModel(
-      id: json['id'] ?? '',
-      profilePictureUrl: json['profilePictureUrl'],
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      specializationName: json['specializationName'] ?? '',
-      experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
-      biography: json['biography'] ?? '',
-      consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,
-      dateOfBirth: json['dateOfBirth'] ?? '',
-      gender: json['gender'] ?? '',
-      isAppleToAppointment: json['isAppleToAppointment'] ?? false,
-      doctorSchedules: json['doctorSchedules'] != null
-          ? (json['doctorSchedules'] as List)
+      id: json['id'] ?? json['Id'] ?? '',
+      profilePictureUrl: json['profilePictureUrl'] ?? json['ProfilePictureUrl'],
+      firstName: json['firstName'] ?? json['FirstName'] ?? '',
+      lastName: json['lastName'] ?? json['LastName'] ?? '',
+      specializationName: json['specializationName'] ?? json['SpecializationName'] ?? '',
+      experienceYears: (json['experienceYears'] ?? json['ExperienceYears'] as num?)?.toDouble() ?? 0.0,
+      biography: json['biography'] ?? json['Biography'] ?? '',
+      consultationFee: (json['consultationFee'] ?? json['ConsultationFee'] as num?)?.toDouble() ?? 0.0,
+      dateOfBirth: json['dateOfBirth'] ?? json['DateOfBirth'] ?? '',
+      gender: json['gender'] ?? json['Gender'] ?? '',
+      isAppleToAppointment: json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? false,
+      doctorSchedules: scheduleList != null
+          ? (scheduleList as List)
               .map((i) => DoctorScheduleModel.fromJson(i))
               .toList()
           : [],

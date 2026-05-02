@@ -1,6 +1,7 @@
 class AdminDashboardModel {
   final int totalPatients;
   final int totalDoctors;
+  final int totalDoctorsToday; // Added this
   final int totalAppointments;
   final int totalAppointmentsToday;
   final int totalPendingAppointmentsToday;
@@ -15,6 +16,7 @@ class AdminDashboardModel {
   AdminDashboardModel({
     required this.totalPatients,
     required this.totalDoctors,
+    required this.totalDoctorsToday,
     required this.totalAppointments,
     required this.totalAppointmentsToday,
     required this.totalPendingAppointmentsToday,
@@ -31,6 +33,7 @@ class AdminDashboardModel {
     return AdminDashboardModel(
       totalPatients: json['totalPatients'] ?? 0,
       totalDoctors: json['totalDoctors'] ?? 0,
+      totalDoctorsToday: json['totalDoctorsToday'] ?? 0, // Added this
       totalAppointments: json['totalAppointments'] ?? 0,
       totalAppointmentsToday: json['totalAppointmentsToday'] ?? 0,
       totalPendingAppointmentsToday: json['totalPendingAppointmentsToday'] ?? 0,
@@ -48,6 +51,7 @@ class AdminDashboardModel {
     return {
       'totalPatients': totalPatients,
       'totalDoctors': totalDoctors,
+      'totalDoctorsToday': totalDoctorsToday,
       'totalAppointments': totalAppointments,
       'totalAppointmentsToday': totalAppointmentsToday,
       'totalPendingAppointmentsToday': totalPendingAppointmentsToday,
