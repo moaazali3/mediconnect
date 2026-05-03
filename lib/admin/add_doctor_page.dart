@@ -25,7 +25,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _biographyController = TextEditingController();
   final _experienceController = TextEditingController();
   final _feeController = TextEditingController();
   final _dobController = TextEditingController();
@@ -53,7 +52,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _biographyController.dispose();
     _experienceController.dispose();
     _feeController.dispose();
     _dobController.dispose();
@@ -136,7 +134,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         gender: _gender,
         dateOfBirth: dob,
         address: _addressController.text,
-        biography: _biographyController.text,
+        biography: "", // Set biography to empty string as requested
         experienceYears: double.tryParse(_experienceController.text) ?? 0,
         consultationFee: double.tryParse(_feeController.text) ?? 0,
         specializationId: _selectedSpecializationId!,
@@ -465,13 +463,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             controller: _addressController,
             label: "Address",
             icon: Icons.location_on_outlined,
-          ),
-          const SizedBox(height: 15),
-          _buildTextField(
-            controller: _biographyController,
-            label: "Biography",
-            icon: Icons.description_outlined,
-            maxLines: 4,
           ),
         ],
       );
