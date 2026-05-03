@@ -68,9 +68,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           }
 
           final doctor = snapshot.data!;
-          final String displayImage = (doctor.imageUrl != null && doctor.imageUrl!.isNotEmpty)
-              ? doctor.imageUrl!
-              : "https://via.placeholder.com/150";
+          final String? displayImage = doctor.profilePictureUrl;
 
           return Column(
             children: [
@@ -167,9 +165,30 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     );
   }
 
-  Widget _buildFixedHeader(DoctorProfileModel doctor, String displayImage) {
+  Widget _buildFixedHeader(DoctorProfileModel doctor, String? displayImage) {
     const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-    final String fullImageUrl = displayImage.startsWith('http') ? displayImage : "$imageBaseUrl$displayImage";
+    
+    Widget imageWidget;
+    if (displayImage != null && displayImage.isNotEmpty) {
+      final String fullImageUrl = displayImage.startsWith('http') ? displayImage : "$imageBaseUrl$displayImage";
+      imageWidget = CircleAvatar(
+        radius: 40,
+        backgroundColor: Colors.white,
+        backgroundImage: NetworkImage(fullImageUrl),
+        onBackgroundImageError: (exception, stackTrace) {
+          debugPrint("Error loading image: $exception");
+        },
+      );
+    } else {
+      imageWidget = CircleAvatar(
+        radius: 40,
+        backgroundColor: Colors.white,
+        child: Text(
+          doctor.firstName.isNotEmpty ? doctor.firstName[0].toUpperCase() : "D",
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: primaryColor),
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -194,11 +213,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                backgroundImage: NetworkImage(fullImageUrl),
-              ),
+              child: imageWidget,
             ),
             const SizedBox(width: 20),
             Expanded(

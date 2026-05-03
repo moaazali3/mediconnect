@@ -93,9 +93,10 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
     const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
 
     return Scaffold(
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: "Manage Bookings",
         showBackButton: true,
+        onRefresh: _fetchDoctors,
       ),
       body: Column(
         children: [
@@ -291,6 +292,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
       appBar: CommonAppBar(
         title: "Bookings: ${widget.doctor.firstName}",
         showBackButton: true,
+        onRefresh: () => setState(() {}),
       ),
       body: Stack(
         children: [

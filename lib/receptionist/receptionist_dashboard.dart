@@ -25,9 +25,11 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
 
   Future<void> _loadInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _receptionistName = prefs.getString('user_name') ?? "Receptionist";
-    });
+    if (mounted) {
+      setState(() {
+        _receptionistName = prefs.getString('user_name') ?? "Receptionist";
+      });
+    }
   }
 
   Future<void> _signOut() async {
@@ -45,34 +47,44 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
     );
   }
 
+  Future<void> _refreshData() async {
+    await _loadInfo();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
       appBar: CommonAppBar(
         subtitle: "Reception Portal • $_receptionistName",
+        onRefresh: _refreshData,
         onLogout: _signOut,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Quick Actions",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3142)),
-                  ),
-                  const SizedBox(height: 15),
-                  _buildActionsGrid(context),
-                ],
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        color: primaryColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Quick Actions",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3142)),
+                    ),
+                    const SizedBox(height: 15),
+                    _buildActionsGrid(context),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

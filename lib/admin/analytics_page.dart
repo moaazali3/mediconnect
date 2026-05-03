@@ -20,7 +20,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   AdminDashboardModel? _stats;
   List<AppointmentModel> _allAppointments = [];
 
-  // التحليلات المتقدمة
   Map<String, int> _doctorPopularity = {};
   Map<int, int> _hourlyTraffic = {};
   double _expectedRevenue = 0;
@@ -65,11 +64,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     _expectedRevenue = 0;
 
     for (var app in _allAppointments) {
-      // 1. شعبية الأطباء
       String doctorId = app.doctorId.isNotEmpty ? app.doctorId : "Unknown";
       _doctorPopularity[doctorId] = (_doctorPopularity[doctorId] ?? 0) + 1;
 
-      // 2. تحليل أوقات الذروة
       try {
         if (app.startTime.isNotEmpty) {
           int hour = int.parse(app.startTime.split(':')[0]);
@@ -78,7 +75,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         }
       } catch (_) {}
 
-      // 3. الإيرادات المتوقعة (للمواعيد المعلقة)
       if (app.status == "Pending") {
         _expectedRevenue += 200; 
       }
@@ -93,9 +89,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: "Advanced Analytics",
         showBackButton: true,
+        onRefresh: _loadData,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
@@ -103,7 +100,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               ? Center(child: Text(_error!))
               : RefreshIndicator(
                   onRefresh: _loadData,
+                  color: primaryColor,
                   child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

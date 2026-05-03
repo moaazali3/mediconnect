@@ -193,9 +193,10 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: "Manage Doctors",
         showBackButton: true,
+        onRefresh: _fetchDoctors,
       ),
       body: Column(
         children: [

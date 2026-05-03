@@ -34,7 +34,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
         ),
       ),
       body: FutureBuilder<List<MedicalRecordModel>>(
-        // هذه الدالة الآن تقوم بدمج بيانات الطبيب تلقائياً داخل الـ ApiService
         future: _apiService.getPatientMedicalHistory(idToFetch),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -51,7 +50,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
             return const Center(child: Text("No medical records found"));
           }
 
-          // ترتيب السجلات من الأحدث إلى الأقدم
           records.sort((a, b) => b.createdDate.compareTo(a.createdDate));
 
           return ListView.builder(
@@ -67,15 +65,27 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
   }
 
   Widget _buildHistoryCard(MedicalRecordModel record) {
+    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    
+    String displaySpec = record.doctorSpecialty.trim();
+    if (displaySpec.isEmpty || displaySpec.toLowerCase() == "null") {
+      displaySpec = "Medical Specialist";
+    }
+
+    String displayName = record.doctorName;
+    if (!displayName.startsWith("Dr.")) {
+      displayName = "Dr. $displayName";
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -86,25 +96,49 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: primaryColor.withOpacity(0.1),
-                child: const Icon(Icons.person, color: primaryColor),
+              // Doctor Image with border like home_content
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
+                ),
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  backgroundImage: (record.doctorImageUrl != null && record.doctorImageUrl!.isNotEmpty)
+                      ? NetworkImage(record.doctorImageUrl!.startsWith('http') ? record.doctorImageUrl! : "$baseUrl${record.doctorImageUrl}")
+                      : null,
+                  child: (record.doctorImageUrl == null || record.doctorImageUrl!.isEmpty)
+                      ? const Icon(Icons.person, color: primaryColor, size: 30)
+                      : null,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 15),
+              // Doctor Info like DoctorCard
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Dr. ${record.doctorName}",
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 17, 
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF263238),
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      record.doctorSpecialty,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      displaySpec,
+                      style: TextStyle(
+                        color: primaryColor.withOpacity(0.8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -112,33 +146,40 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                 ),
               ),
               const SizedBox(width: 8),
+              // Date in Blue
               Text(
                 _formatDate(record.createdDate),
-                style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(
+                  color: primaryColor, 
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
           Divider(color: Colors.grey.shade100, height: 25),
           
-          const Row(
+          // Diagnosis Section
+          Row(
             children: [
-              Icon(Icons.medical_information_rounded, color: Colors.grey, size: 16),
-              SizedBox(width: 6),
-              Text("Diagnosis", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Icon(Icons.medical_services_rounded, color: Colors.grey.shade400, size: 16),
+              const SizedBox(width: 6),
+              const Text("Diagnosis", style: TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             record.diagnosis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
           ),
           const SizedBox(height: 15),
 
-          const Row(
+          // Prescription Section
+          Row(
             children: [
-              Icon(Icons.medication_rounded, color: Colors.grey, size: 16),
-              SizedBox(width: 6),
-              Text("Prescription", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Icon(Icons.medication_rounded, color: Colors.grey.shade400, size: 16),
+              const SizedBox(width: 6),
+              const Text("Prescription", style: TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),

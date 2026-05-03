@@ -9,6 +9,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final String doctorId;
@@ -311,6 +312,20 @@ class _BookingScreenState extends State<BookingScreen> {
                 Text(widget.specialty, style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: primaryColor, size: 28),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DoctorProfileViewScreen(
+                    doctorId: widget.doctorId,
+                    patientId: widget.patientId,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
