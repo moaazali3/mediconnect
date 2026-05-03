@@ -128,6 +128,31 @@ mixin DoctorApi {
     }
   }
 
+  Future<bool> updateDoctorProfile(String id, DoctorProfileModel profile) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.put(
+      Uri.parse('${parent.baseUrl}/Profile/doctor/$id'),
+      headers: parent._headers,
+      body: jsonEncode({
+        "firstName": profile.firstName,
+        "lastName": profile.lastName,
+        "dateOfBirth": profile.dateOfBirth,
+        "gender": profile.gender,
+        "address": profile.address,
+        "phoneNumber": profile.phoneNumber,
+        "biography": profile.biography,
+      }),
+    );
+    
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return true;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to update doctor profile";
+      throw errorMessage;
+    }
+  }
+
   Future<bool> uploadDoctorImage(String doctorId, String filePath) async {
     final ApiService parent = this as ApiService;
     try {
