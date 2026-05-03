@@ -28,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final confirmPassController = TextEditingController();
   final dobController = TextEditingController();
   final addressController = TextEditingController();
+  final otpController = TextEditingController();
   
   String? selectedGender;
   final String selectedRole = "Patient"; 
@@ -46,6 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     confirmPassController.dispose();
     dobController.dispose();
     addressController.dispose();
+    otpController.dispose();
     super.dispose();
   }
 
@@ -145,10 +147,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context); // Close loading
 
       if (response.success) {
-        _showSuccessDialog(context);
+        _showOtpDialog(emailController.text);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response.message), backgroundColor: Colors.red),
@@ -161,6 +163,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
     }
+  }
+
+  void _showOtpDialog(String email) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: const Column(
+          children: [
+            Icon(Icons.mark_email_read_rounded, color: primaryColor, size: 50),
+            SizedBox(height: 10),
+            Text("Verify Email", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("A verification code has been sent to:\n$email", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: otpController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: const TextStyle(letterSpacing: 8, fontSize: 20, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: "000000",
+                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.3), letterSpacing: 8),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                if (otpController.text.isEmpty) return;
+                
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+                );
+
+                final response = await ApiService().confirmEmail(email, otpController.text);
+                
+                if (!mounted) return;
+                Navigator.pop(context); // Close loading
+
+                if (response.success) {
+                  Navigator.pop(context); // Close OTP Dialog
+                  _showSuccessDialog(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(response.message), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text("VERIFY", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Center(child: Text("Cancel", style: TextStyle(color: Colors.grey))),
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -488,12 +568,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
-        content: const Text("Account created successfully!", textAlign: TextAlign.center),
+        content: const Text("Account verified and created successfully!", textAlign: TextAlign.center),
         actions: [
           Center(
             child: ElevatedButton(
               onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-              child: const Text("Continue"),
+              child: const Text("Continue to Login"),
             ),
           )
         ],

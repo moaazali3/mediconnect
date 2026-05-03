@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mediconnect/constants/colors.dart';
@@ -41,6 +42,16 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     _loadProfileData();
   }
 
+  @override
+  void dispose() {
+    fNameController.dispose();
+    lNameController.dispose();
+    phoneController.dispose();
+    bioController.dispose();
+    dobController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadProfileData() async {
     try {
       final String targetId = widget.doctorId ?? "1";
@@ -56,7 +67,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         bioController.text = doctor.biography;
         dobController.text = doctor.dateOfBirth;
         selectedGender = doctor.gender;
-        currentImageUrl = doctor.imageUrl;
+        currentImageUrl = doctor.profilePictureUrl;
         
         _currentSpecializationId = spec?.id;
         _currentExperienceYears = doctor.experienceYears;
@@ -76,6 +87,42 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
+    // 1. Check File Size (Max 2MB)
+    final int fileSize = await image.length();
+    if (fileSize > 2 * 1024 * 1024) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Image size is too large (Maximum 2MB)"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 2. Check Dimensions (Max 1024x1024)
+    try {
+      final bytes = await image.readAsBytes();
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo fi = await codec.getNextFrame();
+      final ui.Image decodedImage = fi.image;
+      
+      if (decodedImage.width > 1024 || decodedImage.height > 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Image dimensions are too large (Maximum 1024x1024)"),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint("Error checking image dimensions: $e");
+    }
+
     setState(() => isUploadingImage = true);
     final String targetId = widget.doctorId ?? "1";
 
@@ -85,7 +132,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         // Refresh profile to get the new image URL
         final doctor = await _apiService.getDoctorProfile(targetId);
         setState(() {
-          currentImageUrl = doctor.imageUrl;
+          currentImageUrl = doctor.profilePictureUrl;
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

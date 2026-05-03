@@ -1,7 +1,7 @@
 part of '../api_service.dart';
 
 mixin DoctorScheduleApi {
-  // جلب جدول مواعيد الطبيب
+  // Get doctor schedule
   Future<List<DoctorScheduleModel>> getDoctorSchedule(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {
@@ -14,19 +14,22 @@ mixin DoctorScheduleApi {
         List<dynamic> body = jsonDecode(response.body);
         return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
       } else if (response.statusCode == 404) {
-        // إذا كان الطبيب لا يملك جدولاً بعد، نرجع قائمة فارغة بدلاً من خطأ
+        // If doctor has no schedule yet, return empty list instead of error
         return [];
       } else {
         throw "Server returned ${response.statusCode}: ${response.body}";
       }
     } catch (e) {
+      if (e is SocketException || e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
+        throw parent.handleError(e);
+      }
       print("Error in getDoctorSchedule: $e");
-      // في حالة وجود خطأ، نفضل إرجاع قائمة فارغة لضمان استمرار عمل الواجهة
+      // In case of error, prefer returning empty list to ensure UI continues working
       return [];
     }
   }
 
-  // إنشاء جدول مواعيد جديد للطبيب
+  // Create new doctor schedule
   Future<ApiResponse> createDoctorSchedule(String doctorId, Map<String, dynamic> scheduleData) async {
     final ApiService parent = this as ApiService;
     try {
@@ -59,11 +62,11 @@ mixin DoctorScheduleApi {
         return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to create schedule.");
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Connection error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 
-  // تحديث جدول مواعيد الطبيب
+  // Update doctor schedule
   Future<ApiResponse> updateDoctorSchedule(String doctorId, Map<String, dynamic> scheduleData) async {
     final ApiService parent = this as ApiService;
     try {
@@ -96,11 +99,11 @@ mixin DoctorScheduleApi {
         return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to update schedule.");
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Connection error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 
-  // حذف جدول مواعيد الطبيب
+  // Delete doctor schedule
   Future<ApiResponse> deleteDoctorSchedule(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {
@@ -116,7 +119,7 @@ mixin DoctorScheduleApi {
         return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to delete schedule.");
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Connection error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 }

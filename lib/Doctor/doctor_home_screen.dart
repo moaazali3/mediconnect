@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -22,31 +21,38 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   final ApiService _apiService = ApiService();
   String? doctorName;
 
-  late final List<Widget> pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDoctorName();
-    pages = [
-      DoctorAppointmentsPage(doctorId: widget.userId),
-      DoctorProfileScreen(doctorId: widget.userId ?? ""),
-    ];
-  }
+  // مفاتيح للتحكم في تحديث الصفحات الداخلية
+  final GlobalKey<DoctorAppointmentsPageState> _appointmentsKey = GlobalKey();
 
   Future<void> _loadDoctorName() async {
     if (widget.userId != null) {
       try {
         final profile = await _apiService.getDoctorProfile(widget.userId!);
-        setState(() {
-          doctorName = "Dr. ${profile.firstName} ${profile.lastName}";
-        });
+        if (mounted) {
+          setState(() {
+            doctorName = "Dr. ${profile.firstName} ${profile.lastName}";
+          });
+        }
       } catch (e) {
         debugPrint("Error loading doctor name: $e");
-        setState(() {
-          doctorName = "Doctor";
-        });
+        if (mounted) {
+          setState(() {
+            doctorName = "Doctor";
+          });
+        }
       }
+    }
+  }
+
+  void _handleRefresh() {
+    _loadDoctorName(); // تحديث الاسم في الـ AppBar
+    
+    // إذا كنا في صفحة المواعيد، نطلب منها التحديث
+    if (currentIndex == 0 && _appointmentsKey.currentState != null) {
+      _appointmentsKey.currentState!.refreshAppointments();
+    } else {
+      // إعادة بناء الواجهة للصفحات الأخرى
+      setState(() {});
     }
   }
 
@@ -62,16 +68,28 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadDoctorName();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: currentIndex == 1 ? null : CommonAppBar(
         title: "Hello,",
         subtitle: doctorName ?? "Loading...",
-        onRefresh: _loadDoctorName,
+        onRefresh: _handleRefresh,
         onLogout: _signOut,
       ),
-      body: pages[currentIndex],
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          DoctorAppointmentsPage(key: _appointmentsKey, doctorId: widget.userId),
+          DoctorProfileScreen(doctorId: widget.userId ?? ""),
+        ],
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(

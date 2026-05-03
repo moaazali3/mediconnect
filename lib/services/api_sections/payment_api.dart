@@ -19,15 +19,19 @@ mixin PaymentApi {
   // جلب سجل المدفوعات للمريض
   Future<List<PaymentModel>> getPatientPayments(String patientId) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Payment/patient/$patientId'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => PaymentModel.fromJson(item)).toList();
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Payment/patient/$patientId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        return body.map((item) => PaymentModel.fromJson(item)).toList();
+      }
+      throw "Error fetching payments";
+    } catch (e) {
+      throw parent.handleError(e);
     }
-    throw "Error fetching payments";
   }
 
   // جلب إجمالي أرباح الطبيب (للاستخدام في البروفايل أو التحليلات)
