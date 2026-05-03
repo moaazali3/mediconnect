@@ -34,7 +34,7 @@ class _HomeContentState extends State<HomeContent> {
   void initState() {
     super.initState();
     _checkConnectivity();
-    _loadCachedData(); // تحميل الكاش أولاً لسرعة الاستجابة
+    _loadCachedData(); 
     _refreshData();
   }
 
@@ -48,7 +48,7 @@ class _HomeContentState extends State<HomeContent> {
             const SnackBar(content: Text("You are offline. Showing cached data.")),
           );
         } else {
-          _refreshData(); // إعادة التحميل عند عودة الإنترنت
+          _refreshData(); 
         }
       }
     });
@@ -69,6 +69,7 @@ class _HomeContentState extends State<HomeContent> {
         if (cachedDoctors != null) {
           Iterable l = json.decode(cachedDoctors);
           _doctors = List<DoctorModel>.from(l.map((model) => DoctorModel.fromJson(model)));
+          _apiService.cacheDoctorImages(_doctors); 
           _isLoadingDoctors = false;
         }
       });
@@ -95,6 +96,7 @@ class _HomeContentState extends State<HomeContent> {
     if (mounted) setState(() => _isLoadingDoctors = true);
     try {
       final docs = await _apiService.getAllDoctors(specializationName: selectedSpecialization);
+      _apiService.cacheDoctorImages(docs); 
       final prefs = await SharedPreferences.getInstance();
       if (selectedSpecialization == "All") {
         await prefs.setString('cached_doctors', json.encode(docs.map((d) => d.toJson()).toList()));
@@ -198,9 +200,10 @@ class _HomeContentState extends State<HomeContent> {
         children: docs.map((doc) => DoctorCard(
           id: doc.id,
           name: "${doc.firstName} ${doc.lastName}",
-          spec: doc.specializationName ?? "General Doctor",
+          spec: doc.specializationName.isEmpty ? "Specialist" : doc.specializationName,
           gender: doc.gender,
           experience: doc.experienceYears,
+          imageUrl: doc.profilePictureUrl,
           patientId: widget.userId,
         )).toList(),
       ),

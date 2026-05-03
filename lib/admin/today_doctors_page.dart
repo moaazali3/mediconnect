@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/edit_doctor_management_page.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class TodayDoctorsPage extends StatefulWidget {
   const TodayDoctorsPage({super.key});
@@ -80,12 +81,10 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: AppBar(
-        title: Text("Doctors Today (${DateFormat('EEEE').format(DateTime.now())})", 
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: CommonAppBar(
+        title: "Doctors Today",
+        subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now()),
+        showBackButton: true,
       ),
       body: Column(
         children: [

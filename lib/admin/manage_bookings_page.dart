@@ -4,7 +4,8 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
-import 'package:mediconnect/patient/screens/profile.dart'; // استيراد صفحة البروفايل
+import 'package:mediconnect/patient/screens/profile.dart'; 
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -89,11 +90,12 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Manage Bookings", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Manage Bookings",
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -111,14 +113,29 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                             padding: const EdgeInsets.all(10),
                             itemBuilder: (context, index) {
                               final doctor = _filteredDoctors[index];
+                              
+                              String? fullImageUrl;
+                              if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
+                                fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
+                                    ? doctor.profilePictureUrl 
+                                    : "$imageBaseUrl${doctor.profilePictureUrl}";
+                              }
+
                               return Card(
                                 elevation: 3,
                                 margin: const EdgeInsets.only(bottom: 15),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: primaryColor.withOpacity(0.1),
-                                    child: const Icon(Icons.person, color: primaryColor),
+                                    backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+                                    backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+                                    child: fullImageUrl == null
+                                        ? Icon(
+                                            doctor.gender == "Male" ? Icons.male : Icons.female, 
+                                            color: doctor.gender == "Male" ? Colors.blue : Colors.pink,
+                                            size: 25,
+                                          )
+                                        : null,
                                   ),
                                   title: Text("${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
                                   subtitle: Text(doctor.specializationName),
@@ -129,7 +146,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                       MaterialPageRoute(
                                         builder: (context) => DoctorBookingsDetail(doctor: doctor),
                                       ),
-                                    ).then((_) => _fetchDoctors()); // Refresh when returning
+                                    ).then((_) => _fetchDoctors()); 
                                   },
                                 ),
                               );
@@ -246,7 +263,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
               backgroundColor: isAccept ? Colors.green : Colors.red,
             ),
           );
-          setState(() {}); // Refresh list
+          setState(() {}); 
         }
       }
     } catch (e) {
@@ -262,11 +279,18 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
 
   @override
   Widget build(BuildContext context) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    String? fullImageUrl;
+    if (widget.doctor.profilePictureUrl != null && widget.doctor.profilePictureUrl!.isNotEmpty) {
+      fullImageUrl = widget.doctor.profilePictureUrl!.startsWith('http') 
+          ? widget.doctor.profilePictureUrl 
+          : "$imageBaseUrl${widget.doctor.profilePictureUrl}";
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Bookings: ${widget.doctor.firstName}", style: const TextStyle(color: Colors.white)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: CommonAppBar(
+        title: "Bookings: ${widget.doctor.firstName}",
+        showBackButton: true,
       ),
       body: Stack(
         children: [

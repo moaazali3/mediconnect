@@ -4,6 +4,7 @@ import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/edit_doctor_management_page.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class ManageDoctorsPage extends StatefulWidget {
   const ManageDoctorsPage({super.key});
@@ -192,11 +193,9 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text("Manage Doctors", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Manage Doctors",
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -306,6 +305,14 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   }
 
   Widget _buildDoctorCard(DoctorModel doctor) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    String? fullImageUrl;
+    if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
+      fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
+          ? doctor.profilePictureUrl 
+          : "$imageBaseUrl${doctor.profilePictureUrl}";
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(16),
@@ -331,10 +338,8 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
             child: CircleAvatar(
               radius: 30,
               backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
-              backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
-                  ? NetworkImage(doctor.profilePictureUrl!)
-                  : null,
-              child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+              backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
+              child: fullImageUrl == null
                   ? Icon(
                       doctor.gender == "Male" ? Icons.male : Icons.female, 
                       size: 35, 

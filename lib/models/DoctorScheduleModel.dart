@@ -37,35 +37,37 @@ class DoctorScheduleModel {
     };
   }
 
-  // دالة متطورة للتحقق من اليوم الحالي
   bool isScheduledFor(int weekday) {
-    // تحويل اليوم القادم من API لنص موحد
+    if (dayOfWeek == null) return false;
     String dayStr = dayOfWeek.toString().trim().toLowerCase();
     
-    // الأيام بالترتيب (DateTime.monday = 1, ..., DateTime.sunday = 7)
-    const dayNames = ['', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    
-    // 1. إذا كان القادم من API هو رقم
+    // Handle Numeric representation (e.g. "1" or 1)
     int? dayInt = int.tryParse(dayStr);
     if (dayInt != null) {
-      // التعامل مع الأنظمة التي تعتبر الأحد 0 أو 7
-      if (dayInt == 0 && weekday == 7) return true; // Sunday
+      if (dayInt == 0 && weekday == 7) return true; // Sunday as 0
+      if (dayInt == 7 && weekday == 7) return true; // Sunday as 7
       return dayInt == weekday;
     }
 
-    // 2. إذا كان القادم من API هو نص (اسم اليوم)
+    // Handle String representation (e.g. "Monday" or "Mon")
+    const dayNames = ['', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     if (weekday >= 1 && weekday <= 7) {
-      String currentDayName = dayNames[weekday];
-      return dayStr == currentDayName || dayStr.startsWith(currentDayName.substring(0, 3));
+      String targetDay = dayNames[weekday];
+      return dayStr == targetDay || dayStr.startsWith(targetDay.substring(0, 3));
     }
-
+    
     return false;
   }
 
   String getDayName() {
-    if (dayOfWeek is String && dayOfWeek.isNotEmpty) return dayOfWeek;
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    if (dayOfWeek is int && dayOfWeek >= 0 && dayOfWeek <= 7) return days[dayOfWeek];
+    int? dayInt = int.tryParse(dayOfWeek.toString());
+    if (dayInt != null && dayInt >= 0 && dayInt <= 7) {
+      return days[dayInt];
+    }
+    if (dayOfWeek is String && dayOfWeek.isNotEmpty) {
+      return dayOfWeek;
+    }
     return 'Unknown';
   }
 }

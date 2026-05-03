@@ -37,7 +37,6 @@ mixin AuthApi {
         }),
       );
       
-      // محاولة فك التشفير بأمان
       dynamic body;
       try {
         if (response.body.isNotEmpty) {
@@ -47,7 +46,6 @@ mixin AuthApi {
         body = response.body;
       }
 
-      // التحقق من أكواد النجاح 200 أو 201
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ApiResponse(success: true, message: "Account created successfully", data: body);
       } else {
@@ -92,6 +90,11 @@ mixin AuthApi {
       }
 
       if (response.statusCode == 200) {
+        // Save tokens in secure storage
+        if (body is Map && body.containsKey('token')) {
+          await SecureStorage.writeData(key: 'auth_token', value: body['token']);
+          await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+        }
         return ApiResponse(success: true, message: "Login Successful", data: body);
       } else {
         String errorMessage = "Login failed";
@@ -106,6 +109,42 @@ mixin AuthApi {
       }
     } catch (e) {
       return ApiResponse(success: false, message: "Connection error: $e");
+    }
+  }
+
+  Future<ApiResponse> refreshToken() async {
+    final ApiService parent = this as ApiService;
+    try {
+      final currentRefreshToken = await SecureStorage.readData(key: 'refresh_token');
+      if (currentRefreshToken == null) {
+        return ApiResponse(success: false, message: "No refresh token found");
+      }
+
+      final response = await http.post(
+        Uri.parse('${parent.baseUrl}/Auth/RefreshToken?refreshToken=$currentRefreshToken'),
+        headers: parent._headers,
+      );
+
+      dynamic body;
+      try {
+        if (response.body.isNotEmpty) {
+          body = jsonDecode(response.body);
+        }
+      } catch (_) {
+        body = response.body;
+      }
+
+      if (response.statusCode == 200) {
+        if (body is Map && body.containsKey('token')) {
+          await SecureStorage.writeData(key: 'auth_token', value: body['token']);
+          await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+        }
+        return ApiResponse(success: true, message: "Token refreshed", data: body);
+      } else {
+        return ApiResponse(success: false, message: "Failed to refresh token");
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: "Refresh token error: $e");
     }
   }
 

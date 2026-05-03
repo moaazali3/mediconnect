@@ -7,6 +7,7 @@ class DoctorCard extends StatelessWidget {
   final String spec;
   final String gender;
   final double experience;
+  final String? imageUrl;
   final String? patientId;
 
   const DoctorCard({
@@ -15,6 +16,7 @@ class DoctorCard extends StatelessWidget {
     required this.spec,
     required this.gender,
     required this.experience,
+    this.imageUrl,
     this.patientId,
     super.key,
   });
@@ -22,6 +24,12 @@ class DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0D47A1);
+    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+
+    String displaySpec = spec.trim();
+    if (displaySpec.isEmpty || displaySpec.toLowerCase() == "null") {
+      displaySpec = "Medical Specialist";
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -38,9 +46,12 @@ class DoctorCard extends StatelessWidget {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Doctor Image
           Container(
-            padding: const EdgeInsets.all(3),
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
@@ -48,47 +59,55 @@ class DoctorCard extends StatelessWidget {
             child: CircleAvatar(
               radius: 30,
               backgroundColor: (gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
-              child: Icon(
-                gender == "Male" ? Icons.male : Icons.female, 
-                size: 35, 
-                color: gender == "Male" ? Colors.blue : Colors.pink
-              ),
+              backgroundImage: (imageUrl != null && imageUrl!.isNotEmpty) 
+                  ? NetworkImage(imageUrl!.startsWith('http') ? imageUrl! : "$baseUrl$imageUrl") 
+                  : null,
+              child: (imageUrl == null || imageUrl!.isEmpty) 
+                  ? Icon(
+                      gender == "Male" ? Icons.male : Icons.female, 
+                      size: 30, 
+                      color: gender == "Male" ? Colors.blue : Colors.pink
+                    ) 
+                  : null,
             ),
           ),
           const SizedBox(width: 15),
 
+          // Doctor Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "Dr. $name",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 17,
                     color: Color(0xFF263238),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  spec,
+                  displaySpec,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: primaryColor.withOpacity(0.8),
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.history_edu, color: primaryColor, size: 18),
+                    const Icon(Icons.history_edu, color: Colors.grey, size: 16),
                     const SizedBox(width: 4),
-                    Text(
-                      "$experience Years Exp.",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                        fontSize: 13,
+                    Flexible(
+                      child: Text(
+                        "${experience.toStringAsFixed(1)} Years Exp.",
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -96,31 +115,38 @@ class DoctorCard extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 10),
 
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BookingScreen(
-                    doctorId: id,
-                    doctorName: "Dr. $name",
-                    specialty: spec,
-                    patientId: patientId,
+          // Action Button
+          SizedBox(
+            width: 45,
+            height: 45,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BookingScreen(
+                      doctorId: id,
+                      doctorName: "Dr. $name",
+                      specialty: displaySpec,
+                      doctorImageUrl: imageUrl, // Passing the image URL here
+                      patientId: patientId,
+                    ),
                   ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                elevation: 0,
               ),
+              child: const Icon(Icons.arrow_forward_ios, size: 16),
             ),
-            child: const Icon(Icons.arrow_forward_ios, size: 16),
           ),
         ],
       ),

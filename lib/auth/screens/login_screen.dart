@@ -6,7 +6,9 @@ import 'package:mediconnect/auth/screens/register_screen.dart';
 import 'package:mediconnect/home_screen.dart'; 
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/admin/admin_dashboard.dart';
+import 'package:mediconnect/receptionist/receptionist_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,9 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _saveSession(String token, String role, String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    
+    await SecureStorage.writeData(key: 'auth_token', value: token);
+    ApiService.setToken(token);
+
     await prefs.setString('user_role', role);
     await prefs.setString('user_id', userId);
+    
     if (rememberMe) {
       await prefs.setString('saved_email', emailController.text);
     } else {
@@ -60,7 +66,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -70,7 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Subtle Overlay (Matched with Register)
           Container(color: Colors.black.withOpacity(0.05)),
           Center(
             child: SingleChildScrollView(
@@ -92,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Logo (Same as Register)
                             Container(
                               padding: const EdgeInsets.all(5),
                               decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
@@ -112,7 +115,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(fontSize: 16, color: Colors.black54)),
                             const SizedBox(height: 35),
 
-                            // Email Field (Styled like Register)
                             _buildLoginField(
                               controller: emailController,
                               label: "Email Address",
@@ -122,7 +124,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            // Password Field (Styled like Register)
                             _buildLoginField(
                               controller: passwordController,
                               label: "Password",
@@ -137,19 +138,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
 
-                            // Login Button
                             const SizedBox(height: 10),
                             Row(
                               children: [
-                                Checkbox(
-                                  value: rememberMe,
-                                  onChanged: (val) => setState(() => rememberMe = val ?? false),
-                                  activeColor: primaryColor,
+                                SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: Checkbox(
+                                    value: rememberMe,
+                                    onChanged: (val) => setState(() => rememberMe = val ?? false),
+                                    activeColor: primaryColor,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
                               ],
                             ),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
                               height: 55,
@@ -181,7 +186,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
                                                     "").toString().toLowerCase();
 
-                                      // حفظ الجلسة للبقاء قيد تسجيل الدخول
                                       await _saveSession(token, role, userId);
 
                                       if (mounted) {
@@ -189,6 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
                                         } else if (role == "doctor") {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
+                                        } else if (role == "receptionist") {
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
                                         } else {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
                                         }
@@ -240,7 +246,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper widget to match Register fields
   Widget _buildLoginField({
     required TextEditingController controller,
     required String label,

@@ -55,6 +55,20 @@ class CreateAppointmentModel {
     required this.appointmentDate,
   });
 
+  CreateAppointmentModel copyWith({
+    String? patientId,
+    String? doctorId,
+    String? dayOfWeek,
+    String? appointmentDate,
+  }) {
+    return CreateAppointmentModel(
+      patientId: patientId ?? this.patientId,
+      doctorId: doctorId ?? this.doctorId,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       "patientId": patientId,
@@ -108,6 +122,7 @@ class DoctorAppointmentModel {
 
 class PatientAppointmentModel {
   final String appointmentId;
+  final String doctorId; 
   final String doctorName;
   final String appointmentDate;
   final String dayOfWeek;
@@ -115,9 +130,11 @@ class PatientAppointmentModel {
   final String endTime;
   final String status;
   final int queueNumber;
+  String? doctorImageUrl;
 
   PatientAppointmentModel({
     required this.appointmentId,
+    required this.doctorId,
     required this.doctorName,
     required this.appointmentDate,
     required this.dayOfWeek,
@@ -125,11 +142,13 @@ class PatientAppointmentModel {
     required this.endTime,
     required this.status,
     required this.queueNumber,
+    this.doctorImageUrl,
   });
 
   factory PatientAppointmentModel.fromJson(Map<String, dynamic> json) {
     return PatientAppointmentModel(
       appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
+      doctorId: (json['doctorId'] ?? '').toString(),
       doctorName: json['doctorName'] ?? '',
       appointmentDate: json['appointmentDate'] ?? '',
       dayOfWeek: json['dayOfWeek'] ?? '',

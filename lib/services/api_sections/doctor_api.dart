@@ -14,9 +14,6 @@ mixin DoctorApi {
     final uri = Uri.parse('${parent.baseUrl}/Doctor').replace(queryParameters: queryParameters);
     final response = await http.get(uri, headers: parent._headers);
 
-    print("Get All Doctors Status Code: ${response.statusCode}");
-    print("Get All Doctors Response Body: ${response.body}");
-
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => DoctorModel.fromJson(item)).toList();
@@ -25,9 +22,23 @@ mixin DoctorApi {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getDoctorNames() async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Doctor/names'),
+      headers: parent._headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => item as Map<String, dynamic>).toList();
+    } else {
+      throw "Error fetching doctor names: ${response.statusCode}";
+    }
+  }
+
   Future<DoctorFullModel> getDoctorDetails(String doctorId, String? patientId) async {
     final ApiService parent = this as ApiService;
-    // التأكد من وجود قيمة للـ patientId لتجنب خطأ 404 في المسار
     final String pId = (patientId == null || patientId.isEmpty) ? "00000000-0000-0000-0000-000000000000" : patientId;
 
     final response = await http.get(
@@ -35,9 +46,6 @@ mixin DoctorApi {
       headers: parent._headers
     );
     
-    print("Get Doctor Details Status Code: ${response.statusCode}");
-    print("Get Doctor Details Response Body: ${response.body}");
-
     if (response.statusCode == 200) {
       return DoctorFullModel.fromJson(jsonDecode(response.body));
     }
@@ -52,61 +60,55 @@ mixin DoctorApi {
       body: jsonEncode(doctor.toJson()),
     );
 
-    print("Create Doctor Status Code: ${response.statusCode}");
-    print("Create Doctor Response Body: ${response.body}");
-
-    final bodyText = response.body.trim();
-
     if (response.statusCode == 200 || response.statusCode == 201) {
-      // 1. محاولة فك التشفير كـ JSON إذا كان يبدأ بـ { أو [
-      if (bodyText.startsWith('{') || bodyText.startsWith('[')) {
-        try {
-          final data = jsonDecode(bodyText);
-          if (data is Map) {
-            return data['doctorId']?.toString() ?? 
-                   data['DoctorId']?.toString() ?? 
-                   data['id']?.toString() ?? 
-                   data['Id']?.toString();
-          }
-        } catch (e) {
-          print("Error parsing success JSON: $e");
+      String? bodyStr = response.body.trim();
+      
+      if (bodyStr.isEmpty) {
+        final location = response.headers['location'];
+        if (location != null) {
+          final id = location.split('/').last;
+          if (id.length > 10) return id;
         }
+        return "SUCCESS_NO_ID"; // Return a placeholder to indicate success
       }
-
-      // 2. التحقق إذا كان النص عبارة عن GUID (معرف) مباشرة
-      final guidRegex = RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', caseSensitive: false);
-      if (guidRegex.hasMatch(bodyText)) {
-        return bodyText;
+      
+      try {
+        final data = jsonDecode(bodyStr);
+        if (data is Map) {
+          final id = data['id'] ?? data['Id'] ?? 
+                     data['doctorId'] ?? data['DoctorId'] ?? 
+                     data['userId'] ?? data['UserId'] ??
+                     (data['data'] is Map ? (data['data']['id'] ?? data['data']['Id']) : data['data']);
+          return id?.toString();
+        } else if (data is String) {
+          return data;
+        }
+        return "SUCCESS_NO_ID";
+      } catch (e) {
+        if (bodyStr.length > 10) return bodyStr; 
+        return "SUCCESS_NO_ID";
       }
-
-      // 3. إذا كان الرد رسالة نجاح نصية
-      if (bodyText.toLowerCase().contains("successfully") || bodyText.toLowerCase().contains("created")) {
-        return "SUCCESS_WITHOUT_ID";
-      }
-
-      return bodyText.isNotEmpty ? bodyText : "SUCCESS";
     } else {
-      // استخراج رسالة الخطأ من السيرفر بشكل احترافي
       String errorMessage = "Failed to add doctor";
       try {
-        if (bodyText.startsWith('{') || bodyText.startsWith('[')) {
-          final data = jsonDecode(bodyText);
-          if (data['errors'] != null) {
-            if (data['errors'] is Map) {
-              errorMessage = (data['errors'] as Map).values.first.toString();
+        final errorBody = jsonDecode(response.body);
+        if (errorBody is Map) {
+          if (errorBody['errors'] != null) {
+            final errors = errorBody['errors'];
+            if (errors is Map) {
+              errorMessage = errors.values
+                  .expand((e) => e is List ? e : [e])
+                  .map((e) => e.toString())
+                  .join("\n");
             } else {
-              errorMessage = data['errors'].toString();
+              errorMessage = errors.toString();
             }
-          } else if (data['message'] != null) {
-            errorMessage = data['message'].toString();
+          } else {
+            errorMessage = errorBody['message'] ?? errorBody['title'] ?? errorMessage;
           }
-        } else if (response.statusCode == 409 || bodyText.contains("already exists")) {
-          errorMessage = "هذا البريد الإلكتروني مسجل مسبقاً لمستخدم آخر";
-        } else {
-          errorMessage = bodyText;
         }
-      } catch (_) {
-        errorMessage = bodyText;
+      } catch (e) {
+        errorMessage = "Server error: ${response.statusCode}";
       }
       throw errorMessage;
     }
@@ -120,13 +122,8 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(doctor.toJson()),
       );
-
-      print("Update Doctor Status Code: ${response.statusCode}");
-      print("Update Doctor Response Body: ${response.body}");
-
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print("Error in updateDoctor: $e");
       return false;
     }
   }
@@ -144,17 +141,31 @@ mixin DoctorApi {
       request.files.add(await http.MultipartFile.fromPath('File', filePath));
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-
-      print("Upload Doctor Image Status Code: ${response.statusCode}");
-      print("Upload Doctor Image Response Body: ${response.body}");
-
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
         return false;
       }
     } catch (e) {
-      print("Error in uploadDoctorImage: $e");
+      return false;
+    }
+  }
+
+  Future<bool> uploadProfilePicture(String doctorId, String filePath) async {
+    final ApiService parent = this as ApiService;
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${parent.baseUrl}/Doctor/$doctorId/upload-profile-picture'),
+      );
+      request.headers.addAll({
+        'ngrok-skip-browser-warning': 'true',
+      });
+      request.files.add(await http.MultipartFile.fromPath('File', filePath));
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
       return false;
     }
   }
@@ -162,10 +173,6 @@ mixin DoctorApi {
   Future<List<SpecializationModel>> getAllSpecializations() async {
     final ApiService parent = this as ApiService;
     final response = await http.get(Uri.parse('${parent.baseUrl}/Specialization'), headers: parent._headers);
-
-    print("Get All Specializations Status Code: ${response.statusCode}");
-    print("Get All Specializations Response Body: ${response.body}");
-
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       return body.map((item) => SpecializationModel.fromJson(item)).toList();
@@ -182,13 +189,8 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-
-      print("Update Specialization Status Code: ${response.statusCode}");
-      print("Update Specialization Response Body: ${response.body}");
-
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      print("Error in updateSpecialization: $e");
       return false;
     }
   }
@@ -201,13 +203,21 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-
-      print("Create Specialization Status Code: ${response.statusCode}");
-      print("Create Specialization Response Body: ${response.body}");
-
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      print("Error in createSpecialization: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteDoctor(String id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.delete(
+        Uri.parse('${parent.baseUrl}/Doctor/$id'),
+        headers: parent._headers,
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
       return false;
     }
   }

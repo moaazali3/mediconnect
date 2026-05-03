@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
+import 'package:mediconnect/admin/add_receptionist_page.dart'; // استيراد صفحة الإضافة الجديدة
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/admin/manage_doctors_page.dart';
@@ -10,8 +11,10 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:mediconnect/admin/qr_scanner_page.dart';
 import 'package:mediconnect/admin/analytics_page.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -38,33 +41,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<AdminDashboardModel> _getCombinedStats() async {
-    // جلب الإحصائيات الأساسية
-    final stats = await _apiService.getAdminDashboardStats();
-    
-    // جلب الدكاترة لحساب المتاحين اليوم بدقة
     try {
+      final stats = await _apiService.getAdminDashboardStats();
       final allDoctors = await _apiService.getAllDoctors();
-      final int currentWeekday = DateTime.now().weekday; // 1=Mon, 7=Sun
-      
+      final int currentWeekday = DateTime.now().weekday;
       int count = 0;
       for (var doctor in allDoctors) {
-        // التحقق باستخدام منطق isScheduledFor المطور
         bool isAvailableToday = doctor.doctorSchedules.any((schedule) {
           return schedule.isScheduledFor(currentWeekday) && schedule.isAvailable;
         });
         if (isAvailableToday) count++;
       }
-
       if (mounted) {
         setState(() {
           _calculatedDoctorsToday = count;
         });
       }
-      // إرجاع الموديل محدثاً بالعدد المحسوب
       return stats.copyWith(totalDoctorsToday: count);
     } catch (e) {
-      debugPrint("Error calculating doctors today: $e");
-      return stats;
+      debugPrint("Error loading admin stats: $e");
+      return AdminDashboardModel(
+        totalAppointmentsToday: 0,
+        totalDoctorsToday: 0,
+        totalRevenueToday: 0,
+        totalPendingAppointmentsToday: 0,
+        totalCompletedAppointmentsToday: 0,
+        totalCancelledAppointmentsToday: 0,
+        totalAppointments: 0,
+        totalDoctors: 0,
+        totalCancelledAppointments: 0,
+        totalCompletedAppointments: 0,
+        totalPatients: 0,
+        totalPendingAppointments: 0,
+        totalRevenue: 0,
+      );
     }
   }
 
@@ -100,89 +110,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(75),
-        child: Container(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            automaticallyImplyLeading: false,
-            toolbarHeight: 75,
-            flexibleSpace: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                child: Row(
-                  children: [
-                    Container(
-                      height: 50,
-                      width: 50,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 4, spreadRadius: 1),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: Image.asset(
-                          "assets/images/img.png",
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.local_hospital, color: primaryColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "MediConnect",
-                            style: TextStyle(
-                              color: primaryColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          Text(
-                            "Admin Portal • $_adminName",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: primaryColor),
-                      onPressed: _refreshData,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.redAccent),
-                      onPressed: _signOut,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+      appBar: CommonAppBar(
+        subtitle: "Admin Portal • $_adminName",
+        onRefresh: _refreshData,
+        onLogout: _signOut,
       ),
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -429,6 +360,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         _buildActionCard(
           context,
+          "Add Receptionist",
+          "Support staff",
+          Icons.person_add_alt_rounded,
+          Colors.indigo.shade600,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
+        ),
+        _buildActionCard(
+          context,
           "Doctors List",
           "Schedules & Fees",
           Icons.medical_services_rounded,
@@ -442,6 +381,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Icons.calendar_today_rounded,
           Colors.green.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageBookingsPage())).then((_) => _refreshData()),
+        ),
+        _buildActionCard(
+          context,
+          "Scan QR",
+          "Confirm attendance",
+          Icons.qr_code_scanner_rounded,
+          Colors.orange.shade700,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage())),
         ),
         _buildActionCard(
           context,

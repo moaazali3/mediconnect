@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class ManageSpecializationsPage extends StatefulWidget {
   const ManageSpecializationsPage({super.key});
@@ -106,10 +107,9 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Specializations", style: TextStyle(color: Colors.white)),
-        backgroundColor: primaryColor,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const CommonAppBar(
+        title: "Specializations",
+        showBackButton: true,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),

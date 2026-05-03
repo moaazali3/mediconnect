@@ -34,6 +34,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
         ),
       ),
       body: FutureBuilder<List<MedicalRecordModel>>(
+        // هذه الدالة الآن تقوم بدمج بيانات الطبيب تلقائياً داخل الـ ApiService
         future: _apiService.getPatientMedicalHistory(idToFetch),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -49,6 +50,9 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
           if (records.isEmpty) {
             return const Center(child: Text("No medical records found"));
           }
+
+          // ترتيب السجلات من الأحدث إلى الأقدم
+          records.sort((a, b) => b.createdDate.compareTo(a.createdDate));
 
           return ListView.builder(
             padding: const EdgeInsets.all(20),
@@ -93,7 +97,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      record.doctorName,
+                      "Dr. ${record.doctorName}",
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -109,7 +113,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                _formatDate(record.visitDate),
+                _formatDate(record.createdDate),
                 style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
@@ -149,6 +153,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
 
   String _formatDate(String dateStr) {
     try {
+      if (dateStr.isEmpty) return "N/A";
       final date = DateTime.parse(dateStr);
       return "${date.day}/${date.month}/${date.year}";
     } catch (e) {

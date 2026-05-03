@@ -4,7 +4,8 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/patient/screens/profile.dart';
+import 'package:mediconnect/patient/screens/profile.dart'; 
+import 'package:intl/intl.dart';
 
 class DoctorAppointmentsPage extends StatefulWidget {
   final String? doctorId;
@@ -20,20 +21,17 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   // State Management
   List<DoctorAppointmentModel> _allAppointments = [];
   List<DoctorScheduleModel> _schedule = [];
+  List<DateTime> _availableDates = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _isProcessing = false;
   
-  String _selectedDay = "All";
+  String _selectedDate = "All"; 
   String _searchQuery = ""; 
   final TextEditingController _searchController = TextEditingController();
 
   final _diagnosisController = TextEditingController();
   final _prescriptionController = TextEditingController();
-
-  final List<String> _weekDaysOrder = [
-    "Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
-  ];
 
   @override
   void initState() {
@@ -67,6 +65,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         setState(() {
           _allAppointments = results[0] as List<DoctorAppointmentModel>;
           _schedule = results[1] as List<DoctorScheduleModel>;
+          _generateAvailableDates();
           _isLoading = false;
         });
       }
@@ -80,12 +79,51 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     }
   }
 
+  void _generateAvailableDates() {
+    _availableDates.clear();
+    Set<DateTime> dateSet = {};
+
+    // 1. Add dates from existing appointments
+    for (var app in _allAppointments) {
+      try {
+        DateTime d = DateTime.parse(app.appointmentDate);
+        dateSet.add(DateTime(d.year, d.month, d.day));
+      } catch (e) {
+        debugPrint("Error parsing appt date: $e");
+      }
+    }
+
+    // 2. Add working days from schedule for the next 30 days
+    if (_schedule.isNotEmpty) {
+      DateTime now = DateTime.now();
+      DateTime today = DateTime(now.year, now.month, now.day);
+      for (int i = 0; i < 30; i++) {
+        DateTime d = today.add(Duration(days: i));
+        // Check if doctor works on this weekday
+        if (_schedule.any((s) => s.isScheduledFor(d.weekday))) {
+          dateSet.add(d);
+        }
+      }
+    }
+
+    // Filter by schedule: only keep dates that are actually working days
+    // (In case some appointments are on days not in current schedule, we might still want to show them)
+    // The user requirement: "خاصه بجدول الدكتور فقط"
+    if (_schedule.isNotEmpty) {
+      _availableDates = dateSet.where((d) => _schedule.any((s) => s.isScheduledFor(d.weekday))).toList();
+    } else {
+      _availableDates = dateSet.toList();
+    }
+
+    _availableDates.sort();
+  }
+
   // Local Filtering Logic
   List<DoctorAppointmentModel> get _filteredAppointments {
     return _allAppointments.where((a) {
-      bool matchesDay = _selectedDay == "All" || a.dayOfWeek == _selectedDay;
+      bool matchesDate = _selectedDate == "All" || a.appointmentDate == _selectedDate;
       bool matchesSearch = a.patientName.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesDay && matchesSearch;
+      return matchesDate && matchesSearch;
     }).toList()
       ..sort((a, b) {
         int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
@@ -95,11 +133,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   }
 
   Future<void> _updateStatus(String id, bool isAccept, {DoctorAppointmentModel? appointment}) async {
-    if (isAccept && appointment != null) {
-      _showMedicalRecordDialog(appointment);
-      return;
-    }
-
     setState(() => _isProcessing = true);
     try {
       bool success = isAccept 
@@ -113,7 +146,12 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
-        _fetchData();
+        
+        await _fetchData(); 
+
+        if (isAccept && appointment != null) {
+          _showMedicalRecordDialog(appointment);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -136,7 +174,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("بيانات المريض غير مكتملة (ID Missing)"), backgroundColor: Colors.orange),
+        const SnackBar(content: Text("Patient data not available"), backgroundColor: Colors.orange),
       );
     }
   }
@@ -150,60 +188,185 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isEdit ? "Edit Medical Record" : "Record - ${appointment.patientName}"),
+        titlePadding: EdgeInsets.zero,
+        title: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.note_add_rounded, color: Colors.white, size: 28),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  "Add Medical Record",
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white70),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              )
+            ],
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _diagnosisController,
-                decoration: const InputDecoration(labelText: "Diagnosis", border: OutlineInputBorder()),
-                maxLines: 3,
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                  const SizedBox(width: 5),
+                  Text(
+                    "Patient: ${appointment.patientName}",
+                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 14),
+                  ),
+                ],
               ),
-              const SizedBox(height: 15),
-              TextField(
+              const SizedBox(height: 25),
+              _buildDialogTextField(
+                controller: _diagnosisController,
+                label: "Diagnosis",
+                hint: "Enter diagnosis details here...",
+                icon: Icons.assignment_outlined,
+              ),
+              const SizedBox(height: 20),
+              _buildDialogTextField(
                 controller: _prescriptionController,
-                decoration: const InputDecoration(labelText: "Prescription", border: OutlineInputBorder()),
-                maxLines: 3,
+                label: "Prescription",
+                hint: "List medications and dosage...",
+                icon: Icons.medication_rounded,
               ),
             ],
           ),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
-          ElevatedButton(
-            onPressed: () async {
-              if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) return;
-              Navigator.pop(context);
-              setState(() => _isProcessing = true);
-              try {
-                bool success = isEdit 
-                    ? await _apiService.updateMedicalRecord(existingRecord.medicalRecordId, _diagnosisController.text, _prescriptionController.text)
-                    : await _apiService.createMedicalRecord(CreateMedicalRecordModel(
-                        appointmentId: appointment.appointmentId,
-                        diagnosis: _diagnosisController.text,
-                        prescription: _prescriptionController.text,
-                      ));
-                
-                if (!isEdit && success) await _apiService.completeAppointmentStatus(appointment.appointmentId);
-                
-                if (mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Success!"), backgroundColor: Colors.green));
-                  _fetchData();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
-                }
-              } finally {
-                if (mounted) setState(() => _isProcessing = false);
-              }
-            },
-            child: Text(isEdit ? "UPDATE" : "SAVE"),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text("CANCEL", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+                      return;
+                    }
+                    Navigator.pop(context);
+                    setState(() => _isProcessing = true);
+                    try {
+                      bool success;
+                      if (isEdit) {
+                        success = await _apiService.updateMedicalRecord(
+                          existingRecord!.medicalRecordId, 
+                          _diagnosisController.text, 
+                          _prescriptionController.text
+                        );
+                      } else {
+                        success = await _apiService.createMedicalRecord(
+                          CreateMedicalRecordModel(
+                            appointmentId: appointment.appointmentId,
+                            diagnosis: _diagnosisController.text,
+                            prescription: _prescriptionController.text,
+                          ),
+                        );
+                      }
+                      
+                      if (mounted && success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(isEdit ? "Record updated!" : "Medical history added!"), backgroundColor: Colors.green)
+                        );
+                        _fetchData();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isProcessing = false);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: const Text("SAVE RECORD", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDialogTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: primaryColor),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryColor)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: controller,
+          maxLines: 4,
+          style: const TextStyle(fontSize: 15, color: Colors.black87),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.all(15),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor.withOpacity(0.2), width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryColor, width: 2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -224,13 +387,8 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                   const SizedBox(height: 20),
                   _buildSearchField(), 
                   const SizedBox(height: 20),
-                  
-                  // قسم الفلتر بنفس ستايل الهوم
-                  _buildDayFilterSection(),
-                  
+                  _buildDateFilterSection(),
                   const SizedBox(height: 20),
-                  
-                  // قسم المواعيد بنفس ستايل "Top Doctors"
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text("Appointments List", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -249,6 +407,11 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                         ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
                       ],
                     ))
+                  else if (apps.isEmpty && _selectedDate != "All")
+                    Center(child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Text("No appointments on ${DateFormat('EEE, d MMM').format(DateTime.parse(_selectedDate))}"),
+                    ))
                   else if (apps.isEmpty)
                     const Center(child: Padding(
                       padding: EdgeInsets.all(40.0),
@@ -261,7 +424,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                         children: apps.map((app) => _buildAppointmentCard(app)).toList(),
                       ),
                     ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
@@ -283,7 +446,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           const Text("Appointments", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
             child: Text("${_filteredAppointments.length} Appts", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -298,7 +461,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
-          hintText: "Search patient...",
+          hintText: "Search patient name...",
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _searchQuery.isNotEmpty 
             ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
@@ -317,47 +480,52 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     );
   }
 
-  Widget _buildDayFilterSection() {
-    List<String> workDays = _schedule.map((s) => s.getDayName()).toSet().toList();
-    workDays.sort((a, b) => _weekDaysOrder.indexOf(a).compareTo(_weekDaysOrder.indexOf(b)));
-    List<String> options = ["All", ...workDays];
-
+  Widget _buildDateFilterSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text("Filter by Day", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text("Filter by Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            children: options.map((day) => _buildFilterItem(day)).toList(),
+            children: [
+              _buildFilterItem("All", "All"),
+              ..._availableDates.map((date) {
+                final String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+                final String displayLabel = DateFormat('EEE, d MMM').format(date);
+                return _buildFilterItem(displayLabel, formattedDate);
+              }).toList(),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildFilterItem(String title) {
-    bool isSelected = _selectedDay == title;
+  Widget _buildFilterItem(String label, String value) {
+    bool isSelected = _selectedDate == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedDay = title),
+      onTap: () => setState(() => _selectedDate = value),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
+          boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
         ),
         child: Text(
-          title, 
+          label, 
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.grey.shade700, 
-            fontWeight: FontWeight.bold
+            fontWeight: FontWeight.bold,
+            fontSize: 13
           )
         ),
       ),
@@ -372,7 +540,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       decoration: BoxDecoration(
         color: Colors.white, 
         borderRadius: BorderRadius.circular(22), 
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -388,7 +556,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: primaryColor.withValues(alpha: 0.1),
+                        backgroundColor: primaryColor.withOpacity(0.1),
                         child: Text(app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?", style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
                       ),
                       const SizedBox(width: 15),
@@ -443,8 +611,23 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     ),
                   ],
                   if (app.status == "Completed") ...[
-                    const SizedBox(height: 10),
-                    TextButton.icon(onPressed: () => _fetchAndEditRecord(app), icon: const Icon(Icons.edit_note, color: primaryColor), label: const Text("Edit Medical Record", style: TextStyle(color: primaryColor))),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _fetchAndEditRecord(app),
+                        icon: const Icon(Icons.add_circle_outline, size: 18),
+                        label: const Text("Add Medical Record", style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: primaryColor,
+                          side: const BorderSide(color: primaryColor, width: 1.5),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
                   ]
                 ],
               ),

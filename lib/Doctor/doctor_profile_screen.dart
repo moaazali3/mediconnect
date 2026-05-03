@@ -6,7 +6,6 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
-import 'package:image_picker/image_picker.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
@@ -18,7 +17,6 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final ApiService _apiService = ApiService();
-  bool _isUploading = false;
   bool _isLoading = true;
   DoctorModel? _doctor;
 
@@ -50,25 +48,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       if (today.month < birthDate.month || (today.month == birthDate.month && today.day < birthDate.day)) age--;
       return age;
     } catch (_) { return 0; }
-  }
-
-  Future<void> _pickAndUploadImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    if (image != null) {
-      setState(() => _isUploading = true);
-      try {
-        final success = await _apiService.uploadDoctorImage(widget.doctorId, image.path);
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Image updated!"), backgroundColor: Colors.green));
-          _fetchProfile();
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-      } finally {
-        setState(() => _isUploading = false);
-      }
-    }
   }
 
   @override
@@ -189,6 +168,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Widget _buildFixedHeader(DoctorProfileModel doctor, String displayImage) {
+    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
+    final String fullImageUrl = displayImage.startsWith('http') ? displayImage : "$imageBaseUrl$displayImage";
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -206,35 +188,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.white,
-                    backgroundImage: NetworkImage(displayImage),
-                  ),
-                ),
-                if (_isUploading)
-                  const Positioned.fill(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                CircleAvatar(
-                  radius: 15,
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.camera_alt_rounded, size: 16, color: primaryColor),
-                    onPressed: _isUploading ? null : _pickAndUploadImage,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                backgroundImage: NetworkImage(fullImageUrl),
+              ),
             ),
             const SizedBox(width: 20),
             Expanded(
@@ -281,13 +245,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Widget _buildSectionTitle(String title) => Padding(padding: const EdgeInsets.only(left: 5, bottom: 10), child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
-
-  Widget _buildSectionTitleWithAction(String title, IconData icon, VoidCallback onTap) {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      _buildSectionTitle(title),
-      IconButton(icon: Icon(icon, color: primaryColor, size: 20), onPressed: onTap),
-    ]);
-  }
 
   Widget _buildInfoCard(List<Widget> children) => Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]), child: Column(children: children));
 

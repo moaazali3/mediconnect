@@ -7,6 +7,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class EditDoctorManagementPage extends StatefulWidget {
   final String doctorId;
@@ -160,13 +161,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: const CommonAppBar(
+        title: "Edit Doctor",
+        showBackButton: true,
       ),
       body: Stack(
         children: [
