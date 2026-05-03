@@ -47,7 +47,7 @@ mixin AuthApi {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return ApiResponse(success: true, message: "Account created successfully", data: body);
+        return ApiResponse(success: true, message: "Verification code sent to your email", data: body);
       } else {
         String errorMessage = "Registration failed";
         if (body is Map) {
@@ -64,7 +64,38 @@ mixin AuthApi {
         return ApiResponse(success: false, message: errorMessage);
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Connection error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
+    }
+  }
+
+  Future<ApiResponse> confirmEmail(String email, String otp) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.post(
+        Uri.parse('${parent.baseUrl}/Auth/ConfirmEmail?email=$email&otp=$otp'),
+        headers: parent._headers,
+      );
+
+      dynamic body;
+      try {
+        if (response.body.isNotEmpty) {
+          body = jsonDecode(response.body);
+        }
+      } catch (_) {
+        body = response.body;
+      }
+
+      if (response.statusCode == 200) {
+        return ApiResponse(success: true, message: "Email verified successfully", data: body);
+      } else {
+        String errorMessage = "Verification failed";
+        if (body is Map && body.containsKey('message')) {
+          errorMessage = body['message'];
+        }
+        return ApiResponse(success: false, message: errorMessage);
+      }
+    } catch (e) {
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 
@@ -108,7 +139,7 @@ mixin AuthApi {
         return ApiResponse(success: false, message: errorMessage);
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Connection error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 
@@ -144,7 +175,7 @@ mixin AuthApi {
         return ApiResponse(success: false, message: "Failed to refresh token");
       }
     } catch (e) {
-      return ApiResponse(success: false, message: "Refresh token error: $e");
+      return ApiResponse(success: false, message: parent.handleError(e));
     }
   }
 

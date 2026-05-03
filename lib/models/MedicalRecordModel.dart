@@ -5,9 +5,10 @@ class MedicalRecordModel {
   final String prescription;
   final String createdDate;
   
-  // حقول اختيارية سنملاها من بيانات الموعد
+  // Optional fields filled from appointment data
   String doctorName;
   String doctorSpecialty;
+  String? doctorImageUrl;
 
   MedicalRecordModel({
     required this.medicalRecordId,
@@ -17,6 +18,7 @@ class MedicalRecordModel {
     required this.createdDate,
     this.doctorName = 'Dr. Unknown',
     this.doctorSpecialty = 'General',
+    this.doctorImageUrl,
   });
 
   factory MedicalRecordModel.fromJson(Map<String, dynamic> json) {

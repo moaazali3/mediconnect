@@ -12,10 +12,10 @@ class DoctorAppointmentsPage extends StatefulWidget {
   const DoctorAppointmentsPage({super.key, this.doctorId});
 
   @override
-  State<DoctorAppointmentsPage> createState() => _DoctorAppointmentsPageState();
+  State<DoctorAppointmentsPage> createState() => DoctorAppointmentsPageState();
 }
 
-class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
+class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   final ApiService _apiService = ApiService();
   
   // State Management
@@ -45,6 +45,11 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     _prescriptionController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Public method for external refresh (like from AppBar)
+  Future<void> refreshAppointments() async {
+    await _fetchData();
   }
 
   Future<void> _fetchData() async {
@@ -106,9 +111,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       }
     }
 
-    // Filter by schedule: only keep dates that are actually working days
-    // (In case some appointments are on days not in current schedule, we might still want to show them)
-    // The user requirement: "خاصه بجدول الدكتور فقط"
     if (_schedule.isNotEmpty) {
       _availableDates = dateSet.where((d) => _schedule.any((s) => s.isScheduledFor(d.weekday))).toList();
     } else {
@@ -118,7 +120,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     _availableDates.sort();
   }
 
-  // Local Filtering Logic
   List<DoctorAppointmentModel> get _filteredAppointments {
     return _allAppointments.where((a) {
       bool matchesDate = _selectedDate == "All" || a.appointmentDate == _selectedDate;
@@ -205,10 +206,10 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             children: [
               const Icon(Icons.note_add_rounded, color: Colors.white, size: 28),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  "Add Medical Record",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  isEdit ? "Edit Medical Record" : "Add Medical Record",
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
               IconButton(
@@ -294,6 +295,10 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                             prescription: _prescriptionController.text,
                           ),
                         );
+                        // Optional: Mark appointment as completed when record is added
+                        if (success && appointment.status != "Completed") {
+                           await _apiService.completeAppointmentStatus(appointment.appointmentId);
+                        }
                       }
                       
                       if (mounted && success) {
@@ -319,7 +324,7 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  child: const Text("SAVE RECORD", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  child: Text(isEdit ? "UPDATE RECORD" : "SAVE RECORD", style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ),
               ),
             ],
@@ -533,8 +538,6 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   }
 
   Widget _buildAppointmentCard(DoctorAppointmentModel app) {
-    final bool isFinalized = app.status == "Completed" || app.status == "Cancelled";
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -600,24 +603,14 @@ class _DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                       Text("Q No: ${app.queueNumber}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                     ],
                   ),
-                  if (!isFinalized) ...[
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(child: OutlinedButton(onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, false), style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text("Cancel"))),
-                        const SizedBox(width: 10),
-                        Expanded(child: ElevatedButton(onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, true, appointment: app), style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text("Accept"))),
-                      ],
-                    ),
-                  ],
-                  if (app.status == "Completed") ...[
+                  if (app.status != "Cancelled") ...[
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => _fetchAndEditRecord(app),
-                        icon: const Icon(Icons.add_circle_outline, size: 18),
-                        label: const Text("Add Medical Record", style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
+                        icon: const Icon(Icons.history_edu_rounded, size: 18),
+                        label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: primaryColor,

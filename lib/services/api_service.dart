@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
@@ -62,5 +63,12 @@ class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, 
 
   String? getCachedDoctorImage(String doctorId) {
     return _doctorImagesCache[doctorId];
+  }
+
+  String handleError(dynamic e) {
+    if (e is SocketException || e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
+      return "No internet connection. Please check your network and try again.";
+    }
+    return "Connection error: $e";
   }
 }

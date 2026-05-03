@@ -85,6 +85,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         title: "Doctors Today",
         subtitle: DateFormat('EEEE, d MMMM').format(DateTime.now()),
         showBackButton: true,
+        onRefresh: _fetchTodayDoctors,
       ),
       body: Column(
         children: [

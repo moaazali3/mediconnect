@@ -10,7 +10,10 @@ class DoctorProfileModel {
   final double experienceYears;
   final double consultationFee;
   final String biography;
-  final String? imageUrl;
+  final String? profilePictureUrl;
+
+  // Getter لضمان التوافق مع الأجزاء التي تستخدم imageUrl
+  String? get imageUrl => profilePictureUrl;
 
   DoctorProfileModel({
     required this.firstName,
@@ -24,23 +27,23 @@ class DoctorProfileModel {
     required this.experienceYears,
     required this.consultationFee,
     required this.biography,
-    this.imageUrl,
+    this.profilePictureUrl,
   });
 
   factory DoctorProfileModel.fromJson(Map<String, dynamic> json) {
     return DoctorProfileModel(
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      email: json['email'] ?? '',
-      dateOfBirth: json['dateOfBirth'] ?? '',
-      gender: json['gender'] ?? '',
-      address: json['address'],
-      phoneNumber: json['phoneNumber'] ?? '',
-      specializationName: json['specializationName'] ?? '',
-      experienceYears: (json['experienceYears'] as num?)?.toDouble() ?? 0.0,
-      consultationFee: (json['consultationFee'] as num?)?.toDouble() ?? 0.0,
-      biography: json['biography'] ?? '',
-      imageUrl: json['imageUrl'],
+      firstName: json['firstName'] ?? json['FirstName'] ?? '',
+      lastName: json['lastName'] ?? json['LastName'] ?? '',
+      email: json['email'] ?? json['Email'] ?? '',
+      dateOfBirth: json['dateOfBirth'] ?? json['DateOfBirth'] ?? '',
+      gender: json['gender'] ?? json['Gender'] ?? '',
+      address: json['address'] ?? json['Address'],
+      phoneNumber: json['phoneNumber'] ?? json['PhoneNumber'] ?? '',
+      specializationName: json['specializationName'] ?? json['SpecializationName'] ?? '',
+      experienceYears: (json['experienceYears'] ?? json['ExperienceYears'] as num?)?.toDouble() ?? 0.0,
+      consultationFee: (json['consultationFee'] ?? json['ConsultationFee'] as num?)?.toDouble() ?? 0.0,
+      biography: json['biography'] ?? json['Biography'] ?? '',
+      profilePictureUrl: json['profilePictureUrl'] ?? json['ProfilePictureUrl'] ?? json['imageUrl'] ?? json['ImageUrl'],
     );
   }
 
@@ -48,12 +51,13 @@ class DoctorProfileModel {
     return {
       "firstName": firstName,
       "lastName": lastName,
+      "email": email,
       "dateOfBirth": dateOfBirth,
       "gender": gender,
       "address": address,
       "phoneNumber": phoneNumber,
       "biography": biography,
-      "imageUrl": imageUrl,
+      "profilePictureUrl": profilePictureUrl,
     };
   }
 }

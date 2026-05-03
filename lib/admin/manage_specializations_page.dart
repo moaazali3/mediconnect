@@ -107,43 +107,55 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: "Specializations",
         showBackButton: true,
+        onRefresh: _fetchSpecializations,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : _specializations.isEmpty
-              ? const Center(child: Text("No specializations found"))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _specializations.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final spec = _specializations[index];
-                    return Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: primaryColor.withOpacity(0.1),
-                          child: const Icon(Icons.category_rounded, color: primaryColor),
+      body: RefreshIndicator(
+        onRefresh: _fetchSpecializations,
+        color: primaryColor,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            : _specializations.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.3),
+                      const Center(child: Text("No specializations found")),
+                    ],
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: _specializations.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final spec = _specializations[index];
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: primaryColor.withOpacity(0.1),
+                            child: const Icon(Icons.category_rounded, color: primaryColor),
+                          ),
+                          title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(spec.description),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.edit_rounded, color: Colors.grey),
+                            onPressed: () => _showAddEditDialog(spec: spec),
+                          ),
                         ),
-                        title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(spec.description),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit_rounded, color: Colors.grey),
-                          onPressed: () => _showAddEditDialog(spec: spec),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+      ),
     );
   }
 }
