@@ -22,6 +22,21 @@ mixin DoctorApi {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getDoctorNames() async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Doctor/names'),
+      headers: parent._headers,
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => item as Map<String, dynamic>).toList();
+    } else {
+      throw "Error fetching doctor names: ${response.statusCode}";
+    }
+  }
+
   Future<DoctorFullModel> getDoctorDetails(String doctorId, String? patientId) async {
     final ApiService parent = this as ApiService;
     final String pId = (patientId == null || patientId.isEmpty) ? "00000000-0000-0000-0000-000000000000" : patientId;

@@ -1,13 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:intl/intl.dart';
-import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
-import 'package:mediconnect/patient/screens/appointments_page.dart';
+import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class BookingScreen extends StatefulWidget {
   final String doctorId;
@@ -37,9 +38,9 @@ class _BookingScreenState extends State<BookingScreen> {
   int? selectedPaymentIndex;
   bool isLoading = false;
   
-  // Schedule and data variables
   List<DoctorScheduleModel> _doctorSchedule = [];
   double? _fetchedFee;
+  String? _doctorImageUrl;
   bool _isFetchingSchedule = true;
 
   @override
@@ -50,22 +51,16 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _fetchDoctorData() async {
     try {
-      // Fetch schedule and profile to get the actual fee from backend
-      final scheduleFuture = _apiService.getDoctorSchedule(widget.doctorId);
-      final profileFuture = _apiService.getDoctorProfile(widget.doctorId);
-      
-      final results = await Future.wait([scheduleFuture, profileFuture]);
-      
-      final schedule = results[0] as List<DoctorScheduleModel>;
-      final profile = results[1] as dynamic; // DoctorProfileModel
+      // Use getDoctorDetails as it returns profile image, fee, and schedules in one call
+      final profile = await _apiService.getDoctorDetails(widget.doctorId, widget.patientId);
 
       if (mounted) {
         setState(() {
-          _doctorSchedule = schedule;
+          _doctorSchedule = profile.doctorSchedules;
           _fetchedFee = profile.consultationFee;
+          _doctorImageUrl = profile.profilePictureUrl;
           _isFetchingSchedule = false;
           
-          // Select first available date by default
           List<DateTime> available = getAvailableDates();
           if (available.isNotEmpty) {
             selectedDate = available.first;
@@ -84,10 +79,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   List<DateTime> getAvailableDates() {
     if (_doctorSchedule.isEmpty) return [];
-    
-    // Extract available day names from schedule
     List<String> availableDays = _doctorSchedule.map((s) => s.getDayName()).toList();
-    
     List<DateTime> dates = [];
     DateTime now = DateTime.now();
     for (int i = 0; i < 30; i++) {
@@ -130,17 +122,16 @@ class _BookingScreenState extends State<BookingScreen> {
         appointmentDate: formattedDate,
       );
 
-      bool apptSuccess = await _apiService.createAppointment(appointmentRequest);
+      String? appointmentId = await _apiService.createAppointment(appointmentRequest);
 
-      if (apptSuccess) {
+      if (appointmentId != null) {
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
-        
         final double currentFee = _fetchedFee ?? double.parse(widget.fee);
         
         final paymentInfo = PaymentModel(
           paymentId: "", 
-          appointmentId: "", 
+          appointmentId: appointmentId, 
           createdDate: DateTime.now().toIso8601String(),
           paymentMethod: paymentMethods[selectedPaymentIndex!],
           paymentStatus: paymentStatus,
@@ -150,8 +141,8 @@ class _BookingScreenState extends State<BookingScreen> {
         await _apiService.createPayment(paymentInfo);
 
         if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          _showSuccessBooking();
+          Navigator.pop(context); 
+          _showSuccessBooking(appointmentId);
         }
       } else {
         throw "Failed to create appointment";
@@ -168,36 +159,60 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _showSuccessBooking() {
+  void _showSuccessBooking(String appointmentId) {
+    final String qrData = jsonEncode({
+      "appointmentId": appointmentId,
+      "doctor": widget.doctorName,
+      "date": DateFormat('yMMMd').format(selectedDate!),
+      "time": "TBD",
+      "queue": "N/A"
+    });
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 80),
-            const SizedBox(height: 20),
-            const Text("Booking Successful!", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text("Your appointment with ${widget.doctorName} is confirmed for ${DateFormat('yMMMd').format(selectedDate!)}.", textAlign: TextAlign.center),
-            const SizedBox(height: 25),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); 
-                  Navigator.pop(context); 
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor, 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
+              const SizedBox(height: 15),
+              const Text("Booking Successful!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              Text("Show this QR code at the reception.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: 180,
+                height: 180,
+                child: QrImageView(
+                  data: qrData,
+                  version: QrVersions.auto,
+                  size: 180.0,
+                  foregroundColor: primaryColor,
                 ),
-                child: const Text("DONE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-            ),
-          ],
+              const SizedBox(height: 15),
+              Text(widget.doctorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); 
+                    Navigator.pop(context); 
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor, 
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text("DONE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -206,13 +221,9 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     List<DateTime> availableDates = getAvailableDates();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      appBar: const CommonAppBar(
-        title: "Book Appointment",
-        showBackButton: true,
-      ),
+      appBar: const CommonAppBar(title: "Book Appointment", showBackButton: true),
       body: Column(
         children: [
           Expanded(
@@ -226,15 +237,9 @@ class _BookingScreenState extends State<BookingScreen> {
                   _buildSectionTitle("Select Date"),
                   const SizedBox(height: 12),
                   _isFetchingSchedule 
-                    ? const Center(child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: CircularProgressIndicator(color: primaryColor),
-                      ))
+                    ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: primaryColor)))
                     : (availableDates.isEmpty 
-                        ? const Center(child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: Text("No available dates found in doctor schedule."),
-                          ))
+                        ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No available dates found.")))
                         : _buildDateSelector(availableDates)),
                   const SizedBox(height: 25),
                   if (selectedDate != null) ...[
@@ -257,48 +262,26 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildDoctorBrief() {
+    final String? imageUrl = _doctorImageUrl ?? widget.doctorImageUrl;
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
             radius: 35,
             backgroundColor: primaryColor.withOpacity(0.1),
-            backgroundImage: widget.doctorImageUrl != null ? NetworkImage(widget.doctorImageUrl!) : null,
-            child: widget.doctorImageUrl == null ? const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35) : null,
+            backgroundImage: imageUrl != null && imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
+            child: (imageUrl == null || imageUrl.isEmpty) ? const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35) : null,
           ),
           const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  widget.doctorName,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  softWrap: true, // Allow name to wrap to show fully
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.specialty,
-                  style: const TextStyle(color: Colors.grey, fontSize: 14),
-                  softWrap: true, // Allow specialty to wrap
-                ),
+                Text(widget.doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(widget.specialty, style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
-            ),
-          ),
-          const SizedBox(width: 5),
-          IconButton(
-            icon: const Icon(Icons.info_outline, color: primaryColor),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => DoctorProfileViewScreen(doctorId: widget.doctorId)),
             ),
           ),
         ],
@@ -306,9 +289,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87));
-  }
+  Widget _buildSectionTitle(String title) => Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87));
 
   Widget _buildDateSelector(List<DateTime> availableDates) {
     return SizedBox(
@@ -327,7 +308,7 @@ class _BookingScreenState extends State<BookingScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? primaryColor : Colors.white,
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200, width: 1),
+                border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
                 boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
               ),
               child: Column(
@@ -349,30 +330,15 @@ class _BookingScreenState extends State<BookingScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [primaryColor, primaryColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
+      decoration: BoxDecoration(gradient: LinearGradient(colors: [primaryColor, primaryColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(20)),
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.info_outline, color: Colors.white70, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "Estimated Turn",
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
-                  softWrap: true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const Text("Generating...", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          const Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
+          Row(children: [Icon(Icons.info_outline, color: Colors.white70, size: 20), SizedBox(width: 8), Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))]),
+          SizedBox(height: 10),
+          Text("Generating QR...", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          SizedBox(height: 10),
+          Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       ),
     );
@@ -399,26 +365,8 @@ class _BookingScreenState extends State<BookingScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isTotal ? Colors.black87 : Colors.grey,
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            ),
-            softWrap: true,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          value,
-          style: TextStyle(
-            color: isTotal ? primaryColor : Colors.black87,
-            fontSize: isTotal ? 18 : 15,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(label, style: TextStyle(color: isTotal ? Colors.black87 : Colors.grey, fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+        Text(value, style: TextStyle(color: isTotal ? primaryColor : Colors.black87, fontSize: isTotal ? 18 : 15, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -484,28 +432,12 @@ class _BookingScreenState extends State<BookingScreen> {
       borderRadius: BorderRadius.circular(15),
       child: Container(
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: selected ? primaryColor.withOpacity(0.05) : Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: selected ? primaryColor : Colors.grey.shade200, width: 1.5),
-        ),
+        decoration: BoxDecoration(color: selected ? primaryColor.withOpacity(0.05) : Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: selected ? primaryColor : Colors.grey.shade200, width: 1.5)),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: selected ? primaryColor : Colors.grey.shade100, shape: BoxShape.circle),
-              child: Icon(icon, color: selected ? Colors.white : Colors.grey, size: 22),
-            ),
+            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: selected ? primaryColor : Colors.grey.shade100, shape: BoxShape.circle), child: Icon(icon, color: selected ? Colors.white : Colors.grey, size: 22)),
             const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87), softWrap: true),
-                  Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey), softWrap: true),
-                ],
-              ),
-            ),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87)), Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey))])),
             if (selected) const Icon(Icons.check_circle_rounded, color: primaryColor),
           ],
         ),

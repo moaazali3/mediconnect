@@ -137,13 +137,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         specializationId: _selectedSpecializationId!,
       );
 
+      // هذا الطلب سيرمي استثناء في حال فشل السيرفر
       final doctorId = await _apiService.createDoctor(doctor);
 
-      // التحقق مما إذا كان الـ ID المسترجع صالحاً (GUID حقيقي)
-      bool hasValidId = doctorId != null && doctorId != "SUCCESS_NO_ID" && doctorId.length > 20;
-
-      if (hasValidId) {
-        // محاولة إنشاء الجدول
+      // التحقق من المعرف (ID) بشكل صحيح لضمان التوافق مع ApiService
+      if (doctorId != null && doctorId != "SUCCESS_NO_ID" && doctorId.length > 10) {
+        // إنشاء جدول المواعيد
         final scheduleRes = await _apiService.createDoctorSchedule(doctorId, {
           "dayOfWeek": _selectedDay,
           "startTime": _startTimeController.text,
@@ -152,12 +151,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         });
 
         if (!mounted) return;
-        Navigator.pop(context); // إغلاق الـ Loading
-
+        Navigator.pop(context); // إغلاق نافذة التحميل
+        
         if (scheduleRes.success) {
           _showSuccessDialog();
         } else {
-          // نجاح إنشاء الحساب ولكن فشل الجدول
+          // تم إنشاء الحساب ولكن فشل إنشاء الجدول
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Doctor added, but schedule failed: ${scheduleRes.message}"), 
@@ -165,16 +164,17 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               duration: const Duration(seconds: 5),
             ),
           );
-          _showSuccessDialog();
+          _showSuccessDialog(); 
         }
       } else {
-        // نجاح العملية بدون ID (أو بـ ID غير صالح للجدول)
+        // نجاح العملية بدون ID حقيقي (ربما نص نجاح بديل)
         if (!mounted) return;
         Navigator.pop(context);
         _showSuccessDialog();
       }
     } catch (e) {
       print("ADD_DOCTOR_ERROR: $e");
+      
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
       
@@ -182,7 +182,8 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         SnackBar(
           content: Text("Error: $e"), 
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(label: "Close", textColor: Colors.white, onPressed: () {}),
         ),
       );
     }
@@ -201,7 +202,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.pop(context, true);
+                Navigator.pop(context, true); // العودة وتحديث القائمة
               },
               style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
               child: const Text("Continue", style: TextStyle(color: Colors.white)),

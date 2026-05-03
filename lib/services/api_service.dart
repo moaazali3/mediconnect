@@ -13,6 +13,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
+import 'package:mediconnect/models/CreateReceptionistModel.dart';
 import 'package:mediconnect/services/secure_storage.dart';
 
 // استيراد الأجزاء المقسمة

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
+import 'package:mediconnect/admin/add_receptionist_page.dart'; // استيراد صفحة الإضافة الجديدة
 import 'package:mediconnect/admin/manage_bookings_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/admin/manage_doctors_page.dart';
@@ -10,6 +11,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:mediconnect/admin/qr_scanner_page.dart';
 import 'package:mediconnect/admin/analytics_page.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -39,8 +41,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<AdminDashboardModel> _getCombinedStats() async {
-    final stats = await _apiService.getAdminDashboardStats();
     try {
+      final stats = await _apiService.getAdminDashboardStats();
       final allDoctors = await _apiService.getAllDoctors();
       final int currentWeekday = DateTime.now().weekday;
       int count = 0;
@@ -57,8 +59,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
       }
       return stats.copyWith(totalDoctorsToday: count);
     } catch (e) {
-      debugPrint("Error calculating doctors today: $e");
-      return stats;
+      debugPrint("Error loading admin stats: $e");
+      return AdminDashboardModel(
+        totalAppointmentsToday: 0,
+        totalDoctorsToday: 0,
+        totalRevenueToday: 0,
+        totalPendingAppointmentsToday: 0,
+        totalCompletedAppointmentsToday: 0,
+        totalCancelledAppointmentsToday: 0,
+        totalAppointments: 0,
+        totalDoctors: 0,
+        totalCancelledAppointments: 0,
+        totalCompletedAppointments: 0,
+        totalPatients: 0,
+        totalPendingAppointments: 0,
+        totalRevenue: 0,
+      );
     }
   }
 
@@ -344,6 +360,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         _buildActionCard(
           context,
+          "Add Receptionist",
+          "Support staff",
+          Icons.person_add_alt_rounded,
+          Colors.indigo.shade600,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
+        ),
+        _buildActionCard(
+          context,
           "Doctors List",
           "Schedules & Fees",
           Icons.medical_services_rounded,
@@ -357,6 +381,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Icons.calendar_today_rounded,
           Colors.green.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageBookingsPage())).then((_) => _refreshData()),
+        ),
+        _buildActionCard(
+          context,
+          "Scan QR",
+          "Confirm attendance",
+          Icons.qr_code_scanner_rounded,
+          Colors.orange.shade700,
+          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage())),
         ),
         _buildActionCard(
           context,

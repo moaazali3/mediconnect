@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class AppointmentsPage extends StatefulWidget {
   final String? userId;
@@ -34,7 +36,6 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
               ));
             }
             
-            // فلترة المواعيد لإظهار الحالة "Pending" فقط
             final appointments = (snapshot.data ?? [])
                 .where((a) => a.status.toLowerCase() == 'pending')
                 .toList();
@@ -88,6 +89,53 @@ class AppointmentCard extends StatelessWidget {
     required this.queue,
     this.imageUrl,
   });
+
+  void _showQRCode(BuildContext context) {
+    // تجهيز البيانات التي سيحتويها الـ QR
+    final String qrData = jsonEncode({
+      "appointmentId": appointmentId,
+      "doctor": name,
+      "date": date,
+      "time": time,
+      "queue": queue
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: const Text("Appointment QR Code", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Present this code at the hospital reception.", textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: Colors.grey)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 200,
+              height: 200,
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 200.0,
+                foregroundColor: primaryColor,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text("$date | $time", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          ],
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("CLOSE", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,16 +201,10 @@ class AppointmentCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  status,
-                  style: TextStyle(color: _getStatusColor(status), fontSize: 12, fontWeight: FontWeight.bold),
-                ),
+              IconButton(
+                onPressed: () => _showQRCode(context),
+                icon: const Icon(Icons.qr_code_2_rounded, color: primaryColor, size: 28),
+                tooltip: "Show QR Code",
               ),
             ],
           ),
@@ -188,14 +230,5 @@ class AppointmentCard extends StatelessWidget {
         Text(text, style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)),
       ],
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending': return Colors.orange;
-      case 'completed': return Colors.green;
-      case 'cancelled': return Colors.red;
-      default: return Colors.blue;
-    }
   }
 }

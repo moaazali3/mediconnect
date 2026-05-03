@@ -1,14 +1,24 @@
 part of '../api_service.dart';
 
 mixin AppointmentApi {
-  Future<bool> createAppointment(CreateAppointmentModel appointment) async {
+  Future<String?> createAppointment(CreateAppointmentModel appointment) async {
     final ApiService parent = this as ApiService;
     final response = await http.post(
       Uri.parse('${parent.baseUrl}/Appointment'),
       headers: parent._headers,
       body: jsonEncode(appointment.toJson()),
     );
-    return response.statusCode == 200 || response.statusCode == 201;
+    
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.body.isEmpty) return "SUCCESS";
+      try {
+        final data = jsonDecode(response.body);
+        return (data['id'] ?? data['appointmentId'] ?? data['Id'])?.toString();
+      } catch (e) {
+        return "SUCCESS";
+      }
+    }
+    return null;
   }
 
   Future<List<DoctorAppointmentModel>> getDoctorAppointments(String doctorId) async {
@@ -28,7 +38,6 @@ mixin AppointmentApi {
       List<dynamic> body = jsonDecode(response.body);
       List<PatientAppointmentModel> appointments = body.map((item) => PatientAppointmentModel.fromJson(item)).toList();
       
-      // ملء روابط الصور من الخزان الموجود في ApiService
       for (var appt in appointments) {
         appt.doctorImageUrl = parent.getCachedDoctorImage(appt.doctorId);
       }
@@ -89,7 +98,6 @@ mixin AppointmentApi {
   Future<List<MedicalRecordModel>> getPatientMedicalHistory(String patientId) async {
     final ApiService parent = this as ApiService;
     
-    // جلب السجلات والمواعيد والأطباء بالتوازي لتحسين الأداء
     final results = await Future.wait([
       http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers),
       http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers),
@@ -107,7 +115,6 @@ mixin AppointmentApi {
       List<MedicalRecordModel> records = recordBody.map((item) => MedicalRecordModel.fromJson(item)).toList();
       List<PatientAppointmentModel> appointments = apptBody.map((item) => PatientAppointmentModel.fromJson(item)).toList();
       
-      // جلب التخصصات من قائمة الدكاترة
       Map<String, String> doctorSpecialties = {};
       if (doctorRes.statusCode == 200) {
         List<dynamic> doctorBody = jsonDecode(doctorRes.body);
@@ -116,7 +123,6 @@ mixin AppointmentApi {
         }
       }
 
-      // خريطة لربط الموعد بالدكتور
       Map<String, PatientAppointmentModel> apptMap = {
         for (var a in appointments) a.appointmentId: a
       };
@@ -125,7 +131,6 @@ mixin AppointmentApi {
         if (apptMap.containsKey(record.appointmentId)) {
           final appt = apptMap[record.appointmentId]!;
           record.doctorName = appt.doctorName;
-          // جلب التخصص بناءً على الـ doctorId الموجود في الموعد
           record.doctorSpecialty = doctorSpecialties[appt.doctorId] ?? 'General';
         }
       }

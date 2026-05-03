@@ -30,27 +30,39 @@ class DoctorModel {
   });
 
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
-    // التحقق من قائمة الجداول سواء كانت تبدأ بحرف كبير أو صغير
-    var scheduleList = json['doctorSchedules'] ?? json['DoctorSchedules'];
-    
+    String? imgUrl = json['profilePictureUrl'] ?? json['ProfilePictureUrl'];
+    if (imgUrl != null && imgUrl.isNotEmpty && !imgUrl.startsWith('http')) {
+      // Prepend host and fix slashes for relative paths
+      imgUrl = "https://wisdom-frisk-exciting.ngrok-free.dev${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
+    }
+
+    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'];
+
     return DoctorModel(
-      id: json['id'] ?? json['Id'] ?? '',
-      profilePictureUrl: json['profilePictureUrl'] ?? json['ProfilePictureUrl'],
-      firstName: json['firstName'] ?? json['FirstName'] ?? '',
-      lastName: json['lastName'] ?? json['LastName'] ?? '',
-      specializationName: json['specializationName'] ?? json['SpecializationName'] ?? '',
-      experienceYears: (json['experienceYears'] ?? json['ExperienceYears'] as num?)?.toDouble() ?? 0.0,
-      biography: json['biography'] ?? json['Biography'] ?? '',
-      consultationFee: (json['consultationFee'] ?? json['ConsultationFee'] as num?)?.toDouble() ?? 0.0,
-      dateOfBirth: json['dateOfBirth'] ?? json['DateOfBirth'] ?? '',
-      gender: json['gender'] ?? json['Gender'] ?? '',
-      isAppleToAppointment: json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? false,
-      doctorSchedules: scheduleList != null
-          ? (scheduleList as List)
-              .map((i) => DoctorScheduleModel.fromJson(i))
-              .toList()
+      id: (json['id'] ?? json['Id'] ?? '').toString(),
+      profilePictureUrl: imgUrl,
+      firstName: (json['firstName'] ?? json['FirstName'] ?? '').toString(),
+      lastName: (json['lastName'] ?? json['LastName'] ?? '').toString(),
+      specializationName: (json['specializationName'] ?? json['SpecializationName'] ?? '').toString(),
+      experienceYears: _toDouble(json['experienceYears'] ?? json['ExperienceYears']),
+      biography: (json['biography'] ?? json['Biography'] ?? '').toString(),
+      consultationFee: _toDouble(json['consultationFee'] ?? json['ConsultationFee']),
+      dateOfBirth: (json['dateOfBirth'] ?? json['DateOfBirth'] ?? '').toString(),
+      gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
+      isAppleToAppointment: json['isAppleToAppointment'] is bool 
+          ? json['isAppleToAppointment'] 
+          : (json['IsAppleToAppointment'] is bool ? json['IsAppleToAppointment'] : false),
+      doctorSchedules: (schedulesJson is List)
+          ? schedulesJson.map((i) => DoctorScheduleModel.fromJson(i)).toList()
           : [],
     );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() {

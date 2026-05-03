@@ -33,4 +33,28 @@ mixin AdminApi {
     );
     return response.statusCode == 200 || response.statusCode == 204;
   }
+
+  Future<bool> createReceptionist(CreateReceptionistModel receptionist) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.post(
+        Uri.parse('${parent.baseUrl}/Receptionist'),
+        headers: parent._headers,
+        body: jsonEncode(receptionist.toJson()),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        final errorBody = jsonDecode(response.body);
+        String errorMessage = "Failed to add receptionist";
+        if (errorBody is Map) {
+          errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
+        }
+        throw errorMessage;
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

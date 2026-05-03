@@ -6,6 +6,7 @@ import 'package:mediconnect/auth/screens/register_screen.dart';
 import 'package:mediconnect/home_screen.dart'; 
 import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
 import 'package:mediconnect/admin/admin_dashboard.dart';
+import 'package:mediconnect/receptionist/receptionist_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/services/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,11 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _saveSession(String token, String role, String userId) async {
     final prefs = await SharedPreferences.getInstance();
     
-    // حفظ التوكن بشكل آمن (تمت معالجته بالفعل في AuthApi.login ولكن نؤكد عليه هنا)
     await SecureStorage.writeData(key: 'auth_token', value: token);
     ApiService.setToken(token);
 
-    // حفظ البيانات الأخرى في SharedPreferences
     await prefs.setString('user_role', role);
     await prefs.setString('user_id', userId);
     
@@ -194,6 +193,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
                                         } else if (role == "doctor") {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
+                                        } else if (role == "receptionist") {
+                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
                                         } else {
                                           Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
                                         }

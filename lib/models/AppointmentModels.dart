@@ -55,6 +55,20 @@ class CreateAppointmentModel {
     required this.appointmentDate,
   });
 
+  CreateAppointmentModel copyWith({
+    String? patientId,
+    String? doctorId,
+    String? dayOfWeek,
+    String? appointmentDate,
+  }) {
+    return CreateAppointmentModel(
+      patientId: patientId ?? this.patientId,
+      doctorId: doctorId ?? this.doctorId,
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       "patientId": patientId,
@@ -116,7 +130,7 @@ class PatientAppointmentModel {
   final String endTime;
   final String status;
   final int queueNumber;
-  String? doctorImageUrl; // الحقل الجديد
+  String? doctorImageUrl;
 
   PatientAppointmentModel({
     required this.appointmentId,

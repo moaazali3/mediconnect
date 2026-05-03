@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
@@ -5,14 +6,15 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/Doctor/doctor_profile_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class DoctorDetailsPage extends StatelessWidget {
   final String doctorId;
-  final String? patientId; // Added patientId
+  final String? patientId; 
 
   const DoctorDetailsPage({super.key, required this.doctorId, this.patientId});
 
-  void _showBookAppointmentSheet(BuildContext context, String doctorId) {
+  void _showBookAppointmentSheet(BuildContext context, DoctorProfileModel doctor) {
     final ApiService apiService = ApiService();
     String selectedDay = "Monday";
     final List<String> days = [
@@ -21,6 +23,7 @@ class DoctorDetailsPage extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
@@ -61,13 +64,11 @@ class DoctorDetailsPage extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
                       onPressed: () async {
-                        // Calculate next date for the selected day
                         DateTime now = DateTime.now();
-                        int targetDayIndex = days.indexOf(selectedDay) + 1; // Mon=1, ..., Sun=7
+                        int targetDayIndex = days.indexOf(selectedDay) + 1; 
                         int currentDayIndex = now.weekday;
                         int daysToAdd = (targetDayIndex - currentDayIndex + 7) % 7;
-                        // If selected day is today, we could book for today or next week. 
-                        // Let's assume next week if today, or logic can be adjusted.
+                        
                         DateTime targetDate = now.add(Duration(days: daysToAdd));
                         String formattedDate = DateFormat('yyyy-MM-dd').format(targetDate);
 
@@ -86,16 +87,21 @@ class DoctorDetailsPage extends StatelessWidget {
                           builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
                         );
 
-                        bool success = await apiService.createAppointment(appointment);
+                        // تم التعديل هنا: استخدام String? بدلاً من bool
+                        String? appointmentId = await apiService.createAppointment(appointment);
                         
                         if (context.mounted) {
-                          Navigator.pop(context); 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(success ? "Appointment Booked Successfully!" : "Failed to book appointment"),
-                              backgroundColor: success ? Colors.green : Colors.red,
-                            ),
-                          );
+                          Navigator.pop(context); // إغلاق نافذة التحميل
+                          if (appointmentId != null) {
+                            _showQRSuccessDialog(context, appointmentId, doctor, formattedDate);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Failed to book appointment"),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text("Confirm Booking", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -107,6 +113,62 @@ class DoctorDetailsPage extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  void _showQRSuccessDialog(BuildContext context, String appointmentId, DoctorProfileModel doctor, String date) {
+    final String qrData = jsonEncode({
+      "appointmentId": appointmentId,
+      "doctor": "Dr. ${doctor.firstName} ${doctor.lastName}",
+      "date": date,
+      "time": "TBD",
+      "queue": "N/A"
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 70),
+            const SizedBox(height: 15),
+            const Text("Booking Successful!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            const Text("Show this QR code at the reception.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 180,
+              height: 180,
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 180.0,
+                foregroundColor: primaryColor,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text("Dr. ${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 25),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // إغلاق الحوار
+                  Navigator.pop(context); // العودة للشاشة السابقة
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("DONE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -171,7 +233,7 @@ class DoctorDetailsPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => _showBookAppointmentSheet(context, doctorId),
+                    onPressed: () => _showBookAppointmentSheet(context, doctor),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       padding: const EdgeInsets.all(16),
@@ -195,13 +257,13 @@ class DoctorDetailsPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 35,
-            backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withValues(alpha: 0.1),
+            backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
             child: Icon(
               doctor.gender == "Male" ? Icons.male : Icons.female,
               color: doctor.gender == "Male" ? Colors.blue : Colors.pink,

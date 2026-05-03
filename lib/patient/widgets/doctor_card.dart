@@ -73,7 +73,7 @@ class DoctorCard extends StatelessWidget {
           ),
           const SizedBox(width: 15),
 
-          // Doctor Info - Expanded to prevent overflow and show full name
+          // Doctor Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,7 +86,6 @@ class DoctorCard extends StatelessWidget {
                     fontSize: 17,
                     color: Color(0xFF263238),
                   ),
-                  // Removed maxLines to allow full name wrapping
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -96,7 +95,6 @@ class DoctorCard extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
-                  // Removed maxLines to allow specialization wrapping
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -132,6 +130,7 @@ class DoctorCard extends StatelessWidget {
                       doctorId: id,
                       doctorName: "Dr. $name",
                       specialty: displaySpec,
+                      doctorImageUrl: imageUrl, // Passing the image URL here
                       patientId: patientId,
                     ),
                   ),
