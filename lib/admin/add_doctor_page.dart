@@ -16,6 +16,8 @@ class AddDoctorPage extends StatefulWidget {
 class _AddDoctorPageState extends State<AddDoctorPage> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
+  
+  // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -27,12 +29,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   final _experienceController = TextEditingController();
   final _feeController = TextEditingController();
   final _dobController = TextEditingController();
-  
-  // Schedule Controllers
-  final _startTimeController = TextEditingController();
-  final _endTimeController = TextEditingController();
-  String? _selectedDay;
-  final List<String> _days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   String _gender = 'Male';
   int? _selectedSpecializationId;
@@ -46,9 +42,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     super.initState();
     _loadSpecializations();
     _dobController.text = DateFormat('yyyy-MM-dd').format(DateTime(1990, 1, 1));
-    _startTimeController.text = "09:00";
-    _endTimeController.text = "17:00";
-    _selectedDay = _days[DateFormat('EEEE').format(DateTime.now()) == "Friday" ? 0 : _days.indexOf(DateFormat('EEEE').format(DateTime.now()))];
   }
 
   @override
@@ -64,8 +57,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     _experienceController.dispose();
     _feeController.dispose();
     _dobController.dispose();
-    _startTimeController.dispose();
-    _endTimeController.dispose();
     super.dispose();
   }
 
@@ -84,6 +75,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     }
   }
 
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) return "Email is required";
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) return "Enter a valid email address";
+    return null;
+  }
+
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
       if (_currentStep == 1) {
@@ -93,13 +91,21 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
           );
           return;
         }
+        if (_passwordController.text.length < 6) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password must be at least 6 characters"), backgroundColor: Colors.red),
+          );
+          return;
+        }
       }
       setState(() => _currentStep++);
     }
   }
 
   void _previousStep() {
-    setState(() => _currentStep--);
+    if (_currentStep > 1) {
+      setState(() => _currentStep--);
+    }
   }
 
   Future<void> _submit() async {
@@ -139,14 +145,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       final doctorId = await _apiService.createDoctor(doctor);
 
       if (doctorId != null) {
-        // Create Schedule
-        await _apiService.createDoctorSchedule(doctorId, {
-          "dayOfWeek": _selectedDay,
-          "startTime": _startTimeController.text,
-          "endTime": _endTimeController.text,
-          "isAvailable": true,
-        });
-
         if (!mounted) return;
         Navigator.pop(context); // Close loading dialog
         _showSuccessDialog();
@@ -154,12 +152,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         if (!mounted) return;
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add doctor. Check logs."), backgroundColor: Colors.red),
+          const SnackBar(content: Text("Failed to create doctor. No ID returned."), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (Navigator.canPop(context)) Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
@@ -173,13 +171,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
         title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
-        content: const Text("Doctor and schedule added successfully!", textAlign: TextAlign.center),
+        content: const Text("Doctor registered successfully!", textAlign: TextAlign.center),
         actions: [
           Center(
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Go back to Management Page
               },
               child: const Text("Continue"),
             ),
@@ -198,7 +196,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (_currentStep > 1) {
+              _previousStep();
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
       ),
       body: Stack(
@@ -209,13 +213,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  primaryColor.withOpacity(0.8),
+                  primaryColor.withValues(alpha: 0.8),
                   Colors.white,
                 ],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withValues(alpha: 0.05)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -229,9 +233,9 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         child: Form(
                           key: _formKey,
@@ -272,7 +276,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       title = "Personal Information";
       icon = Icons.person_outline;
     } else {
-      title = "Professional & Schedule";
+      title = "Professional Information";
       icon = Icons.medical_services_outlined;
     }
 
@@ -292,7 +296,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 40, color: primaryColor),
@@ -351,6 +355,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             label: "Email Address",
             icon: Icons.alternate_email_rounded,
             keyboardType: TextInputType.emailAddress,
+            validator: _validateEmail,
           ),
           const SizedBox(height: 15),
           _buildTextField(
@@ -360,6 +365,11 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             isPassword: true,
             isPasswordHidden: _isPasswordHidden,
             onTogglePassword: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
+            validator: (value) {
+              if (value == null || value.isEmpty) return "Password is required";
+              if (value.length < 6) return "Password must be at least 6 characters";
+              return null;
+            },
           ),
           const SizedBox(height: 15),
           _buildTextField(
@@ -370,7 +380,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             isPasswordHidden: _isConfirmPasswordHidden,
             onTogglePassword: () => setState(() => _isConfirmPasswordHidden = !_isConfirmPasswordHidden),
             validator: (value) {
-              if (value == null || value.isEmpty) return "Required";
+              if (value == null || value.isEmpty) return "Please confirm your password";
               if (value != _passwordController.text) return "Passwords do not match";
               return null;
             },
@@ -450,77 +460,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               Expanded(child: _buildTextField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
             ],
           ),
-          const SizedBox(height: 15),
-          // --- WORK SCHEDULE SECTION ---
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: primaryColor.withOpacity(0.2)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 18, color: primaryColor),
-                    SizedBox(width: 8),
-                    Text("WORK SCHEDULE", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildDropdownField<String>(
-                  label: "Day of Week",
-                  icon: Icons.calendar_view_day_rounded,
-                  initialValue: _selectedDay,
-                  items: _days.map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 13)))).toList(),
-                  onChanged: (val) => setState(() => _selectedDay = val),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTextField(
-                        controller: _startTimeController,
-                        label: "Start Time",
-                        icon: Icons.access_time_rounded,
-                        readOnly: true,
-                        onTap: () async {
-                          TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: const TimeOfDay(hour: 9, minute: 0),
-                          );
-                          if (picked != null) {
-                            setState(() => _startTimeController.text = "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}");
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildTextField(
-                        controller: _endTimeController,
-                        label: "End Time",
-                        icon: Icons.access_time_filled_rounded,
-                        readOnly: true,
-                        onTap: () async {
-                          TimeOfDay? picked = await showTimePicker(
-                            context: context,
-                            initialTime: const TimeOfDay(hour: 17, minute: 0),
-                          );
-                          if (picked != null) {
-                            setState(() => _endTimeController.text = "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}");
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // --- END WORK SCHEDULE SECTION ---
           const SizedBox(height: 15),
           _buildTextField(
             controller: _addressController,
@@ -604,7 +543,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
@@ -617,9 +556,9 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
@@ -648,15 +587,15 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.1),
+            color: primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
       ),
       validator: (val) => val == null ? "Required" : null,

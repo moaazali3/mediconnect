@@ -10,18 +10,19 @@ mixin DoctorScheduleApi {
         headers: parent._headers,
       );
 
+      print("GET DoctorSchedule Status: ${response.statusCode}");
+      print("GET DoctorSchedule Body: ${response.body}");
+
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(response.body);
         return body.map((item) => DoctorScheduleModel.fromJson(item)).toList();
       } else if (response.statusCode == 404) {
-        // إذا كان الطبيب لا يملك جدولاً بعد، نرجع قائمة فارغة بدلاً من خطأ
         return [];
       } else {
         throw "Server returned ${response.statusCode}: ${response.body}";
       }
     } catch (e) {
       print("Error in getDoctorSchedule: $e");
-      // في حالة وجود خطأ، نفضل إرجاع قائمة فارغة لضمان استمرار عمل الواجهة
       return [];
     }
   }
@@ -30,35 +31,41 @@ mixin DoctorScheduleApi {
   Future<ApiResponse> createDoctorSchedule(String doctorId, Map<String, dynamic> scheduleData) async {
     final ApiService parent = this as ApiService;
     try {
-      final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      String dayName = scheduleData['dayOfWeek'] is int 
-          ? days[scheduleData['dayOfWeek']] 
-          : scheduleData['dayOfWeek'].toString();
-
-      final wrappedData = {
-        "doctorSchedules": [
-          {
-            "dayOfWeek": dayName,
-            "startTime": scheduleData['startTime'],
-            "isAvailable": scheduleData['isAvailable'] ?? true,
-            "endTime": scheduleData['endTime'], 
-          }
-        ]
+      // إرسال كائن واحد وليس قائمة، وبمسميات الحقول المتوقعة للسيرفر
+      final body = {
+        "doctorId": doctorId,
+        "dayOfWeek": scheduleData['dayOfWeek'],
+        "startTime": scheduleData['startTime'],
+        "endTime": scheduleData['endTime'],
+        "isAvailable": scheduleData['isAvailable'] ?? true,
       };
+
+      print("POST DoctorSchedule URL: ${parent.baseUrl}/DoctorSchedule/$doctorId");
+      print("POST DoctorSchedule Body: ${jsonEncode(body)}");
 
       final response = await http.post(
         Uri.parse('${parent.baseUrl}/DoctorSchedule/$doctorId'),
         headers: parent._headers,
-        body: jsonEncode(wrappedData),
+        body: jsonEncode(body),
       );
+
+      print("POST DoctorSchedule Status: ${response.statusCode}");
+      print("POST DoctorSchedule Body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ApiResponse(success: true, message: "Doctor schedule created successfully.");
       } else {
-        final body = jsonDecode(response.body);
-        return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to create schedule.");
+        String errorMsg = "Failed to create schedule";
+        try {
+          final data = jsonDecode(response.body);
+          errorMsg = data['errors']?.toString() ?? data['message']?.toString() ?? response.body;
+        } catch (_) {
+          errorMsg = response.body;
+        }
+        return ApiResponse(success: false, message: errorMsg);
       }
     } catch (e) {
+      print("Error in createDoctorSchedule: $e");
       return ApiResponse(success: false, message: "Connection error: $e");
     }
   }
@@ -67,35 +74,40 @@ mixin DoctorScheduleApi {
   Future<ApiResponse> updateDoctorSchedule(String doctorId, Map<String, dynamic> scheduleData) async {
     final ApiService parent = this as ApiService;
     try {
-      final days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      String dayName = scheduleData['dayOfWeek'] is int 
-          ? days[scheduleData['dayOfWeek']] 
-          : scheduleData['dayOfWeek'].toString();
-
-      final wrappedData = {
-        "doctorSchedules": [
-          {
-            "dayOfWeek": dayName,
-            "startTime": scheduleData['startTime'],
-            "isAvailable": scheduleData['isAvailable'] ?? true,
-            "endTime": scheduleData['endTime'],
-          }
-        ]
+      // إرسال كائن واحد وليس قائمة
+      final body = {
+        "doctorId": doctorId,
+        "dayOfWeek": scheduleData['dayOfWeek'],
+        "startTime": scheduleData['startTime'],
+        "endTime": scheduleData['endTime'],
+        "isAvailable": scheduleData['isAvailable'] ?? true,
       };
+
+      print("PUT DoctorSchedule Body: ${jsonEncode(body)}");
 
       final response = await http.put(
         Uri.parse('${parent.baseUrl}/DoctorSchedule/$doctorId'),
         headers: parent._headers,
-        body: jsonEncode(wrappedData),
+        body: jsonEncode(body),
       );
 
-      if (response.statusCode == 200) {
+      print("PUT DoctorSchedule Status: ${response.statusCode}");
+      print("PUT DoctorSchedule Body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
         return ApiResponse(success: true, message: "Doctor schedule updated successfully.");
       } else {
-        final body = jsonDecode(response.body);
-        return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to update schedule.");
+        String errorMsg = "Failed to update schedule";
+        try {
+          final data = jsonDecode(response.body);
+          errorMsg = data['errors']?.toString() ?? data['message']?.toString() ?? response.body;
+        } catch (_) {
+          errorMsg = response.body;
+        }
+        return ApiResponse(success: false, message: errorMsg);
       }
     } catch (e) {
+      print("Error in updateDoctorSchedule: $e");
       return ApiResponse(success: false, message: "Connection error: $e");
     }
   }
@@ -109,11 +121,12 @@ mixin DoctorScheduleApi {
         headers: parent._headers,
       );
 
-      if (response.statusCode == 200) {
+      print("DELETE DoctorSchedule Status: ${response.statusCode}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
         return ApiResponse(success: true, message: "Doctor schedule deleted successfully.");
       } else {
-        final body = jsonDecode(response.body);
-        return ApiResponse(success: false, message: body['errors']?.toString() ?? "Failed to delete schedule.");
+        return ApiResponse(success: false, message: "Failed to delete schedule: ${response.body}");
       }
     } catch (e) {
       return ApiResponse(success: false, message: "Connection error: $e");
