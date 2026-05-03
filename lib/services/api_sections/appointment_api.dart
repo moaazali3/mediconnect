@@ -68,10 +68,10 @@ mixin AppointmentApi {
     throw "خطأ في جلب مواعيد المريض";
   }
 
-  Future<int> getExpectedNumber(String doctorId, String day) async {
+  Future<int> getExpectedNumber(String doctorId, String appointmentDate) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Appointment/expected-number?doctorId=$doctorId&day=$day'),
+      Uri.parse('${parent.baseUrl}/Appointment/expected-number?doctorId=$doctorId&appointmentDate=$appointmentDate'),
       headers: parent._headers,
     );
 

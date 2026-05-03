@@ -83,8 +83,8 @@ class _BookingScreenState extends State<BookingScreen> {
   Future<void> _fetchExpectedTurn(DateTime date) async {
     setState(() => _isFetchingTurn = true);
     try {
-      final String dayName = DateFormat('EEEE').format(date);
-      final turn = await _apiService.getExpectedNumber(widget.doctorId, dayName);
+      final String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+      final turn = await _apiService.getExpectedNumber(widget.doctorId, formattedDate);
       if (mounted) {
         setState(() {
           _expectedTurn = turn;
@@ -373,20 +373,73 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildAppointmentInfoCard() {
+    String estimatedTime = "TBD";
+    
+    if (_expectedTurn != null && selectedDate != null && _doctorSchedule.isNotEmpty) {
+      String dayName = DateFormat('EEEE').format(selectedDate!);
+      try {
+        var schedule = _doctorSchedule.firstWhere(
+          (s) => s.getDayName().toLowerCase() == dayName.toLowerCase(),
+          orElse: () => _doctorSchedule.first,
+        );
+
+        List<String> parts = schedule.startTime.split(':');
+        DateTime baseTime = DateTime(
+          selectedDate!.year, selectedDate!.month, selectedDate!.day,
+          int.parse(parts[0]), int.parse(parts[1])
+        );
+        
+        DateTime myTime = baseTime.add(Duration(minutes: (_expectedTurn! - 1) * 30));
+        estimatedTime = DateFormat('hh:mm a').format(myTime);
+      } catch (e) {
+        estimatedTime = "Check at Hospital";
+      }
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(gradient: LinearGradient(colors: [primaryColor, primaryColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryColor, primaryColor.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight
+        ),
+        borderRadius: BorderRadius.circular(20)
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [Icon(Icons.info_outline, color: Colors.white70, size: 20), SizedBox(width: 8), Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))]),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.white70, size: 20),
+                  SizedBox(width: 8),
+                  Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))
+                ]
+              ),
+              if (_expectedTurn != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 16),
+                      const SizedBox(width: 6),
+                      Text(estimatedTime, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 10),
           _isFetchingTurn 
             ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
             : Text(_expectedTurn != null ? "#$_expectedTurn" : "TBD", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          const Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
+          const Text("* Please arrive 15 mins before the estimated time.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       ),
     );
