@@ -135,43 +135,88 @@ mixin AppointmentApi {
   Future<List<MedicalRecordModel>> getPatientMedicalHistory(String patientId) async {
     final ApiService parent = this as ApiService;
     
-    final results = await Future.wait([
-      http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers),
-      http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers),
-      http.get(Uri.parse('${parent.baseUrl}/Doctor'), headers: parent._headers),
-    ]);
+    try {
+      final results = await Future.wait([
+        http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers),
+        http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers),
+        parent.getDoctorNames(),
+      ]);
 
-    final recordRes = results[0];
-    final apptRes = results[1];
-    final doctorRes = results[2];
+      final recordRes = results[0] as http.Response;
+      final apptRes = results[1] as http.Response;
+      final doctorNamesList = results[2] as List<Map<String, dynamic>>;
 
-    if (recordRes.statusCode == 200 && apptRes.statusCode == 200) {
-      List<dynamic> recordBody = jsonDecode(recordRes.body);
-      List<dynamic> apptBody = jsonDecode(apptRes.body);
-      
-      List<MedicalRecordModel> records = recordBody.map((item) => MedicalRecordModel.fromJson(item)).toList();
-      List<PatientAppointmentModel> appointments = apptBody.map((item) => PatientAppointmentModel.fromJson(item)).toList();
-      
-      Map<String, String> doctorSpecialties = {};
-      if (doctorRes.statusCode == 200) {
-        List<dynamic> doctorBody = jsonDecode(doctorRes.body);
-        for (var d in doctorBody) {
-          doctorSpecialties[d['id'].toString()] = d['specializationName'] ?? 'General';
+      if (recordRes.statusCode == 200 && apptRes.statusCode == 200) {
+        List<dynamic> recordBody = jsonDecode(recordRes.body);
+        List<dynamic> apptBody = jsonDecode(apptRes.body);
+        
+        List<MedicalRecordModel> records = recordBody.map((item) => MedicalRecordModel.fromJson(item)).toList();
+        List<PatientAppointmentModel> appointments = apptBody.map((item) => PatientAppointmentModel.fromJson(item)).toList();
+        
+        Map<String, PatientAppointmentModel> apptMap = {
+          for (var a in appointments) a.appointmentId: a
+        };
+
+        // Name to ID lookup for fallback
+        Map<String, String> nameToIdMap = {};
+        for (var doc in doctorNamesList) {
+          String rawName = (doc['name'] ?? doc['fullName'] ?? doc['firstName'] ?? '').toString().toLowerCase();
+          String cleanName = rawName.replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
+          String id = (doc['id'] ?? doc['doctorId'] ?? '').toString();
+          if (cleanName.isNotEmpty && id.isNotEmpty) {
+            nameToIdMap[cleanName] = id;
+          }
         }
-      }
 
-      Map<String, PatientAppointmentModel> apptMap = {
-        for (var a in appointments) a.appointmentId: a
-      };
+        // 1. Resolve Doctor IDs for each record
+        Set<String> resolvedDoctorIds = {};
+        for (var record in records) {
+          if (apptMap.containsKey(record.appointmentId)) {
+            final appt = apptMap[record.appointmentId]!;
+            
+            String? docId;
+            // Prefer doctorId from appointment if it exists and is not 'null'
+            if (appt.doctorId.isNotEmpty && appt.doctorId.toLowerCase() != "null") {
+              docId = appt.doctorId;
+            } else {
+              // Fallback to name lookup
+              String cleanName = appt.doctorName.toLowerCase().replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
+              docId = nameToIdMap[cleanName];
+            }
 
-      for (var record in records) {
-        if (apptMap.containsKey(record.appointmentId)) {
-          final appt = apptMap[record.appointmentId]!;
-          record.doctorName = appt.doctorName;
-          record.doctorSpecialty = doctorSpecialties[appt.doctorId] ?? 'General';
+            if (docId != null && docId.isNotEmpty) {
+              record.doctorId = docId;
+              resolvedDoctorIds.add(docId);
+            }
+          }
         }
+
+        // 2. Fetch detailed doctor profiles in parallel
+        Map<String, DoctorFullModel> doctorCache = {};
+        await Future.wait(resolvedDoctorIds.map((id) async {
+          try {
+            final details = await parent.getDoctorDetails(id, patientId);
+            doctorCache[id] = details;
+          } catch (_) {}
+        }));
+
+        // 3. Map details back to records
+        for (var record in records) {
+          if (record.doctorId.isNotEmpty && doctorCache.containsKey(record.doctorId)) {
+            final doc = doctorCache[record.doctorId]!;
+            record.doctorName = "Dr. ${doc.firstName} ${doc.lastName}";
+            record.doctorSpecialty = doc.specializationName;
+            record.doctorImageUrl = doc.profilePictureUrl;
+          } else if (apptMap.containsKey(record.appointmentId)) {
+            final appt = apptMap[record.appointmentId]!;
+            record.doctorName = appt.doctorName;
+            record.doctorSpecialty = 'Medical Specialist';
+          }
+        }
+        return records;
       }
-      return records;
+    } catch (e) {
+      // Error handling
     }
     throw "Error fetching medical history";
   }

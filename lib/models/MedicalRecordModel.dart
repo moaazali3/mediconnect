@@ -6,6 +6,7 @@ class MedicalRecordModel {
   final String createdDate;
   
   // Optional fields filled from appointment data
+  String doctorId;
   String doctorName;
   String doctorSpecialty;
   String? doctorImageUrl;
@@ -16,6 +17,7 @@ class MedicalRecordModel {
     required this.diagnosis,
     required this.prescription,
     required this.createdDate,
+    this.doctorId = '',
     this.doctorName = 'Dr. Unknown',
     this.doctorSpecialty = 'General',
     this.doctorImageUrl,
