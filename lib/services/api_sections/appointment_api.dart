@@ -10,13 +10,34 @@ mixin AppointmentApi {
     );
     
     if (response.statusCode == 200 || response.statusCode == 201) {
-      if (response.body.isEmpty) return "SUCCESS";
-      try {
-        final data = jsonDecode(response.body);
-        return (data['id'] ?? data['appointmentId'] ?? data['Id'])?.toString();
-      } catch (e) {
-        return "SUCCESS";
+      String bodyStr = response.body.trim();
+      
+      if (bodyStr.isEmpty) {
+        // Try to get ID from Location header if body is empty
+        final location = response.headers['location'];
+        if (location != null) {
+          final id = location.split('/').last;
+          if (id.length > 20) return id;
+        }
+        return null;
       }
+
+      try {
+        final data = jsonDecode(bodyStr);
+        if (data is Map) {
+          final id = data['id'] ?? data['appointmentId'] ?? data['Id'] ?? 
+                     (data['data'] is Map ? (data['data']['id'] ?? data['data']['appointmentId']) : null);
+          if (id != null) return id.toString();
+        } else if (data is String && data.length > 20) {
+          return data;
+        }
+      } catch (e) {
+        // If not JSON, but looks like a GUID, return it
+        if (bodyStr.length > 20) return bodyStr;
+      }
+      
+      // If we got here, we couldn't find a valid GUID/ID
+      return null;
     }
     return null;
   }
@@ -45,6 +66,22 @@ mixin AppointmentApi {
       return appointments;
     }
     throw "خطأ في جلب مواعيد المريض";
+  }
+
+  Future<int> getExpectedNumber(String doctorId, String day) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Appointment/expected-number?doctorId=$doctorId&day=$day'),
+      headers: parent._headers,
+    );
+
+    if (response.statusCode == 200) {
+      return int.tryParse(response.body) ?? 0;
+    } else {
+      final body = jsonDecode(response.body);
+      String errorMessage = body['errors']?.toString() ?? "Failed to fetch expected number";
+      throw errorMessage;
+    }
   }
 
   Future<bool> completeAppointmentStatus(String appointmentId) async {

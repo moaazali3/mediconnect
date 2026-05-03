@@ -42,6 +42,8 @@ class _BookingScreenState extends State<BookingScreen> {
   double? _fetchedFee;
   String? _doctorImageUrl;
   bool _isFetchingSchedule = true;
+  int? _expectedTurn;
+  bool _isFetchingTurn = false;
 
   @override
   void initState() {
@@ -51,7 +53,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _fetchDoctorData() async {
     try {
-      // Use getDoctorDetails as it returns profile image, fee, and schedules in one call
       final profile = await _apiService.getDoctorDetails(widget.doctorId, widget.patientId);
 
       if (mounted) {
@@ -64,6 +65,7 @@ class _BookingScreenState extends State<BookingScreen> {
           List<DateTime> available = getAvailableDates();
           if (available.isNotEmpty) {
             selectedDate = available.first;
+            _fetchExpectedTurn(selectedDate!);
           }
         });
       }
@@ -73,6 +75,27 @@ class _BookingScreenState extends State<BookingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error fetching data: $e")),
         );
+      }
+    }
+  }
+
+  Future<void> _fetchExpectedTurn(DateTime date) async {
+    setState(() => _isFetchingTurn = true);
+    try {
+      final String dayName = DateFormat('EEEE').format(date);
+      final turn = await _apiService.getExpectedNumber(widget.doctorId, dayName);
+      if (mounted) {
+        setState(() {
+          _expectedTurn = turn;
+          _isFetchingTurn = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _expectedTurn = null;
+          _isFetchingTurn = false;
+        });
       }
     }
   }
@@ -125,6 +148,8 @@ class _BookingScreenState extends State<BookingScreen> {
       String? appointmentId = await _apiService.createAppointment(appointmentRequest);
 
       if (appointmentId != null) {
+        debugPrint("Booking successful. Appointment ID: $appointmentId");
+        
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
         final double currentFee = _fetchedFee ?? double.parse(widget.fee);
@@ -148,6 +173,7 @@ class _BookingScreenState extends State<BookingScreen> {
         throw "Failed to create appointment";
       }
     } catch (e) {
+      debugPrint("Booking error: $e");
       if (mounted) {
         if (Navigator.canPop(context)) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -165,7 +191,7 @@ class _BookingScreenState extends State<BookingScreen> {
       "doctor": widget.doctorName,
       "date": DateFormat('yMMMd').format(selectedDate!),
       "time": "TBD",
-      "queue": "N/A"
+      "queue": _expectedTurn?.toString() ?? "N/A"
     });
 
     showDialog(
@@ -195,6 +221,8 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 15),
               Text(widget.doctorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 5),
+              Text("ID: $appointmentId", style: const TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(height: 25),
               SizedBox(
                 width: double.infinity,
@@ -301,7 +329,13 @@ class _BookingScreenState extends State<BookingScreen> {
           DateTime date = availableDates[index];
           bool isSelected = selectedDate?.day == date.day && selectedDate?.month == date.month && selectedDate?.year == date.year;
           return GestureDetector(
-            onTap: () => setState(() => selectedDate = date),
+            onTap: () {
+              setState(() {
+                selectedDate = date;
+                _expectedTurn = null;
+              });
+              _fetchExpectedTurn(date);
+            },
             child: Container(
               width: 70,
               margin: const EdgeInsets.only(right: 12),
@@ -331,14 +365,16 @@ class _BookingScreenState extends State<BookingScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(gradient: LinearGradient(colors: [primaryColor, primaryColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(20)),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [Icon(Icons.info_outline, color: Colors.white70, size: 20), SizedBox(width: 8), Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))]),
-          SizedBox(height: 10),
-          Text("Generating QR...", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          SizedBox(height: 10),
-          Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
+          const Row(children: [Icon(Icons.info_outline, color: Colors.white70, size: 20), SizedBox(width: 8), Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))]),
+          const SizedBox(height: 10),
+          _isFetchingTurn 
+            ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+            : Text(_expectedTurn != null ? "#$_expectedTurn" : "TBD", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          const Text("* Final queue number will be assigned after confirmation.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       ),
     );
