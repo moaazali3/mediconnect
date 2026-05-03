@@ -107,9 +107,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
             const SizedBox(height: 20),
             _buildDetailRow("Doctor", data['doctor'] ?? "N/A"),
             _buildDetailRow("Date", data['date'] ?? "N/A"),
-            _buildDetailRow("Time", data['time'] ?? "N/A"),
             _buildDetailRow("Queue", "#${data['queue'] ?? 'N/A'}"),
-            _buildDetailRow("ID", appointmentId), // Display ID
             const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
@@ -162,15 +160,15 @@ class _QRScannerPageState extends State<QRScannerPage> {
       Navigator.pop(context); // Close loading
 
       if (success) {
-        _showSuccess("Appointment confirmed successfully!\nID: $appointmentId");
+        _showSuccess("Appointment confirmed successfully!");
       } else {
-        _showError("Failed to confirm appointment for ID: $appointmentId");
+        _showError("Failed to confirm appointment");
       }
     } catch (e) {
       debugPrint("Attendance confirmation error for ID $appointmentId: $e");
       if (!mounted) return;
       Navigator.pop(context);
-      _showError("Error confirming attendance for ID: $appointmentId\n$e");
+      _showError("Error confirming attendance");
     }
   }
 

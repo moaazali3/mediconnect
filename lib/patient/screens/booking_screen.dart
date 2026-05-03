@@ -191,7 +191,6 @@ class _BookingScreenState extends State<BookingScreen> {
       "appointmentId": appointmentId,
       "doctor": widget.doctorName,
       "date": DateFormat('yMMMd').format(selectedDate!),
-      "time": "TBD",
       "queue": _expectedTurn?.toString() ?? "N/A"
     });
 
@@ -222,8 +221,6 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 15),
               Text(widget.doctorName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 5),
-              Text("ID: $appointmentId", style: const TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(height: 25),
               SizedBox(
                 width: double.infinity,

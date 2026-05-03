@@ -96,7 +96,7 @@ mixin AppointmentApi {
     } else {
       final body = jsonDecode(response.body);
       String errorMessage = body['errors']?.toString() ?? "Failed to complete appointment";
-      throw "ID: $appointmentId - $errorMessage";
+      throw errorMessage;
     }
   }
 
@@ -112,7 +112,7 @@ mixin AppointmentApi {
     } else {
       final body = jsonDecode(response.body);
       String errorMessage = body['errors']?.toString() ?? "Failed to cancel appointment";
-      throw "ID: $appointmentId - $errorMessage";
+      throw errorMessage;
     }
   }
 
@@ -128,7 +128,7 @@ mixin AppointmentApi {
     } else {
       final body = jsonDecode(response.body);
       String errorMessage = body['errors']?.toString() ?? "Failed to delete appointment";
-      throw "ID: $appointmentId - $errorMessage";
+      throw errorMessage;
     }
   }
 

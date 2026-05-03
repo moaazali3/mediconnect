@@ -121,7 +121,6 @@ class DoctorDetailsPage extends StatelessWidget {
       "appointmentId": appointmentId,
       "doctor": "Dr. ${doctor.firstName} ${doctor.lastName}",
       "date": date,
-      "time": "TBD",
       "queue": "N/A"
     });
 

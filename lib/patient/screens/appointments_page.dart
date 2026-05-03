@@ -96,7 +96,6 @@ class AppointmentCard extends StatelessWidget {
       "appointmentId": appointmentId,
       "doctor": name,
       "date": date,
-      "time": time,
       "queue": queue
     });
 
@@ -122,7 +121,7 @@ class AppointmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text("$date | $time", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
         actions: [
