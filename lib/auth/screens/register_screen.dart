@@ -57,67 +57,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (value == null || value.isEmpty) return "Required";
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return "Email must have:\n• Valid format (e.g. name@example.com)";
+      return "Valid email required";
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return "Required";
-    
-    List<String> requirements = [];
-    if (value.length < 8) requirements.add("• At least 8 characters");
-    if (!RegExp(r'[A-Z]').hasMatch(value)) requirements.add("• One uppercase letter");
-    if (!RegExp(r'[a-z]').hasMatch(value)) requirements.add("• One lowercase letter");
-    if (!RegExp(r'[0-9]').hasMatch(value)) requirements.add("• One number");
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) requirements.add("• One special character");
-
-    if (requirements.isEmpty) return null;
-    return "Password must have:\n" + requirements.join("\n");
+    if (value.length < 8) return "Min 8 characters required";
+    return null;
   }
 
   String? _validateName(String? value, String label) {
     if (value == null || value.isEmpty) return "Required";
-    List<String> requirements = [];
-    if (value.length < 3) requirements.add("• At least 3 characters");
-    if (RegExp(r'[0-9]').hasMatch(value)) requirements.add("• No numbers allowed");
-    
-    if (requirements.isEmpty) return null;
-    return "$label must have:\n" + requirements.join("\n");
+    if (value.length < 3) return "Min 3 characters";
+    return null;
   }
 
   String? _validatePhone(String? value, String label) {
     if (value == null || value.isEmpty) return "Required";
-    List<String> requirements = [];
-    if (value.length != 11) requirements.add("• Exactly 11 digits");
-    if (!value.startsWith("01")) requirements.add("• Must start with 01");
-    if (!RegExp(r'^[0-9]+$').hasMatch(value)) requirements.add("• Only numbers allowed");
-    
-    if (requirements.isEmpty) return null;
-    return "$label must have:\n" + requirements.join("\n");
-  }
-
-  String? _validateAddress(String? value) {
-    if (value == null || value.isEmpty) return "Required";
-    if (value.length < 5) return "Address must have:\n• Min 5 characters";
-    return null;
-  }
-
-  String? _validateWeight(String? value) {
-    if (value == null || value.isEmpty) return "Required";
-    double? w = double.tryParse(value);
-    if (w == null || w < 2 || w > 300) {
-      return "Weight must have:\n• Range between 2 and 300 kg";
-    }
-    return null;
-  }
-
-  String? _validateHeight(String? value) {
-    if (value == null || value.isEmpty) return "Required";
-    double? h = double.tryParse(value);
-    if (h == null || h < 40 || h > 250) {
-      return "Height must have:\n• Range between 40 and 250 cm";
-    }
+    if (value.length != 11) return "Exactly 11 digits";
     return null;
   }
 
@@ -130,7 +89,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       DateTime dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
-
       final response = await ApiService().registerUser(
         firstName: fNameController.text,
         lastName: lNameController.text,
@@ -147,21 +105,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // Close loading
+      Navigator.pop(context);
 
       if (response.success) {
         _showOtpDialog(emailController.text);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message), backgroundColor: Colors.red));
       }
     } catch (e) {
       if (!mounted) return;
       if (Navigator.canPop(context)) Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
     }
   }
 
@@ -171,26 +125,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Column(
-          children: [
-            Icon(Icons.mark_email_read_rounded, color: primaryColor, size: 50),
-            SizedBox(height: 10),
-            Text("Verify Email", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
+        title: const Text("Verify Email", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("A verification code has been sent to:\n$email", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            Text("Code sent to: $email", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
             const SizedBox(height: 20),
             TextField(
               controller: otpController,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(letterSpacing: 8, fontSize: 20, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: "000000",
-                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.3), letterSpacing: 8),
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
@@ -198,45 +144,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
         ),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         actions: [
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async {
-                if (otpController.text.isEmpty) return;
-                
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
-                );
-
                 final response = await ApiService().confirmEmail(email, otpController.text);
-                
-                if (!mounted) return;
-                Navigator.pop(context); // Close loading
-
-                if (response.success) {
-                  Navigator.pop(context); // Close OTP Dialog
+                if (mounted && response.success) {
+                  Navigator.pop(context);
                   _showSuccessDialog(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(response.message), backgroundColor: Colors.red),
-                  );
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text("VERIFY", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text("VERIFY"),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Center(child: Text("Cancel", style: TextStyle(color: Colors.grey))),
           )
         ],
       ),
@@ -245,6 +165,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bool isSmallScreen = size.height < 700;
+    final bool isVeryNarrow = size.width < 360;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -257,200 +181,94 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
-          Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 30),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: Colors.transparent,
-                                shape: BoxShape.circle
-                              ),
-                              child: Image.asset(
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.05, vertical: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: isSmallScreen ? 20 : 30),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
                                 "assets/images/img.png",
-                                height: 80,
-                                width: 80,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) => const Icon(Icons.person_add_alt_1_rounded, size: 60, color: primaryColor),
+                                height: isSmallScreen ? 60 : 80,
+                                errorBuilder: (c, e, s) => Icon(Icons.person_add_rounded, size: isSmallScreen ? 50 : 60, color: primaryColor),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(_getStepTitle(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
-                            const SizedBox(height: 5),
-                            Text("Step ${currentStep + 1} of 3", style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                            const SizedBox(height: 25),
+                              const SizedBox(height: 10),
+                              Text(_getStepTitle(), style: TextStyle(fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold, color: primaryColor)),
+                              Text("Step ${currentStep + 1} of 3", style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                              const SizedBox(height: 20),
 
-                            // STEP 1: Account Details
-                            if (currentStep == 0) 
-                              Column(
-                                key: const ValueKey(0),
-                                children: [
-                                  _buildTextField(
-                                    controller: emailController,
-                                    label: "Email Address",
-                                    icon: Icons.alternate_email_rounded,
-                                    keyboardType: TextInputType.emailAddress,
-                                    validator: _validateEmail,
-                                  ),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(
-                                    controller: passController,
-                                    label: "Password",
-                                    icon: Icons.lock_person_rounded,
-                                    isPassword: true,
-                                    isPasswordHidden: registerPasswordObscured,
-                                    onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured),
-                                    validator: _validatePassword,
-                                  ),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(
-                                    controller: confirmPassController,
-                                    label: "Confirm Password",
-                                    icon: Icons.lock_person_rounded,
-                                    isPassword: true,
-                                    isPasswordHidden: confirmPasswordObscured,
-                                    onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) return "Required";
-                                      if (value != passController.text) return "Passwords do not match";
-                                      return null;
-                                    },
-                                  ),
-                                ],
-                              ),
-
-                            // STEP 2: Personal Details
-                            if (currentStep == 1) 
-                              Column(
-                                key: const ValueKey(1),
-                                children: [
-                                  _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone Number")),
-                                  const SizedBox(height: 15),
-                                  Row(
-                                    children: [
-                                      Expanded(child: _buildDropdownField(
-                                        label: "Gender",
-                                        icon: Icons.wc_rounded,
-                                        value: selectedGender,
-                                        items: ['Male', 'Female'],
-                                        onChanged: (val) => setState(() => selectedGender = val),
-                                      )),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: _buildTextField(
-                                          controller: dobController,
-                                          label: "Birth Date",
-                                          icon: Icons.calendar_month_rounded,
-                                          readOnly: true,
-                                          onTap: () async {
-                                            DateTime? picked = await showDatePicker(
-                                              context: context,
-                                              initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
-                                              firstDate: DateTime(1900),
-                                              lastDate: DateTime.now(),
-                                            );
-                                            if (picked != null) {
-                                              setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: addressController, label: "Home Address", icon: Icons.location_on_outlined, validator: _validateAddress),
-                                ],
-                              ),
-
-                            // STEP 3: Medical Details
-                            if (currentStep == 2) 
-                              Column(
-                                key: const ValueKey(2),
-                                children: [
-                                  _buildDropdownField(
-                                    label: "Blood Type",
-                                    icon: Icons.bloodtype_rounded,
-                                    value: selectedBloodType,
-                                    items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                                    onChanged: (val) => setState(() => selectedBloodType = val),
-                                  ),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number, validator: _validateWeight),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height_rounded, keyboardType: TextInputType.number, validator: _validateHeight),
-                                  const SizedBox(height: 15),
-                                  _buildTextField(controller: emergencyController, label: "Emergency Contact", icon: Icons.contact_emergency_rounded, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Emergency Contact")),
-                                ],
-                              ),
-
-                            const SizedBox(height: 35),
-
-                            Row(
-                              children: [
-                                if (currentStep > 0) 
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: () => setState(() => currentStep--),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(vertical: 15),
-                                        side: const BorderSide(color: primaryColor),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                      ),
-                                      child: const Text("BACK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                if (currentStep > 0) const SizedBox(width: 15),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: _handleNext,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 15),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                      elevation: 5,
-                                    ),
-                                    child: Text(currentStep == 2 ? "SIGN UP" : "NEXT", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                                  ),
-                                ),
+                              if (currentStep == 0) ...[
+                                _buildTextField(controller: emailController, label: "Email", icon: Icons.email_outlined, validator: _validateEmail),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: passController, label: "Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: registerPasswordObscured, onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured), validator: _validatePassword),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: confirmPassController, label: "Confirm Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: confirmPasswordObscured, onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured), validator: (v) => v != passController.text ? "No match" : null),
                               ],
-                            ),
-                            const SizedBox(height: 20),
 
-                            if (currentStep == 0)
+                              if (currentStep == 1) ...[
+                                _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: phoneController, label: "Phone", icon: Icons.phone_android, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone")),
+                                const SizedBox(height: 15),
+                                // Layout responsive for Gender and Birth Date
+                                isVeryNarrow 
+                                  ? Column(children: [
+                                      _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
+                                      const SizedBox(height: 15),
+                                      _buildDatePickerField(),
+                                    ])
+                                  : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                      Expanded(child: _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v))),
+                                      const SizedBox(width: 10),
+                                      Expanded(child: _buildDatePickerField()),
+                                    ]),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: addressController, label: "Address", icon: Icons.location_on_outlined),
+                              ],
+
+                              if (currentStep == 2) ...[
+                                _buildDropdownField(label: "Blood", icon: Icons.bloodtype, value: selectedBloodType, items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], onChanged: (v) => setState(() => selectedBloodType = v)),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number),
+                                const SizedBox(height: 15),
+                                _buildTextField(controller: emergencyController, label: "Emergency Phone", icon: Icons.contact_emergency, keyboardType: TextInputType.phone),
+                              ],
+
+                              const SizedBox(height: 30),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text("Already have an account?"),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text("Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                                  ),
+                                  if (currentStep > 0) 
+                                    Expanded(child: OutlinedButton(onPressed: () => setState(() => currentStep--), child: const Text("BACK"))),
+                                  if (currentStep > 0) const SizedBox(width: 10),
+                                  Expanded(child: ElevatedButton(onPressed: _handleNext, child: Text(currentStep == 2 ? "SIGN UP" : "NEXT"))),
                                 ],
                               ),
-                          ],
+                              if (currentStep == 0) ...[
+                                const SizedBox(height: 15),
+                                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Already have an account? Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold))),
+                              ]
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -464,37 +282,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  Widget _buildDatePickerField() {
+    return _buildTextField(
+      controller: dobController,
+      label: "Birth Date",
+      icon: Icons.calendar_today,
+      readOnly: true,
+      onTap: () async {
+        DateTime? picked = await showDatePicker(context: context, initialDate: DateTime(2000), firstDate: DateTime(1900), lastDate: DateTime.now());
+        if (picked != null) setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+      },
+    );
+  }
+
   String _getStepTitle() {
-    switch (currentStep) {
-      case 0: return "Account Details";
-      case 1: return "Personal Details";
-      case 2: return "Medical Details";
-      default: return "";
-    }
+    if (currentStep == 0) return "Account Details";
+    if (currentStep == 1) return "Personal Details";
+    return "Medical Details";
   }
 
   void _handleNext() {
     if (formKey.currentState!.validate()) {
-      if (currentStep < 2) {
-        setState(() => currentStep++);
-      } else {
-        _performRegister();
-      }
+      if (currentStep < 2) setState(() => currentStep++);
+      else _performRegister();
     }
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPassword = false,
-    bool isPasswordHidden = false,
-    VoidCallback? onTogglePassword,
-    TextInputType keyboardType = TextInputType.text,
-    bool readOnly = false,
-    VoidCallback? onTap,
-    String? Function(String?)? validator,
-  }) {
+  Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon, bool isPassword = false, bool isPasswordHidden = false, VoidCallback? onTogglePassword, TextInputType keyboardType = TextInputType.text, bool readOnly = false, VoidCallback? onTap, String? Function(String?)? validator}) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword && isPasswordHidden,
@@ -504,80 +318,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
-        errorMaxLines: 10,
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(4),
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: primaryColor, size: 20),
-        ),
-        suffixIcon: isPassword
-            ? IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(isPasswordHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
-                onPressed: onTogglePassword,
-              )
-            : null,
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+        prefixIcon: Icon(icon, color: primaryColor, size: 20),
+        suffixIcon: isPassword ? IconButton(icon: Icon(isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: primaryColor, size: 20), onPressed: onTogglePassword) : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       ),
-      validator: validator ?? (value) => (value == null || value.isEmpty) ? "Required" : null,
+      validator: validator ?? (v) => (v == null || v.isEmpty) ? "Required" : null,
     );
   }
 
-  Widget _buildDropdownField({
-    required String label,
-    required IconData icon,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
+  Widget _buildDropdownField({required String label, required IconData icon, required String? value, required List<String> items, required Function(String?) onChanged}) {
     return DropdownButtonFormField<String>(
-      isExpanded: true,
       value: value,
       items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, color: Colors.black),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(4),
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: primaryColor, size: 20),
-        ),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+        prefixIcon: Icon(icon, color: primaryColor, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       ),
-      validator: (val) => val == null ? "Required" : null,
+      validator: (v) => v == null ? "Required" : null,
     );
   }
 
   void _showSuccessDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 60),
-        content: const Text("Account verified and created successfully!", textAlign: TextAlign.center),
-        actions: [
-          Center(
-            child: ElevatedButton(
-              onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-              child: const Text("Continue to Login"),
-            ),
-          )
-        ],
-      ),
-    );
+    showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Success"), content: const Text("Account created!"), actions: [TextButton(onPressed: () { Navigator.pop(c); Navigator.pop(context); }, child: const Text("OK"))]));
   }
 }

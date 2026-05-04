@@ -221,7 +221,7 @@ mixin AppointmentApi {
     throw "Error fetching medical history";
   }
 
-  Future<MedicalRecordModel> getMedicalRecordByAppointment(String appointmentId) async {
+  Future<MedicalRecordModel?> getMedicalRecordByAppointment(String appointmentId) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(
       Uri.parse('${parent.baseUrl}/MedicalRecord/$appointmentId'),
@@ -230,7 +230,15 @@ mixin AppointmentApi {
     if (response.statusCode == 200) {
       return MedicalRecordModel.fromJson(jsonDecode(response.body));
     }
-    throw "Error fetching medical record for appointment $appointmentId";
+    
+    try {
+      final body = jsonDecode(response.body);
+      if (body['errors'] == "Medical record not found") {
+        return null; // نعيد null بدلاً من الخطأ لفتح واجهة الإضافة
+      }
+    } catch (_) {}
+    
+    throw "Error fetching medical record: ${response.body}";
   }
 
   Future<bool> createMedicalRecord(CreateMedicalRecordModel record) async {

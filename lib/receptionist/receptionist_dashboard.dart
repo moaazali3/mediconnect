@@ -56,7 +56,8 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
       appBar: CommonAppBar(
-        subtitle: "Reception Portal • $_receptionistName",
+        pageName: "Reception Portal",
+        userName: _receptionistName,
         onRefresh: _refreshData,
         onLogout: _signOut,
       ),

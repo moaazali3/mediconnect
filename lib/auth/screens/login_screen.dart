@@ -63,6 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bool isSmallScreen = size.height < 650;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -76,163 +79,169 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Container(color: Colors.black.withOpacity(0.05)),
-          Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(25.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: Form(
-                        key: formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
-                              child: Image.asset(
-                                "assets/images/img.png",
-                                height: 100,
-                                width: 100,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.lock_person_rounded, size: 80, color: primaryColor),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text("Welcome Back",
-                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)),
-                            const Text("Login to your account",
-                                style: TextStyle(fontSize: 16, color: Colors.black54)),
-                            const SizedBox(height: 35),
-
-                            _buildLoginField(
-                              controller: emailController,
-                              label: "Email Address",
-                              icon: Icons.email_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) => (value == null || !value.contains("@")) ? "Valid email required" : null,
-                            ),
-                            const SizedBox(height: 20),
-
-                            _buildLoginField(
-                              controller: passwordController,
-                              label: "Password",
-                              icon: Icons.lock_outline,
-                              isPassword: true,
-                              isPasswordHidden: isPasswordHidden,
-                              onTogglePassword: () => setState(() => isPasswordHidden = !isPasswordHidden),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return "Password is required";
-                                if (value.length < 6) return "Min 6 characters";
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: Checkbox(
-                                    value: rememberMe,
-                                    onChanged: (val) => setState(() => rememberMe = val ?? false),
-                                    activeColor: primaryColor,
-                                  ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(25.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 25 : 40),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
+                                child: Image.asset(
+                                  "assets/images/img.png",
+                                  height: isSmallScreen ? 80 : 100,
+                                  width: isSmallScreen ? 80 : 100,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(Icons.lock_person_rounded, size: isSmallScreen ? 60 : 80, color: primaryColor),
                                 ),
-                                const SizedBox(width: 8),
-                                const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 55,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
-                                    );
+                              ),
+                              SizedBox(height: isSmallScreen ? 15 : 20),
+                              Text("Welcome Back",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: isSmallScreen ? 22 : 26, fontWeight: FontWeight.bold, color: primaryColor)),
+                              const Text("Login to your account",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 16, color: Colors.black54)),
+                              SizedBox(height: isSmallScreen ? 25 : 35),
 
-                                    var response = await ApiService().login(emailController.text, passwordController.text);
+                              _buildLoginField(
+                                controller: emailController,
+                                label: "Email Address",
+                                icon: Icons.email_outlined,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) => (value == null || !value.contains("@")) ? "Valid email required" : null,
+                              ),
+                              const SizedBox(height: 20),
 
-                                    if (!mounted) return;
-                                    Navigator.pop(context); 
-
-                                    if (response.success && response.data != null) {
-                                      String token = response.data['token'];
-                                      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-                                      
-                                      String userId = decodedToken['userId'] ?? 
-                                                     decodedToken['id'] ?? 
-                                                     decodedToken['nameid'] ?? 
-                                                     decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? 
-                                                     "";
-
-                                      String role = (decodedToken['role'] ?? 
-                                                    decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
-                                                    "").toString().toLowerCase();
-
-                                      await _saveSession(token, role, userId);
-
-                                      if (mounted) {
-                                        if (role == "admin") {
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-                                        } else if (role == "doctor") {
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
-                                        } else if (role == "receptionist") {
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
-                                        } else {
-                                          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
-                                        }
-                                      }
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(response.message), 
-                                          backgroundColor: Colors.red,
-                                          duration: const Duration(seconds: 5),
-                                        ),
-                                      );
-                                    }
-                                  }
+                              _buildLoginField(
+                                controller: passwordController,
+                                label: "Password",
+                                icon: Icons.lock_outline,
+                                isPassword: true,
+                                isPasswordHidden: isPasswordHidden,
+                                onTogglePassword: () => setState(() => isPasswordHidden = !isPasswordHidden),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return "Password is required";
+                                  if (value.length < 6) return "Min 6 characters";
+                                  return null;
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                  elevation: 5,
-                                ),
-                                child: const Text("LOGIN", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
                               ),
-                            ),
-                            const SizedBox(height: 25),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text("Don't have an account?"),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: rememberMe,
+                                      onChanged: (val) => setState(() => rememberMe = val ?? false),
+                                      activeColor: primaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                                ],
+                              ),
+                              SizedBox(height: isSmallScreen ? 15 : 25),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 55,
+                                child: ElevatedButton(
+                                  onPressed: () async {
+                                    if (formKey.currentState!.validate()) {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+                                      );
+
+                                      var response = await ApiService().login(emailController.text, passwordController.text);
+
+                                      if (!mounted) return;
+                                      Navigator.pop(context); 
+
+                                      if (response.success && response.data != null) {
+                                        String token = response.data['token'];
+                                        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+                                        
+                                        String userId = decodedToken['userId'] ?? 
+                                                       decodedToken['id'] ?? 
+                                                       decodedToken['nameid'] ?? 
+                                                       decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? 
+                                                       "";
+
+                                        String role = (decodedToken['role'] ?? 
+                                                      decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
+                                                      "").toString().toLowerCase();
+
+                                        await _saveSession(token, role, userId);
+
+                                        if (mounted) {
+                                          if (role == "admin") {
+                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+                                          } else if (role == "doctor") {
+                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
+                                          } else if (role == "receptionist") {
+                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
+                                          } else {
+                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
+                                          }
+                                        }
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(response.message), 
+                                            backgroundColor: Colors.red,
+                                            duration: const Duration(seconds: 5),
+                                          ),
+                                        );
+                                      }
+                                    }
                                   },
-                                  child: const Text("Sign Up", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                    elevation: 5,
+                                  ),
+                                  child: const Text("LOGIN", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              SizedBox(height: isSmallScreen ? 15 : 25),
+                              Wrap(
+                                alignment: WrapAlignment.center,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  const Text("Don't have an account?"),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+                                    },
+                                    child: const Text("Sign Up", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

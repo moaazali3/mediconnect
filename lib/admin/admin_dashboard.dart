@@ -111,7 +111,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
       appBar: CommonAppBar(
-        subtitle: "Admin Portal • $_adminName",
+        pageName: "Admin Portal",
+        userName: _adminName,
         onRefresh: _refreshData,
         onLogout: _signOut,
       ),

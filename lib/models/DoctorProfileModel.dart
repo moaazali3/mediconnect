@@ -1,3 +1,5 @@
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
+
 class DoctorProfileModel {
   final String firstName;
   final String lastName;
@@ -11,6 +13,7 @@ class DoctorProfileModel {
   final double consultationFee;
   final String biography;
   final String? profilePictureUrl;
+  final List<DoctorScheduleModel> doctorSchedules;
 
   // Getter لضمان التوافق مع الأجزاء التي تستخدم imageUrl
   String? get imageUrl => profilePictureUrl;
@@ -28,9 +31,12 @@ class DoctorProfileModel {
     required this.consultationFee,
     required this.biography,
     this.profilePictureUrl,
+    this.doctorSchedules = const [],
   });
 
   factory DoctorProfileModel.fromJson(Map<String, dynamic> json) {
+    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    
     return DoctorProfileModel(
       firstName: json['firstName'] ?? json['FirstName'] ?? '',
       lastName: json['lastName'] ?? json['LastName'] ?? '',
@@ -44,6 +50,9 @@ class DoctorProfileModel {
       consultationFee: (json['consultationFee'] ?? json['ConsultationFee'] as num?)?.toDouble() ?? 0.0,
       biography: json['biography'] ?? json['Biography'] ?? '',
       profilePictureUrl: json['profilePictureUrl'] ?? json['ProfilePictureUrl'] ?? json['imageUrl'] ?? json['ImageUrl'],
+      doctorSchedules: (schedulesJson is List)
+          ? schedulesJson.map((i) => DoctorScheduleModel.fromJson(i)).toList()
+          : [],
     );
   }
 
@@ -58,6 +67,7 @@ class DoctorProfileModel {
       "phoneNumber": phoneNumber,
       "biography": biography,
       "profilePictureUrl": profilePictureUrl,
+      "doctorSchedules": doctorSchedules.map((s) => s.toJson()).toList(),
     };
   }
 }
