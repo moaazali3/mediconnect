@@ -49,7 +49,11 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(spec == null ? "Add Specialization" : "Edit Specialization"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          spec == null ? "Add Specialization" : "Edit Specialization",
+          style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
+        ),
         content: Form(
           key: formKey,
           child: Column(
@@ -57,20 +61,37 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: "Name"),
+                decoration: InputDecoration(
+                  labelText: "Name",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.category_rounded),
+                ),
                 validator: (val) => val == null || val.isEmpty ? "Required" : null,
               ),
+              const SizedBox(height: 15),
               TextFormField(
                 controller: descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
+                decoration: InputDecoration(
+                  labelText: "Description",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.description_rounded),
+                ),
                 maxLines: 2,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () async {
               if (formKey.currentState!.validate()) {
                 final createModel = CreateSpecializationModel(
@@ -107,10 +128,10 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FA),
       appBar: CommonAppBar(
-        title: "Specializations",
+        pageName: "Specializations",
         showBackButton: true,
-        onRefresh: _fetchSpecializations,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEditDialog(),
@@ -127,30 +148,78 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                      const Center(child: Text("No specializations found")),
+                      const Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.category_outlined, size: 60, color: Colors.grey),
+                            SizedBox(height: 10),
+                            Text("No specializations found", style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                      ),
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: _specializations.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    separatorBuilder: (context, index) => const SizedBox(height: 15),
                     itemBuilder: (context, index) {
                       final spec = _specializations[index];
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: primaryColor.withOpacity(0.1),
-                            child: const Icon(Icons.category_rounded, color: primaryColor),
-                          ),
-                          title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(spec.description),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.edit_rounded, color: Colors.grey),
-                            onPressed: () => _showAddEditDialog(spec: spec),
-                          ),
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: const Icon(Icons.category_rounded, color: primaryColor, size: 28),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    spec.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                      color: Color(0xFF2D3142),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    spec.description,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_rounded, color: Colors.grey),
+                              onPressed: () => _showAddEditDialog(spec: spec),
+                            ),
+                          ],
                         ),
                       );
                     },

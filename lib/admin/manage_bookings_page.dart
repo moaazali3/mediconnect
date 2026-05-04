@@ -128,7 +128,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+                                    backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withValues(alpha: 0.1),
                                     backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
                                     child: fullImageUrl == null
                                         ? Icon(
@@ -138,8 +138,13 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                           )
                                         : null,
                                   ),
-                                  title: Text("${doctor.firstName} ${doctor.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(doctor.specializationName),
+                                  title: Text("${doctor.firstName} ${doctor.lastName}", 
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text(doctor.specializationName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
                                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                   onTap: () {
                                     Navigator.push(
@@ -335,29 +340,34 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => ProfileScreen(userId: app.patientId, readOnly: true),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  app.patientName, 
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold, 
-                                    fontSize: 16, 
-                                    color: primaryColor,
-                                    decoration: TextDecoration.underline
-                                  )
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ProfileScreen(userId: app.patientId, readOnly: true),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    app.patientName, 
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold, 
+                                      fontSize: 16, 
+                                      color: primaryColor,
+                                      decoration: TextDecoration.underline
+                                    )
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColor(app.status).withOpacity(0.1),
+                                  color: _getStatusColor(app.status).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -375,17 +385,19 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Date: ${app.appointmentDate}", style: TextStyle(color: Colors.grey[700])),
-                                  Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: Colors.grey[700])),
-                                ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("Date: ${app.appointmentDate}", style: TextStyle(color: Colors.grey[700])),
+                                    Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: Colors.grey[700])),
+                                  ],
+                                ),
                               ),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.withOpacity(0.1),
+                                  color: Colors.orange.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(

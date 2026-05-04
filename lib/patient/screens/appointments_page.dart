@@ -102,7 +102,6 @@ class AppointmentCard extends StatelessWidget {
   });
 
   void _showQRCode(BuildContext context) {
-    // تجهيز البيانات التي سيحتويها الـ QR
     final String qrData = jsonEncode({
       "appointmentId": appointmentId,
       "doctor": name,
@@ -131,7 +130,7 @@ class AppointmentCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
-            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
@@ -183,6 +182,7 @@ class AppointmentCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -196,9 +196,12 @@ class AppointmentCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -207,6 +210,8 @@ class AppointmentCard extends StatelessWidget {
                     ),
                     Text(
                       spec,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                     ),
                   ],
@@ -227,9 +232,9 @@ class AppointmentCard extends StatelessWidget {
             spacing: 8, // المسافة الأفقية بين العناصر
             runSpacing: 10, // المسافة الرأسية لو نزلوا في سطر جديد
             children: [
-              _buildInfoItem(Icons.calendar_today_rounded, date),
-              _buildInfoItem(Icons.access_time_rounded, time),
-              _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue"),
+              Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, date)),
+              Expanded(child: _buildInfoItem(Icons.access_time_rounded, time)),
+              Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue")),
             ],
           ),
         ],
@@ -243,7 +248,14 @@ class AppointmentCard extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
         const SizedBox(width: 5),
-        Text(text, style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
+          ),
+        ),
       ],
     );
   }

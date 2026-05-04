@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/models/SpecializationModel.dart';
-import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -16,7 +14,9 @@ class TodayAppointmentsPage extends StatefulWidget {
 
 class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
   final ApiService _apiService = ApiService();
-  late Future<List<dynamic>> _dataFuture;
+  late Future<List<AppointmentModel>> _appointmentsFuture;
+  DateTime _selectedDate = DateTime.now();
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -26,244 +26,252 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
 
   void _loadData() {
     setState(() {
-      _dataFuture = Future.wait([
-        _apiService.getAllSpecializations(),
-        _apiService.getAllDoctors(),
-        _apiService.getAllAppointments(),
-      ]);
+      _appointmentsFuture = _apiService.getAllAppointments();
     });
   }
 
-  void _showAppointmentsDetails(BuildContext context, String specName, List<AppointmentModel> appointments) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Bookings: $specName",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
-              ),
-              const SizedBox(height: 15),
-              Expanded(
-                child: appointments.isEmpty
-                    ? const Center(child: Text("No patient details found."))
-                    : ListView.builder(
-                        itemCount: appointments.length,
-                        itemBuilder: (context, index) {
-                          final app = appointments[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: primaryColor.withValues(alpha: 0.1),
-                                  child: Text("${index + 1}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                                ),
-                                const SizedBox(width: 15),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        app.patientName.isNotEmpty ? app.patientName : "Patient: ${app.patientId.length > 8 ? app.patientId.substring(0, 8) : app.patientId}...",
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        "Doctor: ${app.doctorName.isNotEmpty ? app.doctorName : "ID: ${app.doctorId.length > 8 ? app.doctorId.substring(0, 8) : app.doctorId}"}",
-                                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    app.startTime,
-                                    style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
+  Future<void> _updateStatus(String id, bool isAccept) async {
+    setState(() => _isProcessing = true);
+    try {
+      bool success;
+      if (isAccept) {
+        success = await _apiService.completeAppointmentStatus(id);
+      } else {
+        success = await _apiService.cancelAppointmentStatus(id);
+      }
+
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!"),
+            backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
+        );
+        _loadData(); 
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: primaryColor,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
         );
       },
     );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  Widget _buildAppointmentItem(AppointmentModel app) {
+    final bool isFinalized = app.status.toLowerCase() == "completed" || 
+                           app.status.toLowerCase() == "cancelled" || 
+                           app.status.toLowerCase() == "confirmed";
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey[100]!),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: primaryColor.withValues(alpha: 0.1),
+                child: const Icon(Icons.person, color: primaryColor, size: 20),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      app.patientName.isNotEmpty ? app.patientName : "Patient: ${app.patientId.substring(0, 8)}...",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Doctor: ${app.doctorName}",
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      app.startTime,
+                      style: const TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    app.status,
+                    style: TextStyle(
+                      fontSize: 11, 
+                      color: _getStatusColor(app.status),
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (!isFinalized) ...[
+            const SizedBox(height: 15),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 0,
+                    ),
+                    child: const Text("Accept"),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Colors.orange;
+      case 'completed': 
+      case 'confirmed': return Colors.green;
+      case 'cancelled': return Colors.red;
+      default: return Colors.blue;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    String selectedDateYMD = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    String selectedDateDMY = DateFormat('dd/MM/yyyy').format(_selectedDate);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: "Today's Appointments",
+        subtitle: DateFormat('EEEE, d MMMM').format(_selectedDate),
         showBackButton: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            onPressed: () => _selectDate(context),
+          ),
+        ],
+        onRefresh: _loadData,
       ),
-      body: FutureBuilder(
-        future: _dataFuture,
-        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
-                  const SizedBox(height: 16),
-                  Text("Error: ${snapshot.error}"),
-                  const SizedBox(height: 16),
-                  ElevatedButton(onPressed: _loadData, child: const Text("Retry")),
-                ],
-              ),
-            );
-          }
-
-          final List<DoctorModel> doctors = snapshot.data![1];
-          final List<AppointmentModel> allAppointments = snapshot.data![2];
-
-          // Filter today's appointments - be robust with the date format using 'contains'
-          final todayAppointments = allAppointments.where((app) => app.appointmentDate.contains(todayDate)).toList();
-
-          // Group appointments by specialization name for better visibility
-          Map<String, List<AppointmentModel>> specGroup = {};
-          for (var app in todayAppointments) {
-            String specName = "Other";
-            for (var d in doctors) {
-              if (d.id.toString() == app.doctorId.toString()) {
-                specName = d.specializationName.isNotEmpty ? d.specializationName : "General";
-                break;
+      body: Stack(
+        children: [
+          FutureBuilder<List<AppointmentModel>>(
+            future: _appointmentsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: primaryColor));
               }
-            }
-            specGroup.putIfAbsent(specName, () => []).add(app);
-          }
+              if (snapshot.hasError) {
+                return Center(child: Text("Error: ${snapshot.error}"));
+              }
 
-          if (todayAppointments.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 15),
-                  Text("No appointments for today.", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                  Text("Checked for: $todayDate", style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                  if (allAppointments.isNotEmpty) 
-                    Text("Total appointments on server: ${allAppointments.length}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                ],
-              ),
-            );
-          }
+              final allAppointments = snapshot.data ?? [];
+              final displayAppointments = allAppointments.where((app) {
+                return app.appointmentDate.contains(selectedDateYMD) || 
+                       app.appointmentDate.contains(selectedDateDMY);
+              }).toList();
 
-          final groupNames = specGroup.keys.toList()..sort();
+              displayAppointments.sort((a, b) => a.startTime.compareTo(b.startTime));
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: groupNames.length,
-            itemBuilder: (context, index) {
-              final name = groupNames[index];
-              final list = specGroup[name]!;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showAppointmentsDetails(context, name, list),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.medical_services_outlined, color: primaryColor),
-                          ),
-                          const SizedBox(width: 15),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142)),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: primaryColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        "${list.length}",
-                                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${list.length} person${list.length > 1 ? 's' : ''} booked today",
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-                        ],
-                      ),
-                    ),
+              if (displayAppointments.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey[300]),
+                      const SizedBox(height: 15),
+                      Text("No appointments for this day.", 
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: displayAppointments.length,
+                itemBuilder: (context, index) => _buildAppointmentItem(displayAppointments[index]),
               );
             },
-          );
-        },
+          ),
+          if (_isProcessing)
+            Container(
+              color: Colors.black.withValues(alpha: 0.1),
+              child: const Center(child: CircularProgressIndicator(color: primaryColor)),
+            ),
+        ],
       ),
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
-import 'package:mediconnect/models/AdminDashboardModel.dart';
+import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:intl/intl.dart';
 
 class TodayRevenuePage extends StatefulWidget {
   const TodayRevenuePage({super.key});
@@ -15,6 +17,7 @@ class TodayRevenuePage extends StatefulWidget {
 class _TodayRevenuePageState extends State<TodayRevenuePage> {
   final ApiService _apiService = ApiService();
   late Future<Map<String, dynamic>> _dataFuture;
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -28,57 +31,115 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
     });
   }
 
-  Future<Map<String, dynamic>> _fetchCombinedData() async {
-    // 1. جلب بيانات لوحة التحكم (للحصول على إجمالي اليوم)
-    final dashboard = await _apiService.getAdminDashboardStats();
-    
-    // 2. جلب كافة التخصصات
-    final specializations = await _apiService.getAllSpecializations();
-    
-    // 3. جلب الإيرادات لكل تخصص باستخدام Endpoint التخصصات الجديد
-    // نستخدم Future.wait لجلبهم بالتوازي لسرعة الأداء
-    final List<Map<String, dynamic>> breakdown = [];
-    
-    final revenueFutures = specializations.map((spec) => 
-      _apiService.getSpecializationRevenue(spec.name).catchError((e) => {
-        "totalRevenue": 0.0,
-        "appointmentCount": 0
-      })
-    ).toList();
-
-    final revenues = await Future.wait(revenueFutures);
-
-    for (int i = 0; i < specializations.length; i++) {
-      final revData = revenues[i];
-      // نأخذ التخصصات التي تحتوي على حجوزات فقط أو نظهر الجميع حسب التصميم
-      double amount = (revData['totalRevenue'] ?? revData['revenue'] ?? 0.0).toDouble();
-      int count = revData['appointmentCount'] ?? revData['totalAppointments'] ?? revData['count'] ?? 0;
-      
-      if (count > 0 || amount > 0) {
-        breakdown.add({
-          "name": specializations[i].name,
-          "revenue": amount,
-          "count": count,
-        });
-      }
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: primaryColor,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+      _loadData();
     }
+  }
 
-    // ترتيب تنازلي حسب الإيرادات
-    breakdown.sort((a, b) => b['revenue'].compareTo(a['revenue']));
+  Future<Map<String, dynamic>> _fetchCombinedData() async {
+    try {
+      final results = await Future.wait([
+        _apiService.getAllAppointments(),
+        _apiService.getAllDoctors(pageSize: 500),
+        _apiService.getAllSpecializations(),
+      ]);
 
-    return {
-      "dashboard": dashboard,
-      "breakdown": breakdown,
-    };
+      final allAppointments = results[0] as List<AppointmentModel>;
+      final allDoctors = results[1] as List<DoctorModel>;
+      final allSpecs = results[2] as List<SpecializationModel>;
+
+      final String targetYMD = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final String targetDMY = DateFormat('dd/MM/yyyy').format(_selectedDate);
+
+      // فلترة مواعيد اليوم المختار
+      final dayAppts = allAppointments.where((app) {
+        String date = app.appointmentDate;
+        return date.contains(targetYMD) || date.contains(targetDMY);
+      }).toList();
+
+      double calculatedTotalRevenue = 0;
+      Map<String, Map<String, dynamic>> specData = {
+        for (var spec in allSpecs) spec.name: {"revenue": 0.0, "count": 0}
+      };
+
+      Map<String, DoctorModel> doctorMap = {for (var d in allDoctors) d.id: d};
+
+      for (var app in dayAppts) {
+        final doc = doctorMap[app.doctorId];
+        if (doc != null) {
+          specData[doc.specializationName] ??= {"revenue": 0.0, "count": 0};
+          specData[doc.specializationName]!["count"] = (specData[doc.specializationName]!["count"] as int) + 1;
+          
+          // احتساب الإيرادات فقط للمواعيد المكتملة
+          if (app.status.toLowerCase() == 'completed') {
+            double fee = doc.consultationFee;
+            calculatedTotalRevenue += fee;
+            specData[doc.specializationName]!["revenue"] = (specData[doc.specializationName]!["revenue"] as double) + fee;
+          }
+        }
+      }
+
+      final List<Map<String, dynamic>> breakdown = [];
+      specData.forEach((name, data) {
+        if (data["count"] > 0 || data["revenue"] > 0) {
+          breakdown.add({
+            "name": name,
+            "revenue": data["revenue"],
+            "count": data["count"],
+          });
+        }
+      });
+
+      breakdown.sort((a, b) => b['revenue'].compareTo(a['revenue']));
+
+      return {
+        "totalRevenue": calculatedTotalRevenue,
+        "totalAppts": dayAppts.length,
+        "breakdown": breakdown,
+      };
+    } catch (e) {
+      debugPrint("Error in TodayRevenuePage: $e");
+      rethrow;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: const CommonAppBar(
-        title: "Today's Revenue",
+      appBar: CommonAppBar(
+        title: "Revenue by Day",
+        subtitle: DateFormat('EEEE, d MMMM').format(_selectedDate),
         showBackButton: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            onPressed: () => _selectDate(context),
+          ),
+        ],
+        onRefresh: _loadData,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _dataFuture,
@@ -101,7 +162,8 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
             );
           }
 
-          final dashboard = snapshot.data!["dashboard"] as AdminDashboardModel;
+          final totalRevenue = (snapshot.data!["totalRevenue"] as num).toDouble();
+          final totalAppts = snapshot.data!["totalAppts"] as int;
           final breakdown = snapshot.data!["breakdown"] as List<Map<String, dynamic>>;
 
           return RefreshIndicator(
@@ -110,7 +172,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                _buildTotalHeader(dashboard.totalRevenueToday, dashboard.totalAppointmentsToday),
+                _buildTotalHeader(totalRevenue, totalAppts),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
                   child: Row(
@@ -130,7 +192,8 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
                         children: [
                           Icon(Icons.info_outline, color: Colors.grey[400], size: 50),
                           const SizedBox(height: 10),
-                          const Text("No breakdown data available", style: TextStyle(color: Colors.grey)),
+                          Text("No revenue data for ${DateFormat('EEEE').format(_selectedDate)}", 
+                            style: const TextStyle(color: Colors.grey)),
                         ],
                       ),
                     ),
@@ -167,7 +230,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
       ),
       child: Column(
         children: [
-          const Text("Today's Total Revenue", style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 1)),
+          const Text("Revenue for Selected Day", style: TextStyle(color: Colors.white70, fontSize: 14, letterSpacing: 1)),
           const SizedBox(height: 10),
           Text(
             "${total.toStringAsFixed(0)} EGP",
@@ -182,7 +245,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
               children: [
                 const Icon(Icons.confirmation_number_outlined, color: Colors.white, size: 16),
                 const SizedBox(width: 8),
-                Text("$count Bookings Today", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text("$count Appts for this Day", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -210,7 +273,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
               color: primaryColor.withOpacity(0.08),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(Icons.medical_services_rounded, color: primaryColor, size: 24),
+            child: const Icon(Icons.payments_rounded, color: primaryColor, size: 24),
           ),
           const SizedBox(width: 15),
           Expanded(
@@ -218,8 +281,6 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142))),
-                const SizedBox(height: 4),
-                Text("$count Hajj / Bookings", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
               ],
             ),
           ),
