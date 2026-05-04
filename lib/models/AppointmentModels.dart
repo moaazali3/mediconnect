@@ -29,15 +29,15 @@ class AppointmentModel {
     return AppointmentModel(
       appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
       patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
-      patientName: json['patientName'] ?? '',
-      doctorId: (json['doctorId'] ?? '').toString(),
-      doctorName: json['doctorName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
-      status: json['status'] ?? '',
+      patientName: json['patientName'] ?? json['patient_name'] ?? '',
+      doctorId: (json['doctorId'] ?? json['doctorID'] ?? json['doctor_id'] ?? json['DoctorId'] ?? '').toString(),
+      doctorName: json['doctorName'] ?? json['doctor_name'] ?? '',
+      appointmentDate: json['appointmentDate'] ?? json['appointment_date'] ?? '',
+      dayOfWeek: json['dayOfWeek'] ?? json['day_of_week'] ?? '',
+      startTime: json['startTime'] ?? json['start_time'] ?? '',
+      endTime: json['endTime'] ?? json['end_time'] ?? '',
+      queueNumber: json['queueNumber'] ?? json['queue_number'] ?? 0,
+      status: json['status'] ?? json['Status'] ?? '',
     );
   }
 }
@@ -108,14 +108,14 @@ class DoctorAppointmentModel {
     return DoctorAppointmentModel(
       appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
       patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
-      doctorId: (json['doctorId'] ?? '').toString(),
-      patientName: json['patientName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      status: json['status'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
+      doctorId: (json['doctorId'] ?? json['doctorID'] ?? json['doctor_id'] ?? json['DoctorId'] ?? '').toString(),
+      patientName: json['patientName'] ?? json['patient_name'] ?? '',
+      appointmentDate: json['appointmentDate'] ?? json['appointment_date'] ?? '',
+      dayOfWeek: json['dayOfWeek'] ?? json['day_of_week'] ?? '',
+      startTime: json['startTime'] ?? json['start_time'] ?? '',
+      endTime: json['endTime'] ?? json['end_time'] ?? '',
+      status: json['status'] ?? json['Status'] ?? '',
+      queueNumber: json['queueNumber'] ?? json['queue_number'] ?? 0,
     );
   }
 }
@@ -148,14 +148,14 @@ class PatientAppointmentModel {
   factory PatientAppointmentModel.fromJson(Map<String, dynamic> json) {
     return PatientAppointmentModel(
       appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
-      doctorId: (json['doctorId'] ?? '').toString(),
-      doctorName: json['doctorName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      status: json['status'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
+      doctorId: (json['doctorId'] ?? json['doctorID'] ?? json['doctor_id'] ?? json['DoctorId'] ?? '').toString(),
+      doctorName: json['doctorName'] ?? json['doctor_name'] ?? '',
+      appointmentDate: json['appointmentDate'] ?? json['appointment_date'] ?? '',
+      dayOfWeek: json['dayOfWeek'] ?? json['day_of_week'] ?? '',
+      startTime: json['startTime'] ?? json['start_time'] ?? '',
+      endTime: json['endTime'] ?? json['end_time'] ?? '',
+      status: json['status'] ?? json['Status'] ?? '',
+      queueNumber: json['queueNumber'] ?? json['queue_number'] ?? 0,
     );
   }
 }

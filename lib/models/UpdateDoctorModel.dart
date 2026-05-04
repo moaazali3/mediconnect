@@ -10,7 +10,7 @@ class UpdateDoctorModel {
   final double experienceYears;
   final double consultationFee;
   final int specializationId;
-  final String biography;
+  final String? biography; // أعدناه هنا كحقل اختياري
 
   UpdateDoctorModel({
     required this.firstName,
@@ -21,10 +21,9 @@ class UpdateDoctorModel {
     required this.experienceYears,
     required this.consultationFee,
     required this.specializationId,
-    required this.biography,
+    this.biography,
   });
 
-  // ميثود لتحويل البيانات من بروفايل الطبيب مع إضافة معرف التخصص
   factory UpdateDoctorModel.fromProfile(DoctorProfileModel profile, int specId) {
     return UpdateDoctorModel(
       firstName: profile.firstName,
@@ -39,7 +38,6 @@ class UpdateDoctorModel {
     );
   }
 
-  // ميثود لتحويل البيانات من الموديل الكامل للطبيب
   factory UpdateDoctorModel.fromFullModel(DoctorFullModel doctor, int specId) {
     return UpdateDoctorModel(
       firstName: doctor.firstName,
@@ -54,7 +52,6 @@ class UpdateDoctorModel {
     );
   }
 
-  // ميثود لتسهيل تحديث حقول معينة فقط مع الحفاظ على البقية
   UpdateDoctorModel copyWith({
     String? firstName,
     String? lastName,
@@ -80,7 +77,7 @@ class UpdateDoctorModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> data = {
       "firstName": firstName,
       "lastName": lastName,
       "phoneNumber": phoneNumber,
@@ -89,7 +86,13 @@ class UpdateDoctorModel {
       "experienceYears": experienceYears,
       "consultationFee": consultationFee,
       "specializationId": specializationId,
-      "biography": biography,
     };
+    
+    // إرسال الـ biography فقط إذا لم يكن null (سيستخدمه الدكتور ولا يستخدمه الأدمن)
+    if (biography != null) {
+      data["biography"] = biography;
+    }
+    
+    return data;
   }
 }

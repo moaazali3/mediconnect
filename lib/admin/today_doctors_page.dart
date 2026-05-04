@@ -21,7 +21,8 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
   List<DoctorModel> _filteredDoctors = [];
   bool _isLoading = true;
   String _searchQuery = "";
-  // إجبار اللغة على الإنجليزية للمقارنة البرمجية
+  
+  final int _currentWeekday = DateTime.now().weekday;
   final String _todayNameEn = DateFormat('EEEE', 'en_US').format(DateTime.now());
 
   @override
@@ -37,25 +38,55 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
   }
 
   Future<void> _fetchTodayDoctors() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    
     try {
-      final allDoctors = await _apiService.getAllDoctors();
-      
-      // فلترة الدكاترة الذين لديهم جدول اليوم (بمقارنة دقيقة)
-      final filtered = allDoctors.where((doctor) {
-        return doctor.doctorSchedules.any((schedule) {
-          return schedule.getDayName().trim().toLowerCase() == _todayNameEn.toLowerCase() && schedule.isAvailable;
-        });
-      }).toList();
+      // 1. جلب جميع الدكاترة
+      final List<DoctorModel> allDoctors = await _apiService.getAllDoctors();
+      List<DoctorModel> doctorsWithSchedules = [];
 
-      setState(() {
-        _todayDoctors = filtered;
-        _applySearch();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+      // 2. جلب جداول المواعيد لكل دكتور (لأن قائمة getAllDoctors قد لا تحتوي عليها)
+      // نستخدم Future.wait لتسريع العملية
+      await Future.wait(allDoctors.map((doctor) async {
+        try {
+          final schedules = await _apiService.getDoctorSchedule(doctor.id);
+          // إنشاء نسخة جديدة من الدكتور تحتوي على الجداول
+          final updatedDoctor = DoctorModel(
+            id: doctor.id,
+            firstName: doctor.firstName,
+            lastName: doctor.lastName,
+            specializationName: doctor.specializationName,
+            experienceYears: doctor.experienceYears,
+            biography: doctor.biography,
+            consultationFee: doctor.consultationFee,
+            dateOfBirth: doctor.dateOfBirth,
+            gender: doctor.gender,
+            isAppleToAppointment: doctor.isAppleToAppointment,
+            profilePictureUrl: doctor.profilePictureUrl,
+            doctorSchedules: schedules,
+          );
+          
+          // التحقق مما إذا كان الدكتور متاحاً اليوم
+          if (schedules.any((s) => s.isScheduledFor(_currentWeekday) && s.isAvailable)) {
+            doctorsWithSchedules.add(updatedDoctor);
+          }
+        } catch (e) {
+          print("Error fetching schedule for doctor ${doctor.id}: $e");
+        }
+      }));
+
       if (mounted) {
+        setState(() {
+          _todayDoctors = doctorsWithSchedules;
+          _applySearch();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error in TodayDoctorsPage: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error fetching doctors: $e")),
         );
@@ -136,28 +167,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                 : RefreshIndicator(
                     onRefresh: _fetchTodayDoctors,
                     child: _filteredDoctors.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.person_off_outlined, size: 80, color: Colors.grey.shade300),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _searchQuery.isEmpty ? "No doctors available today" : "No results for '$_searchQuery'",
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                                ),
-                                if (_searchQuery.isEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: Text(
-                                      "Tip: Ensure doctors have a 'Work Schedule' set for $_todayNameEn.",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          )
+                        ? _buildEmptyState()
                         : ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             itemCount: _filteredDoctors.length,
@@ -173,13 +183,42 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
     );
   }
 
-  Widget _buildDoctorCard(DoctorModel doctor) {
-    // العثور على موعد اليوم لعرضه (مع استخدام orElse لتجنب الخطأ)
-    final todaySchedules = doctor.doctorSchedules.where(
-      (s) => s.getDayName().trim().toLowerCase() == _todayNameEn.toLowerCase(),
+  Widget _buildEmptyState() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_off_outlined, size: 80, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isEmpty ? "No doctors available today" : "No results for '$_searchQuery'",
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            ),
+            if (_searchQuery.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  "Tip: Ensure doctors have a 'Work Schedule' set for $_todayNameEn.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
-    
-    final schedule = todaySchedules.isNotEmpty ? todaySchedules.first : null;
+  }
+
+  Widget _buildDoctorCard(DoctorModel doctor) {
+    // جلب موعد اليوم لعرض الوقت
+    final schedule = doctor.doctorSchedules.firstWhere(
+      (s) => s.isScheduledFor(_currentWeekday),
+      orElse: () => doctor.doctorSchedules.first,
+    );
 
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -277,7 +316,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                           Icon(Icons.access_time_rounded, color: Colors.grey.shade500, size: 14),
                           const SizedBox(width: 4),
                           Text(
-                            schedule != null ? "${schedule.startTime} - ${schedule.endTime}" : "No schedule info",
+                            "${schedule.startTime} - ${schedule.endTime}",
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 12,

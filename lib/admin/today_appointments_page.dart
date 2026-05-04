@@ -16,16 +16,22 @@ class TodayAppointmentsPage extends StatefulWidget {
 
 class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
   final ApiService _apiService = ApiService();
-  late Future<List<SpecializationModel>> _specializationsFuture;
-  late Future<List<DoctorModel>> _doctorsFuture;
-  late Future<List<AppointmentModel>> _allAppointmentsFuture;
+  late Future<List<dynamic>> _dataFuture;
 
   @override
   void initState() {
     super.initState();
-    _specializationsFuture = _apiService.getAllSpecializations();
-    _doctorsFuture = _apiService.getAllDoctors();
-    _allAppointmentsFuture = _apiService.getAllAppointments();
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _dataFuture = Future.wait([
+        _apiService.getAllSpecializations(),
+        _apiService.getAllDoctors(),
+        _apiService.getAllAppointments(),
+      ]);
+    });
   }
 
   void _showAppointmentsDetails(BuildContext context, String specName, List<AppointmentModel> appointments) {
@@ -80,11 +86,11 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        app.patientName.isNotEmpty ? app.patientName : "Patient ID: ${app.patientId.substring(0, 8)}...",
+                                        app.patientName.isNotEmpty ? app.patientName : "Patient: ${app.patientId.length > 8 ? app.patientId.substring(0, 8) : app.patientId}...",
                                         style: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                       Text(
-                                        "Doctor: ${app.doctorName.isNotEmpty ? app.doctorName : "ID: " + app.doctorId.substring(0,8)}",
+                                        "Doctor: ${app.doctorName.isNotEmpty ? app.doctorName : "ID: ${app.doctorId.length > 8 ? app.doctorId.substring(0, 8) : app.doctorId}"}",
                                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                       ),
                                     ],
@@ -125,42 +131,43 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
         showBackButton: true,
       ),
       body: FutureBuilder(
-        future: Future.wait([_specializationsFuture, _doctorsFuture, _allAppointmentsFuture]),
+        future: _dataFuture,
         builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: primaryColor));
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const SizedBox(height: 16),
+                  Text("Error: ${snapshot.error}"),
+                  const SizedBox(height: 16),
+                  ElevatedButton(onPressed: _loadData, child: const Text("Retry")),
+                ],
+              ),
+            );
           }
 
-          final List<SpecializationModel> specializations = snapshot.data![0];
           final List<DoctorModel> doctors = snapshot.data![1];
           final List<AppointmentModel> allAppointments = snapshot.data![2];
 
-          // Filter today's appointments
-          final todayAppointments = allAppointments.where((app) => app.appointmentDate.startsWith(todayDate)).toList();
+          // Filter today's appointments - be robust with the date format using 'contains'
+          final todayAppointments = allAppointments.where((app) => app.appointmentDate.contains(todayDate)).toList();
 
-          // Group appointments by specialization
-          Map<int, List<AppointmentModel>> specGroup = {};
+          // Group appointments by specialization name for better visibility
+          Map<String, List<AppointmentModel>> specGroup = {};
           for (var app in todayAppointments) {
-            String specName = "";
+            String specName = "Other";
             for (var d in doctors) {
-              if (d.id.toString() == app.doctorId) {
-                specName = d.specializationName;
+              if (d.id.toString() == app.doctorId.toString()) {
+                specName = d.specializationName.isNotEmpty ? d.specializationName : "General";
                 break;
               }
             }
-            
-            var spec = specializations.firstWhere(
-              (s) => s.name == specName,
-              orElse: () => SpecializationModel(id: -1, name: "Other", description: "")
-            );
-            
-            if (spec.id != -1) {
-              if (!specGroup.containsKey(spec.id)) specGroup[spec.id] = [];
-              specGroup[spec.id]!.add(app);
-            }
+            specGroup.putIfAbsent(specName, () => []).add(app);
           }
 
           if (todayAppointments.isEmpty) {
@@ -171,19 +178,22 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                   Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey[300]),
                   const SizedBox(height: 15),
                   Text("No appointments for today.", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  Text("Checked for: $todayDate", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  if (allAppointments.isNotEmpty) 
+                    Text("Total appointments on server: ${allAppointments.length}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
                 ],
               ),
             );
           }
 
+          final groupNames = specGroup.keys.toList()..sort();
+
           return ListView.builder(
             padding: const EdgeInsets.all(20),
-            itemCount: specializations.length,
+            itemCount: groupNames.length,
             itemBuilder: (context, index) {
-              final spec = specializations[index];
-              final list = specGroup[spec.id] ?? [];
-
-              if (list.isEmpty) return const SizedBox.shrink();
+              final name = groupNames[index];
+              final list = specGroup[name]!;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 15),
@@ -198,7 +208,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showAppointmentsDetails(context, spec.name, list),
+                    onTap: () => _showAppointmentsDetails(context, name, list),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -219,7 +229,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                                 Row(
                                   children: [
                                     Text(
-                                      spec.name,
+                                      name,
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142)),
                                     ),
                                     const SizedBox(width: 8),

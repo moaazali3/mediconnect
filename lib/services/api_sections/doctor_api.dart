@@ -1,10 +1,11 @@
 part of '../api_service.dart';
 
 mixin DoctorApi {
-  Future<List<DoctorModel>> getAllDoctors({String? specializationName, int pageNumber = 1}) async {
+  Future<List<DoctorModel>> getAllDoctors({String? specializationName, int pageNumber = 1, int pageSize = 100}) async {
     final ApiService parent = this as ApiService;
     final Map<String, String> queryParameters = {
       'pageNumber': pageNumber.toString(),
+      'pageSize': pageSize.toString(),
     };
 
     if (specializationName != null && specializationName != "All") {
@@ -12,13 +13,24 @@ mixin DoctorApi {
     }
 
     final uri = Uri.parse('${parent.baseUrl}/Doctor').replace(queryParameters: queryParameters);
-    final response = await http.get(uri, headers: parent._headers);
+    try {
+      final response = await http.get(uri, headers: parent._headers);
 
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => DoctorModel.fromJson(item)).toList();
-    } else {
-      throw "Server error!";
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          data = decoded['data'] ?? decoded['doctors'] ?? decoded['items'] ?? [];
+        }
+        return data.map((item) => DoctorModel.fromJson(item)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("Error in getAllDoctors: $e");
+      return [];
     }
   }
 
@@ -69,7 +81,7 @@ mixin DoctorApi {
           final id = location.split('/').last;
           if (id.length > 10) return id;
         }
-        return "SUCCESS_NO_ID"; // Return a placeholder to indicate success
+        return "SUCCESS_NO_ID"; 
       }
       
       try {
@@ -172,12 +184,23 @@ mixin DoctorApi {
 
   Future<List<SpecializationModel>> getAllSpecializations() async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(Uri.parse('${parent.baseUrl}/Specialization'), headers: parent._headers);
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((item) => SpecializationModel.fromJson(item)).toList();
-    } else {
-      throw "Error fetching specializations";
+    try {
+      final response = await http.get(Uri.parse('${parent.baseUrl}/Specialization'), headers: parent._headers);
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          data = decoded['data'] ?? decoded['items'] ?? [];
+        }
+        return data.map((item) => SpecializationModel.fromJson(item)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("Error in getAllSpecializations: $e");
+      return [];
     }
   }
 

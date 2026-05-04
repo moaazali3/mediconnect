@@ -25,6 +25,32 @@ mixin AdminApi {
     }
   }
 
+  Future<Map<String, dynamic>> getDoctorRevenue(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw "Failed to load doctor revenue";
+    }
+  }
+
+  Future<Map<String, dynamic>> getSpecializationRevenue(String specializationName) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw "Failed to load specialization revenue";
+    }
+  }
+
   Future<bool> deleteDoctor(String doctorId) async {
     final ApiService parent = this as ApiService;
     final response = await http.delete(

@@ -26,8 +26,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final _lNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _feeController = TextEditingController();
-  final _biographyController = TextEditingController();
-  final _addressController = TextEditingController();
   final _expController = TextEditingController();
   final _dobController = TextEditingController();
   
@@ -51,8 +49,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     _lNameController.dispose();
     _phoneController.dispose();
     _feeController.dispose();
-    _biographyController.dispose();
-    _addressController.dispose();
     _expController.dispose();
     _dobController.dispose();
     super.dispose();
@@ -69,8 +65,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       _lNameController.text = _currentProfile!.lastName;
       _phoneController.text = _currentProfile!.phoneNumber;
       _feeController.text = _currentProfile!.consultationFee.toStringAsFixed(0);
-      _biographyController.text = _currentProfile!.biography;
-      _addressController.text = _currentProfile!.address ?? '';
       _expController.text = _currentProfile!.experienceYears.toStringAsFixed(0);
       _dobController.text = _currentProfile!.dateOfBirth.split('T')[0];
       _gender = _currentProfile!.gender;
@@ -104,7 +98,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         experienceYears: double.tryParse(_expController.text) ?? 0,
         consultationFee: double.tryParse(_feeController.text) ?? 0,
         specializationId: _selectedSpecId!,
-        biography: _biographyController.text,
       );
 
       final success = await _apiService.updateDoctor(widget.doctorId, updateModel);
@@ -167,20 +160,19 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       ),
       body: Stack(
         children: [
-          // Background Gradient matching Login
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  primaryColor.withOpacity(0.8),
+                  primaryColor.withValues(alpha: 0.8),
                   Colors.white,
                 ],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withValues(alpha: 0.05)),
           
           _isLoading 
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
@@ -195,20 +187,19 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         child: Form(
                           key: _formKey,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Header Icon / Image like Login
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: primaryColor.withOpacity(0.1),
+                                  color: primaryColor.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(Icons.edit_note_rounded, size: 50, color: primaryColor),
@@ -220,7 +211,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                                   style: const TextStyle(fontSize: 16, color: Colors.black54)),
                               const SizedBox(height: 35),
 
-                              // --- Sections ---
                               _buildSectionTitle("PERSONAL INFORMATION"),
                               const SizedBox(height: 15),
                               Row(
@@ -266,8 +256,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 15),
-                              _buildLoginField(controller: _addressController, label: "Address", icon: Icons.location_on_outlined),
 
                               const SizedBox(height: 30),
                               _buildSectionTitle("PROFESSIONAL DETAILS"),
@@ -287,8 +275,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                                   Expanded(child: _buildLoginField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
                                 ],
                               ),
-                              const SizedBox(height: 15),
-                              _buildLoginField(controller: _biographyController, label: "Biography", icon: Icons.description_outlined, maxLines: 3),
 
                               const SizedBox(height: 30),
                               Row(
@@ -321,7 +307,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                               ),
 
                               const SizedBox(height: 40),
-                              // Save Button like LOGIN
                               SizedBox(
                                 width: double.infinity,
                                 height: 55,
@@ -360,7 +345,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.bold,
-          color: primaryColor.withOpacity(0.7),
+          color: primaryColor.withValues(alpha: 0.7),
           letterSpacing: 1.2,
         ),
       ),
@@ -373,7 +358,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         padding: const EdgeInsets.all(15),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Text("No schedule set yet.", style: TextStyle(color: Colors.grey, fontSize: 13), textAlign: TextAlign.center),
@@ -384,9 +369,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.5),
+          color: Colors.white.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.5)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -423,15 +408,15 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -461,15 +446,15 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -526,7 +511,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         child: Container(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 25),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: Column(
@@ -601,9 +586,9 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: primaryColor.withOpacity(0.05),
+          color: primaryColor.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: primaryColor.withOpacity(0.2)),
+          border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,15 +621,15 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
