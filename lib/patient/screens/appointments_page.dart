@@ -18,7 +18,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    String idToFetch = widget.userId ?? "1"; 
+    String idToFetch = widget.userId ?? "1";
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -35,11 +35,22 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                 child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
               ));
             }
-            
+
             final appointments = (snapshot.data ?? [])
                 .where((a) => a.status.toLowerCase() == 'pending')
                 .toList();
-                
+
+            // Sort appointments by date
+            appointments.sort((a, b) {
+              try {
+                DateTime dateA = DateTime.parse(a.appointmentDate);
+                DateTime dateB = DateTime.parse(b.appointmentDate);
+                return dateA.compareTo(dateB);
+              } catch (e) {
+                return 0;
+              }
+            });
+
             if (appointments.isEmpty) {
               return const Center(child: Text("No pending appointments found"));
             }
@@ -172,6 +183,7 @@ class AppointmentCard extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -191,7 +203,7 @@ class AppointmentCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold, 
+                        fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Color(0xFF263238),
                       ),
@@ -213,8 +225,12 @@ class AppointmentCard extends StatelessWidget {
             ],
           ),
           const Divider(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+          // الحل هنا: استخدمنا Wrap بدل Row عشان لو الشاشة ضيقة ينزل الباقي في السطر اللي تحته
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 8, // المسافة الأفقية بين العناصر
+            runSpacing: 10, // المسافة الرأسية لو نزلوا في سطر جديد
             children: [
               Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, date)),
               Expanded(child: _buildInfoItem(Icons.access_time_rounded, time)),
@@ -228,14 +244,14 @@ class AppointmentCard extends StatelessWidget {
 
   Widget _buildInfoItem(IconData icon, String text) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.min, // مهمة جداً عشان الـ Wrap يعرف حجم العنصر بالظبط ومياخدش مساحة زيادة
       children: [
         Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
         const SizedBox(width: 5),
         Flexible(
           child: Text(
-            text, 
-            maxLines: 1, 
+            text,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
           ),
