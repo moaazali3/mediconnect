@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
+class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
-  final String? subtitle;
+  final String? pageName;
+  final String? userName;
+  final String? subtitle; // إضافة subtitle مجدداً لدعم الحالات الخاصة مثل التواريخ
   final List<Widget>? actions;
   final bool showBackButton;
   final VoidCallback? onBackTap;
@@ -13,6 +16,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CommonAppBar({
     super.key,
     this.title = "MediConnect",
+    this.pageName,
+    this.userName,
     this.subtitle,
     this.actions,
     this.showBackButton = false,
@@ -22,7 +27,52 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
+  State<CommonAppBar> createState() => _CommonAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(75);
+}
+
+class _CommonAppBarState extends State<CommonAppBar> {
+  String? _loadedUserName;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userName == null) {
+      _loadUserName();
+    }
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _loadedUserName = prefs.getString('user_name');
+      });
+    }
+  }
+
+  String _capitalize(String? s) {
+    if (s == null || s.isEmpty) return "";
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    String? displayUserName = widget.userName ?? _loadedUserName;
+    String displaySubtitle = "";
+    
+    if (widget.subtitle != null) {
+      displaySubtitle = widget.subtitle!;
+    } else if (widget.pageName != null && displayUserName != null) {
+      displaySubtitle = "${widget.pageName} • ${_capitalize(displayUserName)}";
+    } else if (widget.pageName != null) {
+      displaySubtitle = widget.pageName!;
+    } else if (displayUserName != null) {
+      displaySubtitle = _capitalize(displayUserName);
+    }
+
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -44,10 +94,10 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.symmetric(horizontal: 15.0),
             child: Row(
               children: [
-                if (showBackButton)
+                if (widget.showBackButton || Navigator.canPop(context))
                   IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
-                    onPressed: onBackTap ?? () => Navigator.pop(context),
+                    onPressed: widget.onBackTap ?? () => Navigator.pop(context),
                   )
                 else
                   Container(
@@ -77,7 +127,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        widget.title,
                         style: const TextStyle(
                           color: primaryColor,
                           fontSize: 18,
@@ -85,9 +135,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
                           letterSpacing: 0.5,
                         ),
                       ),
-                      if (subtitle != null)
+                      if (displaySubtitle.isNotEmpty)
                         Text(
-                          subtitle!,
+                          displaySubtitle,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 11,
@@ -97,16 +147,16 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ],
                   ),
                 ),
-                if (actions != null) ...actions!,
-                if (onRefresh != null)
+                if (widget.actions != null) ...widget.actions!,
+                if (widget.onRefresh != null)
                   IconButton(
                     icon: const Icon(Icons.refresh, color: primaryColor),
-                    onPressed: onRefresh,
+                    onPressed: widget.onRefresh,
                   ),
-                if (onLogout != null)
+                if (widget.onLogout != null)
                   IconButton(
                     icon: const Icon(Icons.logout, color: Colors.redAccent),
-                    onPressed: onLogout,
+                    onPressed: widget.onLogout,
                   ),
               ],
             ),
@@ -115,7 +165,4 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(75);
 }

@@ -5,6 +5,7 @@ import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'doctor_appointments_page.dart';
+import 'doctor_pending_appointments_page.dart';
 import 'doctor_profile_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   // مفاتيح للتحكم في تحديث الصفحات الداخلية
   final GlobalKey<DoctorAppointmentsPageState> _appointmentsKey = GlobalKey();
+  final GlobalKey<DoctorPendingAppointmentsPageState> _pendingKey = GlobalKey();
 
   Future<void> _loadDoctorName() async {
     if (widget.userId != null) {
@@ -30,7 +32,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         final profile = await _apiService.getDoctorProfile(widget.userId!);
         if (mounted) {
           setState(() {
-            doctorName = "Dr. ${profile.firstName} ${profile.lastName}";
+            doctorName = "${profile.firstName} ${profile.lastName}";
           });
         }
       } catch (e) {
@@ -47,11 +49,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   void _handleRefresh() {
     _loadDoctorName(); // تحديث الاسم في الـ AppBar
     
-    // إذا كنا في صفحة المواعيد، نطلب منها التحديث
+    // تحديث الصفحة الحالية
     if (currentIndex == 0 && _appointmentsKey.currentState != null) {
       _appointmentsKey.currentState!.refreshAppointments();
+    } else if (currentIndex == 1 && _pendingKey.currentState != null) {
+      _pendingKey.currentState!.refreshAppointments();
     } else {
-      // إعادة بناء الواجهة للصفحات الأخرى
       setState(() {});
     }
   }
@@ -77,9 +80,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: currentIndex == 1 ? null : CommonAppBar(
-        title: "Hello,",
-        subtitle: doctorName ?? "Loading...",
+      appBar: currentIndex == 2 ? null : CommonAppBar(
+        pageName: currentIndex == 0 ? "Completed" : (currentIndex == 1 ? "Pending" : "Profile"),
+        userName: doctorName ?? "Loading...",
         onRefresh: _handleRefresh,
         onLogout: _signOut,
       ),
@@ -87,6 +90,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         index: currentIndex,
         children: [
           DoctorAppointmentsPage(key: _appointmentsKey, doctorId: widget.userId),
+          DoctorPendingAppointmentsPage(key: _pendingKey, doctorId: widget.userId),
           DoctorProfileScreen(doctorId: widget.userId ?? ""),
         ],
       ),
@@ -121,9 +125,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             },
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.list_alt_rounded),
-                activeIcon: Icon(Icons.list_alt_rounded, size: 30),
-                label: "Appointments",
+                icon: Icon(Icons.assignment_turned_in_rounded),
+                activeIcon: Icon(Icons.assignment_turned_in_rounded, size: 30),
+                label: "Completed",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.pending_actions_rounded),
+                activeIcon: Icon(Icons.pending_actions_rounded, size: 30),
+                label: "Pending",
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_rounded),

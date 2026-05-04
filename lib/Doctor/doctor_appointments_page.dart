@@ -18,7 +18,6 @@ class DoctorAppointmentsPage extends StatefulWidget {
 class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   final ApiService _apiService = ApiService();
   
-  // State Management
   List<DoctorAppointmentModel> _allAppointments = [];
   List<DoctorScheduleModel> _schedule = [];
   List<DateTime> _availableDates = [];
@@ -47,7 +46,6 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     super.dispose();
   }
 
-  // Public method for external refresh (like from AppBar)
   Future<void> refreshAppointments() async {
     await _fetchData();
   }
@@ -68,7 +66,9 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 
       if (mounted) {
         setState(() {
-          _allAppointments = results[0] as List<DoctorAppointmentModel>;
+          _allAppointments = (results[0] as List<DoctorAppointmentModel>)
+              .where((a) => a.status.toLowerCase() == 'completed')
+              .toList();
           _schedule = results[1] as List<DoctorScheduleModel>;
           _generateAvailableDates();
           _isLoading = false;
@@ -88,7 +88,6 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     _availableDates.clear();
     Set<DateTime> dateSet = {};
 
-    // 1. Add dates from existing appointments
     for (var app in _allAppointments) {
       try {
         DateTime d = DateTime.parse(app.appointmentDate);
@@ -98,13 +97,11 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       }
     }
 
-    // 2. Add working days from schedule for the next 30 days
     if (_schedule.isNotEmpty) {
       DateTime now = DateTime.now();
       DateTime today = DateTime(now.year, now.month, now.day);
       for (int i = 0; i < 30; i++) {
         DateTime d = today.add(Duration(days: i));
-        // Check if doctor works on this weekday
         if (_schedule.any((s) => s.isScheduledFor(d.weekday))) {
           dateSet.add(d);
         }
@@ -116,7 +113,6 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     } else {
       _availableDates = dateSet.toList();
     }
-
     _availableDates.sort();
   }
 
@@ -133,38 +129,6 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       });
   }
 
-  Future<void> _updateStatus(String id, bool isAccept, {DoctorAppointmentModel? appointment}) async {
-    setState(() => _isProcessing = true);
-    try {
-      bool success = isAccept 
-          ? await _apiService.completeAppointmentStatus(id)
-          : await _apiService.cancelAppointmentStatus(id);
-
-      if (mounted && success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isAccept ? "Appointment Completed!" : "Appointment Cancelled!"),
-            backgroundColor: isAccept ? Colors.green : Colors.red,
-          ),
-        );
-        
-        await _fetchData(); 
-
-        if (isAccept && appointment != null) {
-          _showMedicalRecordDialog(appointment);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
-  }
-
   void _navigateToProfile(DoctorAppointmentModel app) {
     if (app.patientId.isNotEmpty && app.patientId != "0") {
       Navigator.push(
@@ -175,7 +139,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Patient data not available"), backgroundColor: Colors.orange),
+        const SnackBar(content: Text("Patient data not available"), backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -184,17 +148,20 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     _diagnosisController.text = existingRecord?.diagnosis ?? "";
     _prescriptionController.text = existingRecord?.prescription ?? "";
     bool isEdit = existingRecord != null;
+    final size = MediaQuery.of(context).size;
+    final bool isSmallScreen = size.height < 650;
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: EdgeInsets.zero,
         title: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
             color: primaryColor,
             borderRadius: BorderRadius.only(
@@ -204,128 +171,96 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.note_add_rounded, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
+              Icon(Icons.note_add_rounded, color: Colors.white, size: isSmallScreen ? 22 : 26),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  isEdit ? "Edit Medical Record" : "Add Medical Record",
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  isEdit ? "Edit Record" : "Add Record",
+                  style: TextStyle(color: Colors.white, fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close, color: Colors.white70),
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close, color: Colors.white70, size: 22),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               )
             ],
           ),
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(Icons.person_outline, size: 16, color: Colors.grey),
-                  const SizedBox(width: 5),
-                  Text(
-                    "Patient: ${appointment.patientName}",
-                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 14),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-              _buildDialogTextField(
-                controller: _diagnosisController,
-                label: "Diagnosis",
-                hint: "Enter diagnosis details here...",
-                icon: Icons.assignment_outlined,
-              ),
-              const SizedBox(height: 20),
-              _buildDialogTextField(
-                controller: _prescriptionController,
-                label: "Prescription",
-                hint: "List medications and dosage...",
-                icon: Icons.medication_rounded,
-              ),
-            ],
+        content: SizedBox(
+          width: size.width * 0.9,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        "Patient: ${appointment.patientName}",
+                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildDialogTextField(
+                  controller: _diagnosisController,
+                  label: "Diagnosis",
+                  hint: "Enter diagnosis...",
+                  icon: Icons.assignment_outlined,
+                  isSmall: isSmallScreen,
+                ),
+                const SizedBox(height: 15),
+                _buildDialogTextField(
+                  controller: _prescriptionController,
+                  label: "Prescription",
+                  hint: "List medications...",
+                  icon: Icons.medication_rounded,
+                  isSmall: isSmallScreen,
+                ),
+              ],
+            ),
           ),
         ),
-        actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        actionsPadding: const EdgeInsets.fromLTRB(15, 0, 15, 15),
         actions: [
-          Row(
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text("CANCEL", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                child: const Text("CANCEL", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
-                      return;
-                    }
-                    Navigator.pop(context);
-                    setState(() => _isProcessing = true);
-                    try {
-                      bool success;
-                      if (isEdit) {
-                        success = await _apiService.updateMedicalRecord(
-                          existingRecord!.medicalRecordId, 
-                          _diagnosisController.text, 
-                          _prescriptionController.text
-                        );
-                      } else {
-                        success = await _apiService.createMedicalRecord(
-                          CreateMedicalRecordModel(
-                            appointmentId: appointment.appointmentId,
-                            diagnosis: _diagnosisController.text,
-                            prescription: _prescriptionController.text,
-                          ),
-                        );
-                        // Optional: Mark appointment as completed when record is added
-                        if (success && appointment.status != "Completed") {
-                           await _apiService.completeAppointmentStatus(appointment.appointmentId);
-                        }
-                      }
-                      
-                      if (mounted && success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(isEdit ? "Record updated!" : "Medical history added!"), backgroundColor: Colors.green)
-                        );
-                        _fetchData();
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                        );
-                      }
-                    } finally {
-                      if (mounted) setState(() => _isProcessing = false);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  child: Text(isEdit ? "UPDATE RECORD" : "SAVE RECORD", style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_diagnosisController.text.isEmpty || _prescriptionController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+                    return;
+                  }
+                  Navigator.pop(dialogContext);
+                  _saveMedicalRecord(appointment, isEdit, existingRecord);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
+                child: Text(isEdit ? "UPDATE" : "SAVE", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -334,41 +269,56 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     );
   }
 
+  Future<void> _saveMedicalRecord(DoctorAppointmentModel appointment, bool isEdit, MedicalRecordModel? existingRecord) async {
+    setState(() => _isProcessing = true);
+    try {
+      bool success = isEdit
+          ? await _apiService.updateMedicalRecord(existingRecord!.medicalRecordId, _diagnosisController.text, _prescriptionController.text)
+          : await _apiService.createMedicalRecord(CreateMedicalRecordModel(
+              appointmentId: appointment.appointmentId,
+              diagnosis: _diagnosisController.text,
+              prescription: _prescriptionController.text,
+            ));
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Successfully saved!"), backgroundColor: Colors.green));
+        _fetchData();
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
   Widget _buildDialogTextField({
     required TextEditingController controller,
     required String label,
     required String hint,
     required IconData icon,
+    bool isSmall = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: primaryColor),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryColor)),
+            Icon(icon, size: 16, color: primaryColor),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: primaryColor)),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         TextField(
           controller: controller,
-          maxLines: 4,
-          style: const TextStyle(fontSize: 15, color: Colors.black87),
+          maxLines: isSmall ? 2 : 3,
+          style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.all(15),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: primaryColor.withOpacity(0.2), width: 1),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: primaryColor, width: 2),
-            ),
+            fillColor: Colors.grey.shade50,
+            contentPadding: const EdgeInsets.all(10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: primaryColor)),
           ),
         ),
       ],
@@ -377,6 +327,8 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bool isSmallScreen = size.height < 650;
     final apps = _filteredAppointments;
 
     return Scaffold(
@@ -387,49 +339,31 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             RefreshIndicator(
               onRefresh: _fetchData,
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
-                  _buildHeader(),
-                  const SizedBox(height: 20),
+                  _buildHeader(isSmallScreen),
+                  const SizedBox(height: 15),
                   _buildSearchField(), 
-                  const SizedBox(height: 20),
-                  _buildDateFilterSection(),
-                  const SizedBox(height: 20),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text("Appointments List", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 15),
+                  _buildDateFilterSection(isSmallScreen),
+                  const SizedBox(height: 15),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text("History Records", style: TextStyle(fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 10),
                   
                   if (_isLoading)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: CircularProgressIndicator(color: primaryColor),
-                    ))
-                  else if (_errorMessage != null)
-                    Center(child: Column(
-                      children: [
-                        Text("Error: $_errorMessage"),
-                        ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
-                      ],
-                    ))
-                  else if (apps.isEmpty && _selectedDate != "All")
-                    Center(child: Padding(
-                      padding: const EdgeInsets.all(40.0),
-                      child: Text("No appointments on ${DateFormat('EEE, d MMM').format(DateTime.parse(_selectedDate))}"),
-                    ))
+                    const Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: primaryColor)))
                   else if (apps.isEmpty)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: Text("No appointments found"),
-                    ))
+                    const Center(child: Padding(padding: EdgeInsets.all(40.0), child: Text("No records available.", style: TextStyle(color: Colors.grey))))
                   else
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
-                        children: apps.map((app) => _buildAppointmentCard(app)).toList(),
+                        children: apps.map((app) => _buildAppointmentCard(app, isSmallScreen)).toList(),
                       ),
                     ),
-
                   const SizedBox(height: 20),
                 ],
               ),
@@ -442,17 +376,23 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool isSmall) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text("Appointments", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              "Appointments History", 
+              style: TextStyle(fontSize: isSmall ? 18 : 22, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Text("${_filteredAppointments.length} Appts", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            child: Text("${_filteredAppointments.length} Done", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
           ),
         ],
       ),
@@ -465,35 +405,28 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
+        style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
-          hintText: "Search patient name...",
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: _searchQuery.isNotEmpty 
-            ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
-                _searchController.clear();
-                setState(() => _searchQuery = "");
-              }) 
-            : null,
+          hintText: "Search by patient name...",
+          prefixIcon: const Icon(Icons.search, size: 20),
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
         ),
       ),
     );
   }
 
-  Widget _buildDateFilterSection() {
+  Widget _buildDateFilterSection(bool isSmall) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text("Filter by Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text("Filter Date", style: TextStyle(fontSize: isSmall ? 14 : 16, fontWeight: FontWeight.bold)),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -517,127 +450,83 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     return GestureDetector(
       onTap: () => setState(() => _selectedDate = value),
       child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
-          boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
         ),
-        child: Text(
-          label, 
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700, 
-            fontWeight: FontWeight.bold,
-            fontSize: 13
-          )
-        ),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 11)),
       ),
     );
   }
 
-  Widget _buildAppointmentCard(DoctorAppointmentModel app) {
+  Widget _buildAppointmentCard(DoctorAppointmentModel app, bool isSmall) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white, 
-        borderRadius: BorderRadius.circular(22), 
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
+        borderRadius: BorderRadius.circular(15), 
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))]
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _navigateToProfile(app),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: primaryColor.withOpacity(0.1),
-                        child: Text(app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?", style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                                const SizedBox(width: 5),
-                                const Icon(Icons.contact_page_outlined, size: 16, color: Colors.grey),
-                              ],
-                            ),
-                            Text("${app.dayOfWeek}, ${app.appointmentDate}", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                            Text(app.status, style: TextStyle(color: _getStatusColor(app.status), fontSize: 13, fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                    ],
+      child: Column(
+        children: [
+          ListTile(
+            onTap: () => _navigateToProfile(app),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            leading: CircleAvatar(
+              radius: isSmall ? 20 : 24,
+              backgroundColor: primaryColor.withOpacity(0.1),
+              child: Text(app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?", style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            ),
+            title: Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text("${app.appointmentDate} • ${app.startTime}", style: const TextStyle(fontSize: 11)),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time_rounded, size: 14, color: Colors.green),
+                        const SizedBox(width: 4),
+                        Text("${app.startTime} - ${app.endTime}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
+                      ],
+                    ),
+                    Text("Q No: ${app.queueNumber}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 11)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 38,
+                  child: ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
+                    icon: const Icon(Icons.history_edu_rounded, size: 16),
+                    label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: primaryColor,
+                      side: const BorderSide(color: primaryColor, width: 1),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-            const Divider(height: 1, indent: 16, endIndent: 16),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.access_time_rounded, size: 16, color: Colors.green),
-                          const SizedBox(width: 8),
-                          Text("${app.startTime} - ${app.endTime}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      Text("Q No: ${app.queueNumber}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  if (app.status != "Cancelled") ...[
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
-                        icon: const Icon(Icons.history_edu_rounded, size: 18),
-                        label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: primaryColor,
-                          side: const BorderSide(color: primaryColor, width: 1.5),
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ]
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed': return Colors.green;
-      case 'cancelled': return Colors.red;
-      case 'pending': return Colors.orange;
-      default: return Colors.blue;
-    }
   }
 
   Future<void> _fetchAndEditRecord(DoctorAppointmentModel appointment) async {
@@ -646,7 +535,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       final record = await _apiService.getMedicalRecordByAppointment(appointment.appointmentId);
       if (mounted) _showMedicalRecordDialog(appointment, existingRecord: record);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error fetching record: $e")));
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

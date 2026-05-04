@@ -64,11 +64,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String pageName = "Patient Portal";
+    if (currentIndex == 1) pageName = "My Appointments";
+    if (currentIndex == 2) pageName = "Profile";
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: currentIndex == 2 ? null : CommonAppBar(
-        title: currentIndex == 0 ? "Hello," : "My Appointments",
-        subtitle: currentIndex == 0 ? (userName ?? "Loading...") : "MediConnect Patient",
+        pageName: pageName,
+        userName: userName ?? "Loading...",
         onRefresh: () => setState(() { _loadUserName(); }),
         onLogout: _signOut,
       ),
