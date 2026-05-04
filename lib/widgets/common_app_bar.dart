@@ -6,7 +6,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
   final String? pageName;
   final String? userName;
-  final String? subtitle; // إضافة subtitle مجدداً لدعم الحالات الخاصة مثل التواريخ
+  final String? subtitle;
   final List<Widget>? actions;
   final bool showBackButton;
   final VoidCallback? onBackTap;
@@ -30,7 +30,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   State<CommonAppBar> createState() => _CommonAppBarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(75);
+  Size get preferredSize => const Size.fromHeight(80); // Increased height slightly
 }
 
 class _CommonAppBarState extends State<CommonAppBar> {
@@ -75,6 +75,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
 
     return Container(
       decoration: BoxDecoration(
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -88,78 +89,82 @@ class _CommonAppBarState extends State<CommonAppBar> {
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 75,
-        flexibleSpace: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15.0),
-            child: Row(
-              children: [
-                if (widget.showBackButton || Navigator.canPop(context))
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
-                    onPressed: widget.onBackTap ?? () => Navigator.pop(context),
-                  )
-                else
-                  Container(
-                    height: 50,
-                    width: 50,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(color: Colors.black12, blurRadius: 4, spreadRadius: 1),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(5.0),
-                      child: Image.asset(
-                        "assets/images/img.png",
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.local_hospital, color: primaryColor),
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.title,
-                        style: const TextStyle(
-                          color: primaryColor,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      if (displaySubtitle.isNotEmpty)
-                        Text(
-                          displaySubtitle,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+        toolbarHeight: 80,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+          child: Row(
+            children: [
+              if (widget.showBackButton || Navigator.canPop(context))
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
+                  onPressed: widget.onBackTap ?? () => Navigator.pop(context),
+                )
+              else
+                Container(
+                  height: 45,
+                  width: 45,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black12, blurRadius: 4, spreadRadius: 1),
                     ],
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: Image.asset(
+                      "assets/images/img.png",
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.local_hospital, color: primaryColor),
+                    ),
+                  ),
                 ),
-                if (widget.actions != null) ...widget.actions!,
-                if (widget.onRefresh != null)
-                  IconButton(
-                    icon: const Icon(Icons.refresh, color: primaryColor),
-                    onPressed: widget.onRefresh,
-                  ),
-                if (widget.onLogout != null)
-                  IconButton(
-                    icon: const Icon(Icons.logout, color: Colors.redAccent),
-                    onPressed: widget.onLogout,
-                  ),
-              ],
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      widget.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: primaryColor,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (displaySubtitle.isNotEmpty)
+                      Text(
+                        displaySubtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (widget.actions != null) ...widget.actions!,
+              if (widget.onRefresh != null)
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: primaryColor, size: 20),
+                  onPressed: widget.onRefresh,
+                ),
+              if (widget.onLogout != null)
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.redAccent, size: 20),
+                  onPressed: widget.onLogout,
+                ),
+            ],
           ),
         ),
       ),

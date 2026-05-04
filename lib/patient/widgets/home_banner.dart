@@ -6,17 +6,14 @@ class HomeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFF0D47A1);
-    const Color secondaryColor = Color(0xFF1565C0); // درجة أفتح قليلاً للتدرج
+    const Color secondaryColor = Color(0xFF1565C0);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       height: 140,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            primaryColor,
-            secondaryColor,
-          ],
+          colors: [primaryColor, secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -31,7 +28,6 @@ class HomeBanner extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // 🎨 Background Decorative Circles
           Positioned(
             top: -20,
             right: -20,
@@ -53,22 +49,27 @@ class HomeBanner extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min, // Added min size
                     children: [
-                      Text(
+                      const Text(
                         "Health Protection",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
+                      const SizedBox(height: 8),
+                      const Text(
                         "Book Best Doctors",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -78,10 +79,10 @@ class HomeBanner extends StatelessWidget {
                     ],
                   ),
                 ),
-                // 🖼️ Banner Image/Icon
+                const SizedBox(width: 10),
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 70, // Slightly smaller to ensure fit
+                  height: 70,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     shape: BoxShape.circle,
@@ -89,7 +90,7 @@ class HomeBanner extends StatelessWidget {
                   child: const Center(
                     child: Icon(
                       Icons.medical_services_rounded,
-                      size: 40,
+                      size: 35,
                       color: Colors.white,
                     ),
                   ),

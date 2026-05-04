@@ -81,6 +81,8 @@ class DoctorCard extends StatelessWidget {
               children: [
                 Text(
                   "Dr. $name",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
@@ -90,6 +92,8 @@ class DoctorCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   displaySpec,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: primaryColor.withOpacity(0.8),
                     fontSize: 14,
@@ -104,6 +108,8 @@ class DoctorCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         "${experience.toStringAsFixed(1)} Years Exp.",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontSize: 12,
@@ -130,7 +136,7 @@ class DoctorCard extends StatelessWidget {
                       doctorId: id,
                       doctorName: "Dr. $name",
                       specialty: displaySpec,
-                      doctorImageUrl: imageUrl, // Passing the image URL here
+                      doctorImageUrl: imageUrl,
                       patientId: patientId,
                     ),
                   ),
