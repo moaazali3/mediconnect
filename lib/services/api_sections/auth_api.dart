@@ -72,7 +72,7 @@ mixin AuthApi {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.post(
-        Uri.parse('${parent.baseUrl}/Auth/ConfirmEmail?email=$email&otp=$otp'),
+        Uri.parse('${parent.baseUrl}/Auth/VerifyEmail?email=$email&otp=$otp'),
         headers: parent._headers,
       );
 
