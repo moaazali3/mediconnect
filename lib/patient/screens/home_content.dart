@@ -109,13 +109,30 @@ class _HomeContentState extends State<HomeContent> {
 
   @override
   Widget build(BuildContext context) {
-    var filteredDoctors = _doctors;
+    var filteredDoctors = List<DoctorModel>.from(_doctors);
     if (searchQuery.isNotEmpty) {
-      filteredDoctors = _doctors.where((doc) {
+      filteredDoctors = filteredDoctors.where((doc) {
         final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
         return fullName.contains(searchQuery);
       }).toList();
     }
+
+    // Sort alphabetically, ignoring the "dr" prefix if it exists
+    filteredDoctors.sort((a, b) {
+      String nameA = "${a.firstName} ${a.lastName}".toLowerCase();
+      String nameB = "${b.firstName} ${b.lastName}".toLowerCase();
+
+      if (nameA.startsWith("dr")) {
+        nameA = nameA.substring(2).trim();
+        if (nameA.startsWith(".")) nameA = nameA.substring(1).trim();
+      }
+      if (nameB.startsWith("dr")) {
+        nameB = nameB.substring(2).trim();
+        if (nameB.startsWith(".")) nameB = nameB.substring(1).trim();
+      }
+
+      return nameA.compareTo(nameB);
+    });
 
     return RefreshIndicator(
       onRefresh: _refreshData,
