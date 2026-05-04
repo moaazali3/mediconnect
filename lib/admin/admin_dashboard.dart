@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
-import 'package:mediconnect/admin/add_receptionist_page.dart'; // استيراد صفحة الإضافة الجديدة
-import 'package:mediconnect/admin/manage_bookings_page.dart';
+import 'package:mediconnect/admin/add_receptionist_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/admin/manage_doctors_page.dart';
 import 'package:mediconnect/admin/today_appointments_page.dart';
 import 'package:mediconnect/admin/today_doctors_page.dart';
+import 'package:mediconnect/admin/today_revenue_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
-import 'package:mediconnect/admin/qr_scanner_page.dart';
 import 'package:mediconnect/admin/analytics_page.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -27,7 +25,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final ApiService _apiService = ApiService();
   late Future<AdminDashboardModel> _statsFuture;
   String _adminName = "Administrator";
-  int _calculatedDoctorsToday = 0;
 
   @override
   void initState() {
@@ -46,17 +43,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
       final allDoctors = await _apiService.getAllDoctors();
       final int currentWeekday = DateTime.now().weekday;
       int count = 0;
-      for (var doctor in allDoctors) {
-        bool isAvailableToday = doctor.doctorSchedules.any((schedule) {
-          return schedule.isScheduledFor(currentWeekday) && schedule.isAvailable;
-        });
-        if (isAvailableToday) count++;
-      }
-      if (mounted) {
-        setState(() {
-          _calculatedDoctorsToday = count;
-        });
-      }
+
+      // جلب المواعيد لكل دكتور للتأكد من ظهوره في الإحصائيات
+      await Future.wait(allDoctors.map((doctor) async {
+        try {
+          final schedules = await _apiService.getDoctorSchedule(doctor.id);
+          bool isAvailableToday = schedules.any((schedule) {
+            return schedule.isScheduledFor(currentWeekday) && schedule.isAvailable;
+          });
+          if (isAvailableToday) count++;
+        } catch (e) {
+          print("Error checking schedule for doctor ${doctor.id}: $e");
+        }
+      }));
+
       return stats.copyWith(totalDoctorsToday: count);
     } catch (e) {
       debugPrint("Error loading admin stats: $e");
@@ -245,12 +245,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
         const SizedBox(height: 15),
-        _buildStatCard(
-          "Today Revenue",
-          "${stats.totalRevenueToday.toStringAsFixed(0)} EGP",
-          Icons.payments_rounded,
-          Colors.green,
-          isFullWidth: true,
+        InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const TodayRevenuePage()),
+            );
+          },
+          child: _buildStatCard(
+            "Today Revenue",
+            "${stats.totalRevenueToday.toStringAsFixed(0)} EGP",
+            Icons.payments_rounded,
+            Colors.green,
+            isFullWidth: true,
+          ),
         ),
         const SizedBox(height: 15),
         _buildBreakdownCard(
@@ -374,22 +382,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Icons.medical_services_rounded,
           Colors.teal.shade600,
           () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())).then((_) => _refreshData()),
-        ),
-        _buildActionCard(
-          context,
-          "Bookings",
-          "View appointments",
-          Icons.calendar_today_rounded,
-          Colors.green.shade600,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageBookingsPage())).then((_) => _refreshData()),
-        ),
-        _buildActionCard(
-          context,
-          "Scan QR",
-          "Confirm attendance",
-          Icons.qr_code_scanner_rounded,
-          Colors.orange.shade700,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage())),
         ),
         _buildActionCard(
           context,

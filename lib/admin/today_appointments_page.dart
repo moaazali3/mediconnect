@@ -16,9 +16,7 @@ class TodayAppointmentsPage extends StatefulWidget {
 
 class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
   final ApiService _apiService = ApiService();
-  late Future<List<SpecializationModel>> _specializationsFuture;
-  late Future<List<DoctorModel>> _doctorsFuture;
-  late Future<List<AppointmentModel>> _allAppointmentsFuture;
+  late Future<List<dynamic>> _dataFuture;
 
   @override
   void initState() {
@@ -27,14 +25,12 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
   }
 
   void _loadData() {
-    _specializationsFuture = _apiService.getAllSpecializations();
-    _doctorsFuture = _apiService.getAllDoctors();
-    _allAppointmentsFuture = _apiService.getAllAppointments();
-  }
-
-  Future<void> _refreshData() async {
     setState(() {
-      _loadData();
+      _dataFuture = Future.wait([
+        _apiService.getAllSpecializations(),
+        _apiService.getAllDoctors(),
+        _apiService.getAllAppointments(),
+      ]);
     });
   }
 
@@ -90,11 +86,11 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        app.patientName.isNotEmpty ? app.patientName : "Patient ID: ${app.patientId.substring(0, 8)}...",
+                                        app.patientName.isNotEmpty ? app.patientName : "Patient: ${app.patientId.length > 8 ? app.patientId.substring(0, 8) : app.patientId}...",
                                         style: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                       Text(
-                                        "Doctor: ${app.doctorName.isNotEmpty ? app.doctorName : "ID: " + app.doctorId.substring(0,8)}",
+                                        "Doctor: ${app.doctorName.isNotEmpty ? app.doctorName : "ID: ${app.doctorId.length > 8 ? app.doctorId.substring(0, 8) : app.doctorId}"}",
                                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                       ),
                                     ],
@@ -130,151 +126,144 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: CommonAppBar(
+      appBar: const CommonAppBar(
         title: "Today's Appointments",
         showBackButton: true,
-        onRefresh: _refreshData,
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        color: primaryColor,
-        child: FutureBuilder(
-          future: Future.wait([_specializationsFuture, _doctorsFuture, _allAppointmentsFuture]),
-          builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: primaryColor));
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            }
-
-            final List<SpecializationModel> specializations = snapshot.data![0];
-            final List<DoctorModel> doctors = snapshot.data![1];
-            final List<AppointmentModel> allAppointments = snapshot.data![2];
-
-            // Filter today's appointments
-            final todayAppointments = allAppointments.where((app) => app.appointmentDate.startsWith(todayDate)).toList();
-
-            // Group appointments by specialization
-            Map<int, List<AppointmentModel>> specGroup = {};
-            for (var app in todayAppointments) {
-              String specName = "";
-              for (var d in doctors) {
-                if (d.id.toString() == app.doctorId) {
-                  specName = d.specializationName;
-                  break;
-                }
-              }
-              
-              var spec = specializations.firstWhere(
-                (s) => s.name == specName,
-                orElse: () => SpecializationModel(id: -1, name: "Other", description: "")
-              );
-              
-              if (spec.id != -1) {
-                if (!specGroup.containsKey(spec.id)) specGroup[spec.id] = [];
-                specGroup[spec.id]!.add(app);
-              }
-            }
-
-            if (todayAppointments.isEmpty) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
+      body: FutureBuilder(
+        future: _dataFuture,
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: primaryColor));
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey[300]),
-                        const SizedBox(height: 15),
-                        Text("No appointments for today.", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-                      ],
-                    ),
-                  ),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const SizedBox(height: 16),
+                  Text("Error: ${snapshot.error}"),
+                  const SizedBox(height: 16),
+                  ElevatedButton(onPressed: _loadData, child: const Text("Retry")),
                 ],
-              );
+              ),
+            );
+          }
+
+          final List<DoctorModel> doctors = snapshot.data![1];
+          final List<AppointmentModel> allAppointments = snapshot.data![2];
+
+          // Filter today's appointments - be robust with the date format using 'contains'
+          final todayAppointments = allAppointments.where((app) => app.appointmentDate.contains(todayDate)).toList();
+
+          // Group appointments by specialization name for better visibility
+          Map<String, List<AppointmentModel>> specGroup = {};
+          for (var app in todayAppointments) {
+            String specName = "Other";
+            for (var d in doctors) {
+              if (d.id.toString() == app.doctorId.toString()) {
+                specName = d.specializationName.isNotEmpty ? d.specializationName : "General";
+                break;
+              }
             }
+            specGroup.putIfAbsent(specName, () => []).add(app);
+          }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: specializations.length,
-              itemBuilder: (context, index) {
-                final spec = specializations[index];
-                final list = specGroup[spec.id] ?? [];
+          if (todayAppointments.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey[300]),
+                  const SizedBox(height: 15),
+                  Text("No appointments for today.", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
+                  Text("Checked for: $todayDate", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  if (allAppointments.isNotEmpty) 
+                    Text("Total appointments on server: ${allAppointments.length}", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+            );
+          }
 
-                if (list.isEmpty) return const SizedBox.shrink();
+          final groupNames = specGroup.keys.toList()..sort();
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+          return ListView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: groupNames.length,
+            itemBuilder: (context, index) {
+              final name = groupNames[index];
+              final list = specGroup[name]!;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => _showAppointmentsDetails(context, spec.name, list),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: primaryColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.medical_services_outlined, color: primaryColor),
+                    onTap: () => _showAppointmentsDetails(context, name, list),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        spec.name,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142)),
+                            child: const Icon(Icons.medical_services_outlined, color: primaryColor),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: primaryColor,
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: primaryColor,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          "${list.length}",
-                                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                        ),
+                                      child: Text(
+                                        "${list.length}",
+                                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "${list.length} person${list.length > 1 ? 's' : ''} booked today",
-                                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${list.length} person${list.length > 1 ? 's' : ''} booked today",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                ),
+                              ],
                             ),
-                            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-                          ],
-                        ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
-            );
-          },
-        ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

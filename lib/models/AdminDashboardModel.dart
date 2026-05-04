@@ -63,19 +63,19 @@ class AdminDashboardModel {
 
   factory AdminDashboardModel.fromJson(Map<String, dynamic> json) {
     return AdminDashboardModel(
-      totalPatients: json['totalPatients'] ?? 0,
-      totalDoctors: json['totalDoctors'] ?? 0,
-      totalDoctorsToday: json['totalDoctorsToday'] ?? 0,
-      totalAppointments: json['totalAppointments'] ?? 0,
-      totalAppointmentsToday: json['totalAppointmentsToday'] ?? 0,
-      totalPendingAppointmentsToday: json['totalPendingAppointmentsToday'] ?? 0,
-      totalCompletedAppointmentsToday: json['totalCompletedAppointmentsToday'] ?? 0,
-      totalCancelledAppointmentsToday: json['totalCancelledAppointmentsToday'] ?? 0,
-      totalPendingAppointments: json['totalpendingAppointments'] ?? 0,
-      totalCompletedAppointments: json['totalCompletedAppointments'] ?? 0,
-      totalCancelledAppointments: json['totalCancelledAppointments'] ?? 0,
-      totalRevenueToday: (json['totalRevenueToday'] ?? 0).toDouble(),
-      totalRevenue: (json['totalRevenue'] ?? 0).toDouble(),
+      totalPatients: json['totalPatients'] ?? json['TotalPatients'] ?? 0,
+      totalDoctors: json['totalDoctors'] ?? json['TotalDoctors'] ?? 0,
+      totalDoctorsToday: json['totalDoctorsToday'] ?? json['TotalDoctorsToday'] ?? 0,
+      totalAppointments: json['totalAppointments'] ?? json['TotalAppointments'] ?? 0,
+      totalAppointmentsToday: json['totalAppointmentsToday'] ?? json['TotalAppointmentsToday'] ?? 0,
+      totalPendingAppointmentsToday: json['totalPendingAppointmentsToday'] ?? json['TotalPendingAppointmentsToday'] ?? 0,
+      totalCompletedAppointmentsToday: json['totalCompletedAppointmentsToday'] ?? json['TotalCompletedAppointmentsToday'] ?? 0,
+      totalCancelledAppointmentsToday: json['totalCancelledAppointmentsToday'] ?? json['TotalCancelledAppointmentsToday'] ?? 0,
+      totalPendingAppointments: json['totalPendingAppointments'] ?? json['totalpendingAppointments'] ?? json['TotalPendingAppointments'] ?? 0,
+      totalCompletedAppointments: json['totalCompletedAppointments'] ?? json['TotalCompletedAppointments'] ?? 0,
+      totalCancelledAppointments: json['totalCancelledAppointments'] ?? json['TotalCancelledAppointments'] ?? 0,
+      totalRevenueToday: (json['totalRevenueToday'] ?? json['TotalRevenueToday'] ?? 0).toDouble(),
+      totalRevenue: (json['totalRevenue'] ?? json['TotalRevenue'] ?? 0).toDouble(),
     );
   }
 
@@ -89,7 +89,7 @@ class AdminDashboardModel {
       'totalPendingAppointmentsToday': totalPendingAppointmentsToday,
       'totalCompletedAppointmentsToday': totalCompletedAppointmentsToday,
       'totalCancelledAppointmentsToday': totalCancelledAppointmentsToday,
-      'totalpendingAppointments': totalPendingAppointments,
+      'totalPendingAppointments': totalPendingAppointments,
       'totalCompletedAppointments': totalCompletedAppointments,
       'totalCancelledAppointments': totalCancelledAppointments,
       'totalRevenueToday': totalRevenueToday,

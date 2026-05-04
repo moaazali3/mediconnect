@@ -32,14 +32,27 @@ class DoctorModel {
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     String? imgUrl = json['profilePictureUrl'] ?? json['ProfilePictureUrl'];
     if (imgUrl != null && imgUrl.isNotEmpty && !imgUrl.startsWith('http')) {
-      // Prepend host and fix slashes for relative paths
       imgUrl = "https://wisdom-frisk-exciting.ngrok-free.dev${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
     }
 
-    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    // دالة آمنة لتحويل القيم المنطقية (Booleans)
+    bool parseBool(dynamic value, {bool defaultValue = false}) {
+      if (value == null) return defaultValue;
+      if (value is bool) return value;
+      if (value is int) return value == 1;
+      if (value is String) return value.toLowerCase() == 'true' || value == '1';
+      return defaultValue;
+    }
+
+    // البحث عن قائمة الجداول في عدة مفاتيح محتملة
+    var schedulesJson = json['doctorSchedules'] ?? 
+                        json['DoctorSchedules'] ?? 
+                        json['schedules'] ?? 
+                        json['Schedules'];
 
     return DoctorModel(
-      id: (json['id'] ?? json['Id'] ?? '').toString(),
+      // قراءة المعرف بكافة أشكاله المحتملة لضمان نجاح جلب المواعيد وحساب الإحصائيات
+      id: (json['id'] ?? json['Id'] ?? json['doctorId'] ?? json['DoctorId'] ?? json['userId'] ?? json['UserId'] ?? '').toString(),
       profilePictureUrl: imgUrl,
       firstName: (json['firstName'] ?? json['FirstName'] ?? '').toString(),
       lastName: (json['lastName'] ?? json['LastName'] ?? '').toString(),
@@ -49,9 +62,7 @@ class DoctorModel {
       consultationFee: _toDouble(json['consultationFee'] ?? json['ConsultationFee']),
       dateOfBirth: (json['dateOfBirth'] ?? json['DateOfBirth'] ?? '').toString(),
       gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
-      isAppleToAppointment: json['isAppleToAppointment'] is bool 
-          ? json['isAppleToAppointment'] 
-          : (json['IsAppleToAppointment'] is bool ? json['IsAppleToAppointment'] : false),
+      isAppleToAppointment: parseBool(json['isAppleToAppointment'] ?? json['IsAppleToAppointment']),
       doctorSchedules: (schedulesJson is List)
           ? schedulesJson.map((i) => DoctorScheduleModel.fromJson(i)).toList()
           : [],
