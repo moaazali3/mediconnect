@@ -207,13 +207,25 @@ class _LoginScreenState extends State<LoginScreen> {
                                           }
                                         }
                                       } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(response.message), 
-                                            backgroundColor: Colors.red,
-                                            duration: const Duration(seconds: 5),
-                                          ),
-                                        );
+                                        if (response.message == "Email is not confirmed!") {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => RegisterScreen(
+                                                initialEmail: emailController.text,
+                                                showOtpDialog: true,
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(response.message), 
+                                              backgroundColor: Colors.red,
+                                              duration: const Duration(seconds: 5),
+                                            ),
+                                          );
+                                        }
                                       }
                                     }
                                   },

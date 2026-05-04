@@ -38,8 +38,16 @@ mixin AppointmentApi {
       
       // If we got here, we couldn't find a valid GUID/ID
       return null;
+    } else {
+      try {
+        final body = jsonDecode(response.body);
+        String errorMessage = body['errors']?.toString() ?? body['message']?.toString() ?? "Failed to create appointment";
+        throw errorMessage;
+      } catch (e) {
+        if (e is String) rethrow;
+        throw "Failed to create appointment";
+      }
     }
-    return null;
   }
 
   Future<List<DoctorAppointmentModel>> getDoctorAppointments(String doctorId) async {

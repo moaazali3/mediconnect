@@ -107,12 +107,6 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         }
       }
     }
-
-    if (_schedule.isNotEmpty) {
-      _availableDates = dateSet.where((d) => _schedule.any((s) => s.isScheduledFor(d.weekday))).toList();
-    } else {
-      _availableDates = dateSet.toList();
-    }
     _availableDates.sort();
   }
 
@@ -352,7 +346,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     child: Text("History Records", style: TextStyle(fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 10),
-                  
+
                   if (_isLoading)
                     const Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: primaryColor)))
                   else if (apps.isEmpty)
@@ -384,7 +378,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         children: [
           Expanded(
             child: Text(
-              "Appointments History", 
+              "Appointments History",
               style: TextStyle(fontSize: isSmall ? 18 : 22, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
@@ -467,7 +461,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white, 
-        borderRadius: BorderRadius.circular(15), 
+        borderRadius: BorderRadius.circular(15),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))]
       ),
       child: Column(
