@@ -15,9 +15,6 @@ class DoctorProfileModel {
   final String? profilePictureUrl;
   final List<DoctorScheduleModel> doctorSchedules;
 
-  // Getter لضمان التوافق مع الأجزاء التي تستخدم imageUrl
-  String? get imageUrl => profilePictureUrl;
-
   DoctorProfileModel({
     required this.firstName,
     required this.lastName,
@@ -35,7 +32,8 @@ class DoctorProfileModel {
   });
 
   factory DoctorProfileModel.fromJson(Map<String, dynamic> json) {
-    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    // التحقق من وجود المواعيد في الـ JSON بأي مسمى محتمل من الباك اند
+    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'] ?? json['schedules'] ?? json['Schedules'];
     
     return DoctorProfileModel(
       firstName: json['firstName'] ?? json['FirstName'] ?? '',
