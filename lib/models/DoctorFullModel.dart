@@ -14,6 +14,8 @@ class DoctorFullModel {
   final bool isAppleToAppointment;
   final List<DoctorScheduleModel> doctorSchedules;
   final String phoneNumber;
+  final String? email;
+  final String? address;
 
   DoctorFullModel({
     required this.id,
@@ -29,16 +31,18 @@ class DoctorFullModel {
     required this.isAppleToAppointment,
     this.doctorSchedules = const [],
     this.phoneNumber = '',
+    this.email,
+    this.address,
   });
 
   factory DoctorFullModel.fromJson(Map<String, dynamic> json) {
     String? imgUrl = json['profilePictureUrl'] ?? json['ProfilePictureUrl'];
     if (imgUrl != null && imgUrl.isNotEmpty && !imgUrl.startsWith('http')) {
-      // Prepend host and fix slashes
       imgUrl = "https://wisdom-frisk-exciting.ngrok-free.dev${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
     }
 
-    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'];
+    // التحقق من كافة المسميات المحتملة للمواعيد
+    var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'] ?? json['schedules'] ?? json['Schedules'];
 
     return DoctorFullModel(
       id: (json['id'] ?? json['Id'] ?? '').toString(),
@@ -53,6 +57,8 @@ class DoctorFullModel {
       gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
       isAppleToAppointment: json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? false,
       phoneNumber: (json['phoneNumber'] ?? json['PhoneNumber'] ?? '').toString(),
+      email: json['email'] ?? json['Email'],
+      address: json['address'] ?? json['Address'],
       doctorSchedules: (schedulesJson is List)
           ? schedulesJson.map((i) => DoctorScheduleModel.fromJson(i)).toList()
           : [],
@@ -80,7 +86,30 @@ class DoctorFullModel {
       'gender': gender,
       'isAppleToAppointment': isAppleToAppointment,
       'phoneNumber': phoneNumber,
+      'email': email,
+      'address': address,
       'doctorSchedules': doctorSchedules.map((s) => s.toJson()).toList(),
     };
+  }
+
+  // ميثود مساعدة لنسخ الكائن مع تحديث المواعيد
+  DoctorFullModel copyWith({List<DoctorScheduleModel>? schedules}) {
+    return DoctorFullModel(
+      id: id,
+      profilePictureUrl: profilePictureUrl,
+      firstName: firstName,
+      lastName: lastName,
+      specializationName: specializationName,
+      experienceYears: experienceYears,
+      biography: biography,
+      consultationFee: consultationFee,
+      dateOfBirth: dateOfBirth,
+      gender: gender,
+      isAppleToAppointment: isAppleToAppointment,
+      phoneNumber: phoneNumber,
+      email: email,
+      address: address,
+      doctorSchedules: schedules ?? doctorSchedules,
+    );
   }
 }
