@@ -17,7 +17,7 @@ class BookingScreen extends StatefulWidget {
   final String specialty;
   final String fee;
   final String? doctorImageUrl;
-  final String? patientId; 
+  final String? patientId;
 
   const BookingScreen({
     super.key,
@@ -38,7 +38,7 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? selectedDate;
   int? selectedPaymentIndex;
   bool isLoading = false;
-  
+
   List<DoctorScheduleModel> _doctorSchedule = [];
   double? _fetchedFee;
   String? _doctorImageUrl;
@@ -62,7 +62,7 @@ class _BookingScreenState extends State<BookingScreen> {
           _fetchedFee = profile.consultationFee;
           _doctorImageUrl = profile.profilePictureUrl;
           _isFetchingSchedule = false;
-          
+
           List<DateTime> available = getAvailableDates();
           if (available.isNotEmpty) {
             selectedDate = available.first;
@@ -150,14 +150,14 @@ class _BookingScreenState extends State<BookingScreen> {
 
       if (appointmentId != null) {
         debugPrint("Booking successful. Appointment ID: $appointmentId");
-        
+
         final paymentMethods = ["Cash", "Card", "Wallet"];
         final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
         final double currentFee = _fetchedFee ?? double.parse(widget.fee);
-        
+
         final paymentInfo = PaymentModel(
-          paymentId: "", 
-          appointmentId: appointmentId, 
+          paymentId: "",
+          appointmentId: appointmentId,
           createdDate: DateTime.now().toIso8601String(),
           paymentMethod: paymentMethods[selectedPaymentIndex!],
           paymentStatus: paymentStatus,
@@ -167,7 +167,7 @@ class _BookingScreenState extends State<BookingScreen> {
         await _apiService.createPayment(paymentInfo);
 
         if (mounted) {
-          Navigator.pop(context); 
+          Navigator.pop(context);
           _showSuccessBooking(appointmentId);
         }
       } else {
@@ -175,10 +175,18 @@ class _BookingScreenState extends State<BookingScreen> {
       }
     } catch (e) {
       debugPrint("Booking error: $e");
+      String errorMessage = e.toString();
+      
+      // Handle duplicate booking error from backend
+      if (errorMessage.toLowerCase().contains("already") || 
+          errorMessage.toLowerCase().contains("appointment exists")) {
+        errorMessage = "You already have an appointment with this doctor on this day.";
+      }
+
       if (mounted) {
         if (Navigator.canPop(context)) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -226,11 +234,11 @@ class _BookingScreenState extends State<BookingScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context); 
-                    Navigator.pop(context); 
+                    Navigator.pop(context);
+                    Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor, 
+                    backgroundColor: primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -262,11 +270,11 @@ class _BookingScreenState extends State<BookingScreen> {
                   const SizedBox(height: 25),
                   _buildSectionTitle("Select Date"),
                   const SizedBox(height: 12),
-                  _isFetchingSchedule 
-                    ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: primaryColor)))
-                    : (availableDates.isEmpty 
-                        ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No available dates found.")))
-                        : _buildDateSelector(availableDates)),
+                  _isFetchingSchedule
+                      ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator(color: primaryColor)))
+                      : (availableDates.isEmpty
+                      ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No available dates found.")))
+                      : _buildDateSelector(availableDates)),
                   const SizedBox(height: 25),
                   if (selectedDate != null) ...[
                     _buildSectionTitle("Appointment Info"),
@@ -374,21 +382,21 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Widget _buildAppointmentInfoCard() {
     String estimatedTime = "TBD";
-    
+
     if (_expectedTurn != null && selectedDate != null && _doctorSchedule.isNotEmpty) {
       String dayName = DateFormat('EEEE').format(selectedDate!);
       try {
         var schedule = _doctorSchedule.firstWhere(
-          (s) => s.getDayName().toLowerCase() == dayName.toLowerCase(),
+              (s) => s.getDayName().toLowerCase() == dayName.toLowerCase(),
           orElse: () => _doctorSchedule.first,
         );
 
         List<String> parts = schedule.startTime.split(':');
         DateTime baseTime = DateTime(
-          selectedDate!.year, selectedDate!.month, selectedDate!.day,
-          int.parse(parts[0]), int.parse(parts[1])
+            selectedDate!.year, selectedDate!.month, selectedDate!.day,
+            int.parse(parts[0]), int.parse(parts[1])
         );
-        
+
         DateTime myTime = baseTime.add(Duration(minutes: (_expectedTurn! - 1) * 30));
         estimatedTime = DateFormat('hh:mm a').format(myTime);
       } catch (e) {
@@ -400,12 +408,12 @@ class _BookingScreenState extends State<BookingScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryColor, primaryColor.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight
-        ),
-        borderRadius: BorderRadius.circular(20)
+          gradient: LinearGradient(
+              colors: [primaryColor, primaryColor.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight
+          ),
+          borderRadius: BorderRadius.circular(20)
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -413,31 +421,37 @@ class _BookingScreenState extends State<BookingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.white70, size: 20),
-                  SizedBox(width: 8),
-                  Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14))
-                ]
+              const Expanded( // 👈 التعديل الأول: استخدام Expanded لضمان عدم خروج النص
+                child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.white70, size: 20),
+                      SizedBox(width: 8),
+                      Flexible( // 👈 التعديل الثاني: Flexible عشان يقصر النص لو الشاشة ضاقت جداً
+                          child: Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14), overflow: TextOverflow.ellipsis)
+                      )
+                    ]
+                ),
               ),
+              const SizedBox(width: 10), // مسافة أمان
               if (_expectedTurn != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // 👈 التعديل التالت: تقليل البادينج الداخلي شوية
                   decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 16),
+                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 15), // تصغير الأيقونة بيكسل واحد
                       const SizedBox(width: 6),
-                      Text(estimatedTime, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text(estimatedTime, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)), // تصغير الخط درجة
                     ],
                   ),
                 ),
             ],
           ),
           const SizedBox(height: 10),
-          _isFetchingTurn 
-            ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-            : Text(_expectedTurn != null ? "#$_expectedTurn" : "TBD", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+          _isFetchingTurn
+              ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+              : Text(_expectedTurn != null ? "#$_expectedTurn" : "TBD", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           const Text("* Please arrive 15 mins before the estimated time.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],

@@ -3,7 +3,6 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 
@@ -17,30 +16,9 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final ApiService _apiService = ApiService();
-  bool _isLoading = true;
-  DoctorModel? _doctor;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchProfile();
-  }
-
-  Future<void> _fetchProfile() async {
-    setState(() => _isLoading = true);
-    try {
-      final doctors = await _apiService.getAllDoctors();
-      setState(() {
-        _doctor = doctors.firstWhere((d) => d.id == widget.doctorId);
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
-    }
-  }
 
   int _calculateAge(String dob) {
+    if (dob.isEmpty) return 0;
     try {
       final birthDate = DateTime.parse(dob);
       final today = DateTime.now();
@@ -50,12 +28,25 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     } catch (_) { return 0; }
   }
 
+  // ميثود لجلب البروفايل والمواعيد معاً لضمان ظهور البيانات
+  Future<Map<String, dynamic>> _fetchFullProfile() async {
+    final results = await Future.wait([
+      _apiService.getDoctorProfile(widget.doctorId),
+      _apiService.getDoctorSchedule(widget.doctorId),
+    ]);
+    
+    return {
+      'profile': results[0] as DoctorProfileModel,
+      'schedules': results[1] as List<DoctorScheduleModel>,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      body: FutureBuilder<DoctorProfileModel>(
-        future: _apiService.getDoctorProfile(widget.doctorId),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchFullProfile(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: primaryColor));
@@ -67,7 +58,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             return const Center(child: Text("No Data Found"));
           }
 
-          final doctor = snapshot.data!;
+          final doctor = snapshot.data!['profile'] as DoctorProfileModel;
+          final schedules = snapshot.data!['schedules'] as List<DoctorScheduleModel>;
           final String? displayImage = doctor.profilePictureUrl;
 
           return Column(
@@ -84,11 +76,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       _buildInfoCard([
                         _buildInfoRow(Icons.badge_rounded, "Specialization", doctor.specializationName),
                         _buildDivider(),
-                        _buildInfoRow(Icons.work_history_rounded, "Experience", "${doctor.experienceYears} Years"),
+                        _buildInfoRow(Icons.work_history_rounded, "Experience", "${doctor.experienceYears.toStringAsFixed(0)} Years"),
                         _buildDivider(),
-                        _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee} EGP"),
+                        _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${doctor.consultationFee.toStringAsFixed(0)} EGP"),
                         _buildDivider(),
-                        _buildInfoRow(Icons.description_rounded, "Biography", doctor.biography),
+                        _buildInfoRow(Icons.description_rounded, "Biography", doctor.biography.isNotEmpty ? doctor.biography : "No biography provided"),
                       ]),
 
                       const SizedBox(height: 25),
@@ -105,7 +97,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
                       const SizedBox(height: 25),
                       _buildSectionTitle("Work Schedule"),
-                      _buildScheduleCard(_doctor?.doctorSchedules ?? []),
+                      _buildScheduleCard(schedules),
 
                       const SizedBox(height: 40),
 
@@ -248,13 +240,23 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   Widget _buildScheduleCard(List<DoctorScheduleModel> schedules) {
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]),
       child: schedules.isEmpty
-        ? const ListTile(title: Text("No work hours set", style: TextStyle(color: Colors.grey)))
-        : Column(children: schedules.map((s) => ListTile(
-            leading: const Icon(Icons.calendar_today_outlined, size: 18, color: primaryColor),
-            title: Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.w600)),
-            trailing: Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+        ? const Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Text("No work hours set", style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+          )
+        : Column(children: schedules.map((s) => Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.calendar_today_outlined, size: 18, color: primaryColor),
+                title: Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                trailing: Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                subtitle: Text(s.isAvailable ? "Available" : "Unavailable", style: TextStyle(color: s.isAvailable ? Colors.green : Colors.red, fontSize: 11)),
+              ),
+              if (schedules.last != s) _buildDivider(),
+            ],
           )).toList()),
     );
   }
