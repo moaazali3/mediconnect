@@ -1,11 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final String? initialEmail;
+  final bool showOtpDialog;
+  const RegisterScreen({super.key, this.initialEmail, this.showOtpDialog = false});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -15,7 +18,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int currentStep = 0;
   bool registerPasswordObscured = true;
   bool confirmPasswordObscured = true;
-  final formKey = GlobalKey<FormState>();
+
+  // Use separate keys for each step to avoid validation state bleeding between steps
+  final List<GlobalKey<FormState>> _formKeys = [
+    GlobalKey<FormState>(),
+    GlobalKey<FormState>(),
+    GlobalKey<FormState>(),
+  ];
 
   final fNameController = TextEditingController();
   final lNameController = TextEditingController();
@@ -29,10 +38,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final dobController = TextEditingController();
   final addressController = TextEditingController();
   final otpController = TextEditingController();
-  
+
   String? selectedGender;
-  final String selectedRole = "Patient"; 
+  final String selectedRole = "Patient";
   String? selectedBloodType;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail != null) {
+      emailController.text = widget.initialEmail!;
+    }
+    if (widget.showOtpDialog && widget.initialEmail != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showOtpDialog(widget.initialEmail!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -54,29 +76,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // --- Validators ---
 
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) return "Required";
+    if (value == null || value.isEmpty) return "Email address is required";
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
-      return "Valid email required";
+      return "Please enter a valid email address";
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return "Required";
-    if (value.length < 8) return "Min 8 characters required";
+    if (value == null || value.isEmpty) return "Password is required";
+
+    final hasMinLength = value.length >= 8;
+    final hasUppercase = RegExp(r'[A-Z]').hasMatch(value);
+    final hasLowercase = RegExp(r'[a-z]').hasMatch(value);
+    final hasNumber = RegExp(r'[0-9]').hasMatch(value);
+    final hasSpecialChar = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(value);
+
+    if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+      return "Password must follow these rules:\n• Minimum 8 characters\n• One uppercase letter (A-Z)\n• One lowercase letter (a-z)\n• One number\n• One special character (@, #, \$, etc.)";
+    }
     return null;
   }
 
   String? _validateName(String? value, String label) {
-    if (value == null || value.isEmpty) return "Required";
-    if (value.length < 3) return "Min 3 characters";
+    if (value == null || value.isEmpty) return "$label is required";
+    if (value.length < 3) return "$label must be at least 3 characters";
     return null;
   }
 
   String? _validatePhone(String? value, String label) {
-    if (value == null || value.isEmpty) return "Required";
-    if (value.length != 11) return "Exactly 11 digits";
+    if (value == null || value.isEmpty) return "$label is required";
+    if (value.length != 11) return "$label must be exactly 11 digits";
+    if (!value.startsWith('01')) return "$label must start with 01";
+    return null;
+  }
+
+  String? _validateHeight(String? value) {
+    if (value == null || value.isEmpty) return "Height is required";
+    final h = double.tryParse(value);
+    if (h == null || h < 50 || h > 250) return "Height must be between 50 and 250 cm";
+    return null;
+  }
+
+  String? _validateWeight(String? value) {
+    if (value == null || value.isEmpty) return "Weight is required";
+    final w = double.tryParse(value);
+    if (w == null || w < 20 || w > 300) return "Weight must be between 20 and 300 kg";
+    return null;
+  }
+
+  String? _validateAddress(String? value) {
+    if (value == null || value.isEmpty) return "Address is required";
     return null;
   }
 
@@ -110,7 +161,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (response.success) {
         _showOtpDialog(emailController.text);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message), backgroundColor: Colors.red));
+        String errorMessage = response.message;
+        if (errorMessage.contains("already taken")) {
+          errorMessage = "This email is already in use.";
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage), backgroundColor: Colors.red));
       }
     } catch (e) {
       if (!mounted) return;
@@ -120,45 +175,154 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showOtpDialog(String email) {
+    otpController.clear();
+    bool isLoading = false;
+    String? errorText;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        title: const Text("Verify Email", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("Code sent to: $email", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.grey)),
-            const SizedBox(height: 20),
-            TextField(
-              controller: otpController,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: "000000",
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            // التعديل الأول: تقليل الهوامش الخارجية عشان ندي مساحة للمربعات على الشاشات الصغيرة
+            insetPadding: const EdgeInsets.symmetric(horizontal: 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+            contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            content: SizedBox(
+              // التعديل التاني: نكبر المحتوى لأقصى عرض مسموح بيه جوه الديالوج
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.mark_email_read_outlined, size: 50, color: primaryColor),
+                    const SizedBox(height: 15),
+                    const Text("Verify Email",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+                    const SizedBox(height: 10),
+                    Text("We have sent a 6-digit verification code to\n$email",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5)),
+                    const SizedBox(height: 30),
+
+                    SizedBox(
+                      height: 55,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Visual Boxes
+                          Row(
+                            children: List.generate(6, (index) {
+                              bool isFocused = otpController.text.length == index;
+                              bool isFilled = otpController.text.length > index;
+                              // التعديل التالت: نستخدم Expanded براحتنا عشان الديالوج بقى واخد العرض الصح
+                              return Expanded(
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isFocused ? primaryColor : (isFilled ? primaryColor.withOpacity(0.5) : Colors.grey.shade300),
+                                      width: isFocused ? 2 : 1,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    isFilled ? otpController.text[index] : "",
+                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          // Hidden TextField to handle input - Placed on top
+                          Positioned.fill(
+                            child: Opacity(
+                              opacity: 0.01,
+                              child: TextField(
+                                controller: otpController,
+                                keyboardType: TextInputType.number,
+                                autofocus: true,
+                                maxLength: 6,
+                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    errorText = null;
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                  counterText: "",
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 12), textAlign: TextAlign.center),
+                    ],
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : () async {
+                          if (otpController.text.length < 6) {
+                            setDialogState(() => errorText = "Please enter the full 6-digit code");
+                            return;
+                          }
+                          setDialogState(() => isLoading = true);
+                          try {
+                            final response = await ApiService().confirmEmail(email, otpController.text);
+                            if (mounted) {
+                              if (response.success) {
+                                Navigator.pop(context);
+                                _showSuccessDialog(context);
+                              } else {
+                                setDialogState(() {
+                                  isLoading = false;
+                                  errorText = response.message;
+                                });
+                              }
+                            }
+                          } catch (e) {
+                            setDialogState(() {
+                              isLoading = false;
+                              errorText = "Something went wrong, please try again";
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          elevation: 0,
+                        ),
+                        child: isLoading
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text("Verify", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600)),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                final response = await ApiService().confirmEmail(email, otpController.text);
-                if (mounted && response.success) {
-                  Navigator.pop(context);
-                  _showSuccessDialog(context);
-                }
-              },
-              child: const Text("VERIFY"),
-            ),
-          )
-        ],
+          );
+        },
       ),
     );
   }
@@ -181,100 +345,156 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
+          Container(color: Colors.black.withOpacity(0.05)),
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.05, vertical: 20),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 15, vertical: isSmallScreen ? 20 : 30),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Center(
+                        child: ClipRRect(
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
-                        ),
-                        child: Form(
-                          key: formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Image.asset(
-                                "assets/images/img.png",
-                                height: isSmallScreen ? 60 : 80,
-                                errorBuilder: (c, e, s) => Icon(Icons.person_add_rounded, size: isSmallScreen ? 50 : 60, color: primaryColor),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 20 : 35),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: Colors.white.withOpacity(0.3)),
                               ),
-                              const SizedBox(height: 10),
-                              Text(_getStepTitle(), style: TextStyle(fontSize: isSmallScreen ? 16 : 18, fontWeight: FontWeight.bold, color: primaryColor)),
-                              Text("Step ${currentStep + 1} of 3", style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                              const SizedBox(height: 20),
+                              child: Form(
+                                key: _formKeys[currentStep],
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: const BoxDecoration(color: Colors.transparent, shape: BoxShape.circle),
+                                      child: Image.asset(
+                                        "assets/images/img.png",
+                                        height: isSmallScreen ? 70 : 100,
+                                        width: isSmallScreen ? 70 : 100,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Icon(Icons.person_add_rounded, size: isSmallScreen ? 50 : 80, color: primaryColor),
+                                      ),
+                                    ),
+                                    SizedBox(height: isSmallScreen ? 10 : 20),
+                                    Text(_getStepTitle(),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(fontSize: isSmallScreen ? 20 : 26, fontWeight: FontWeight.bold, color: primaryColor)),
+                                    Text("Step ${currentStep + 1} of 3",
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                                    SizedBox(height: isSmallScreen ? 20 : 35),
 
-                              if (currentStep == 0) ...[
-                                _buildTextField(controller: emailController, label: "Email", icon: Icons.email_outlined, validator: _validateEmail),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: passController, label: "Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: registerPasswordObscured, onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured), validator: _validatePassword),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: confirmPassController, label: "Confirm Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: confirmPasswordObscured, onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured), validator: (v) => v != passController.text ? "No match" : null),
-                              ],
+                                    if (currentStep == 0) ...[
+                                      _buildTextField(controller: emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: _validateEmail),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: passController, label: "Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: registerPasswordObscured, onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured), validator: _validatePassword),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: confirmPassController, label: "Confirm Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: confirmPasswordObscured, onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured), validator: (v) => v != passController.text ? "Passwords do not match" : null),
+                                    ],
 
-                              if (currentStep == 1) ...[
-                                _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: phoneController, label: "Phone", icon: Icons.phone_android, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone")),
-                                const SizedBox(height: 15),
-                                // Layout responsive for Gender and Birth Date
-                                isVeryNarrow 
-                                  ? Column(children: [
-                                      _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
-                                      const SizedBox(height: 15),
-                                      _buildDatePickerField(),
-                                    ])
-                                  : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                      Expanded(child: _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v))),
-                                      const SizedBox(width: 10),
-                                      Expanded(child: _buildDatePickerField()),
-                                    ]),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: addressController, label: "Address", icon: Icons.location_on_outlined),
-                              ],
+                                    if (currentStep == 1) ...[
+                                      _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: phoneController, label: "Phone", icon: Icons.phone_android, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone")),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      isVeryNarrow
+                                          ? Column(children: [
+                                        _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
+                                        SizedBox(height: isSmallScreen ? 15 : 20),
+                                        _buildDatePickerField(),
+                                      ])
+                                          : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                        Expanded(child: _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v))),
+                                        const SizedBox(width: 10),
+                                        Expanded(child: _buildDatePickerField()),
+                                      ]),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: addressController, label: "Address", icon: Icons.location_on_outlined, validator: _validateAddress),
+                                    ],
 
-                              if (currentStep == 2) ...[
-                                _buildDropdownField(label: "Blood", icon: Icons.bloodtype, value: selectedBloodType, items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], onChanged: (v) => setState(() => selectedBloodType = v)),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number),
-                                const SizedBox(height: 15),
-                                _buildTextField(controller: emergencyController, label: "Emergency Phone", icon: Icons.contact_emergency, keyboardType: TextInputType.phone),
-                              ],
+                                    if (currentStep == 2) ...[
+                                      _buildDropdownField(label: "Blood Type", icon: Icons.bloodtype, value: selectedBloodType, items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], onChanged: (v) => setState(() => selectedBloodType = v)),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number, validator: _validateWeight),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number, validator: _validateHeight),
+                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      _buildTextField(controller: emergencyController, label: "Emergency Phone", icon: Icons.contact_emergency, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Emergency Phone")),
+                                    ],
 
-                              const SizedBox(height: 30),
-                              Row(
-                                children: [
-                                  if (currentStep > 0) 
-                                    Expanded(child: OutlinedButton(onPressed: () => setState(() => currentStep--), child: const Text("BACK"))),
-                                  if (currentStep > 0) const SizedBox(width: 10),
-                                  Expanded(child: ElevatedButton(onPressed: _handleNext, child: Text(currentStep == 2 ? "SIGN UP" : "NEXT"))),
-                                ],
+                                    SizedBox(height: isSmallScreen ? 20 : 35),
+                                    Row(
+                                      children: [
+                                        if (currentStep > 0)
+                                          Expanded(
+                                            child: SizedBox(
+                                              height: 50,
+                                              child: OutlinedButton(
+                                                onPressed: () => setState(() => currentStep--),
+                                                style: OutlinedButton.styleFrom(
+                                                  side: const BorderSide(color: primaryColor),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                                ),
+                                                child: const Text("BACK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ),
+                                          ),
+                                        if (currentStep > 0) const SizedBox(width: 10),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 50,
+                                            child: ElevatedButton(
+                                              onPressed: _handleNext,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: primaryColor,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                                                elevation: 5,
+                                              ),
+                                              child: Text(currentStep == 2 ? "SIGN UP" : "NEXT", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (currentStep == 0) ...[
+                                      SizedBox(height: isSmallScreen ? 10 : 25),
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        children: [
+                                          const Text("Already have an account?", style: TextStyle(fontSize: 14)),
+                                          GestureDetector(
+                                            onTap: () => Navigator.pop(context),
+                                            child: const Padding(
+                                              padding: EdgeInsets.only(left: 8.0),
+                                              child: Text("Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ]
+                                  ],
+                                ),
                               ),
-                              if (currentStep == 0) ...[
-                                const SizedBox(height: 15),
-                                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Already have an account? Login", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold))),
-                              ]
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -302,13 +522,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleNext() {
-    if (formKey.currentState!.validate()) {
+    // Validate only the current step's form
+    if (_formKeys[currentStep].currentState!.validate()) {
       if (currentStep < 2) setState(() => currentStep++);
       else _performRegister();
     }
   }
 
-  Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon, bool isPassword = false, bool isPasswordHidden = false, VoidCallback? onTogglePassword, TextInputType keyboardType = TextInputType.text, bool readOnly = false, VoidCallback? onTap, String? Function(String?)? validator}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    bool isPasswordHidden = false,
+    VoidCallback? onTogglePassword,
+    TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword && isPasswordHidden,
@@ -318,10 +550,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: primaryColor, size: 20),
-        suffixIcon: isPassword ? IconButton(icon: Icon(isPasswordHidden ? Icons.visibility_off : Icons.visibility, color: primaryColor, size: 20), onPressed: onTogglePassword) : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        errorStyle: const TextStyle(fontSize: 11, height: 1.2),
+        errorMaxLines: 5,
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: primaryColor, size: 20),
+        ),
+        suffixIcon: isPassword
+            ? IconButton(
+          icon: Icon(isPasswordHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
+          onPressed: onTogglePassword,
+        )
+            : null,
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.6),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
+        ),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1)
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)
+        ),
       ),
       validator: validator ?? (v) => (v == null || v.isEmpty) ? "Required" : null,
     );
@@ -334,9 +596,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: primaryColor, size: 20),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        errorStyle: const TextStyle(fontSize: 11, height: 1.2),
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: primaryColor, size: 20),
+        ),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.6),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
+        ),
+        errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1)
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)
+        ),
       ),
       validator: (v) => v == null ? "Required" : null,
     );

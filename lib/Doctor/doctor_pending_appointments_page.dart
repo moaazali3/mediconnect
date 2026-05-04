@@ -22,7 +22,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
   List<DateTime> _availableDates = [];
   bool _isLoading = true;
   String? _errorMessage;
-  
+
   String _selectedDate = "All"; 
   String _searchQuery = ""; 
   final TextEditingController _searchController = TextEditingController();
@@ -149,7 +149,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
             children: [
               _buildHeader(),
               const SizedBox(height: 20),
-              _buildSearchField(), 
+              _buildSearchField(),
               const SizedBox(height: 20),
               _buildDateFilterSection(),
               const SizedBox(height: 20),
@@ -158,7 +158,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                 child: Text("Pending Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 10),
-              
+
               if (_isLoading)
                 const Center(child: Padding(
                   padding: EdgeInsets.all(40.0),
@@ -206,7 +206,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
         children: [
           const Expanded(
             child: Text(
-              "Pending Appointment", 
+              "Pending Appointment",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               softWrap: true,
             ),
@@ -283,9 +283,9 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
           boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
         ),
         child: Text(
-          label, 
+          label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700, 
+            color: isSelected ? Colors.white : Colors.grey.shade700,
             fontWeight: FontWeight.bold,
             fontSize: 13
           )
@@ -299,7 +299,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white, 
-        borderRadius: BorderRadius.circular(22), 
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: ClipRRect(
@@ -318,7 +318,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                         radius: 28,
                         backgroundColor: const Color(0xFFE3F2FD),
                         child: Text(
-                          app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?", 
+                          app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1976D2), fontSize: 20)
                         ),
                       ),
@@ -331,7 +331,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                               children: [
                                 Expanded(
                                   child: Text(
-                                    app.patientName, 
+                                    app.patientName,
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -342,12 +342,12 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "${app.dayOfWeek}, ${app.appointmentDate}", 
+                              "${app.dayOfWeek}, ${app.appointmentDate}",
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              app.status, 
+                              app.status,
                               style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold)
                             ),
                           ],
@@ -372,7 +372,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "${app.startTime} - ${app.endTime}", 
+                            "${app.startTime} - ${app.endTime}",
                             style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 15),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -382,7 +382,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    "Q No: ${app.queueNumber}", 
+                    "Q No: ${app.queueNumber}",
                     style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 15)
                   ),
                 ],
