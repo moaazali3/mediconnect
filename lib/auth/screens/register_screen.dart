@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String? initialEmail;
@@ -18,6 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int currentStep = 0;
   bool registerPasswordObscured = true;
   bool confirmPasswordObscured = true;
+  bool _isJustRegistered = false; 
 
   // Use separate keys for each step to avoid validation state bleeding between steps
   final List<GlobalKey<FormState>> _formKeys = [
@@ -159,6 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Navigator.pop(context);
 
       if (response.success) {
+        setState(() => _isJustRegistered = true);
         _showOtpDialog(emailController.text);
       } else {
         String errorMessage = response.message;
@@ -182,15 +185,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            // التعديل الأول: تقليل الهوامش الخارجية عشان ندي مساحة للمربعات على الشاشات الصغيرة
             insetPadding: const EdgeInsets.symmetric(horizontal: 15),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
             contentPadding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
             content: SizedBox(
-              // التعديل التاني: نكبر المحتوى لأقصى عرض مسموح بيه جوه الديالوج
               width: double.maxFinite,
               child: SingleChildScrollView(
                 child: Column(
@@ -212,12 +213,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Visual Boxes
                           Row(
                             children: List.generate(6, (index) {
                               bool isFocused = otpController.text.length == index;
                               bool isFilled = otpController.text.length > index;
-                              // التعديل التالت: نستخدم Expanded براحتنا عشان الديالوج بقى واخد العرض الصح
                               return Expanded(
                                 child: Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -239,7 +238,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               );
                             }),
                           ),
-                          // Hidden TextField to handle input - Placed on top
                           Positioned.fill(
                             child: Opacity(
                               opacity: 0.01,
@@ -285,8 +283,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             final response = await ApiService().confirmEmail(email, otpController.text);
                             if (mounted) {
                               if (response.success) {
-                                Navigator.pop(context);
-                                _showSuccessDialog(context);
+                                Navigator.pop(dialogContext);
+                                _showSuccessDialog();
                               } else {
                                 setDialogState(() {
                                   isLoading = false;
@@ -314,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 15),
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600)),
                     ),
                   ],
@@ -628,7 +626,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _showSuccessDialog(BuildContext context) {
-    showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Success"), content: const Text("Account created!"), actions: [TextButton(onPressed: () { Navigator.pop(c); Navigator.pop(context); }, child: const Text("OK"))]));
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+        title: const Column(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green, size: 60),
+            SizedBox(height: 10),
+            Text("Success", style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "Your account has been created successfully. Please login to continue.",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // Return to Login screen and clear the navigation stack
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text("OK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          )
+        ],
+      ),
+    );
   }
 }
