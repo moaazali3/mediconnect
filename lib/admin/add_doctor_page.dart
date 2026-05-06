@@ -76,26 +76,26 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return "Email is required";
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) return "Enter a valid email address";
+    if (!emailRegex.hasMatch(value)) return "Please enter a valid email address";
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) return "Password is required";
+    List<String> errors = [];
+    if (value.length < 8) errors.add("• Minimum 8 characters");
+    if (!RegExp(r'[A-Z]').hasMatch(value)) errors.add("• One uppercase letter (A-Z)");
+    if (!RegExp(r'[a-z]').hasMatch(value)) errors.add("• One lowercase letter (a-z)");
+    if (!RegExp(r'[0-9]').hasMatch(value)) errors.add("• One number");
+
+    if (errors.isNotEmpty) {
+      return "Password must follow these rules:\n${errors.join('\n')}";
+    }
     return null;
   }
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
-      if (_currentStep == 1) {
-        if (_passwordController.text != _confirmPasswordController.text) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Passwords do not match"), backgroundColor: Colors.red),
-          );
-          return;
-        }
-        if (_passwordController.text.length < 6) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Password must be at least 6 characters"), backgroundColor: Colors.red),
-          );
-          return;
-        }
-      }
       setState(() => _currentStep++);
     }
   }
@@ -363,11 +363,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             isPassword: true,
             isPasswordHidden: _isPasswordHidden,
             onTogglePassword: () => setState(() => _isPasswordHidden = !_isPasswordHidden),
-            validator: (value) {
-              if (value == null || value.isEmpty) return "Password is required";
-              if (value.length < 6) return "Password must be at least 6 characters";
-              return null;
-            },
+            validator: _validatePassword,
           ),
           const SizedBox(height: 15),
           _buildTextField(
@@ -390,10 +386,25 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         key: const ValueKey(2),
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildTextField(controller: _firstNameController, label: "First Name", icon: Icons.person_outline)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _firstNameController,
+                  label: "First Name",
+                  icon: Icons.person_outline,
+                  validator: (value) => (value == null || value.length < 3) ? "First Name must be at least 3 characters" : null,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _buildTextField(controller: _lastNameController, label: "Last Name", icon: Icons.person_outline)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _lastNameController,
+                  label: "Last Name",
+                  icon: Icons.person_outline,
+                  validator: (value) => (value == null || value.length < 3) ? "Last Name must be at least 3 characters" : null,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 15),
@@ -402,9 +413,11 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             label: "Phone Number",
             icon: Icons.phone_android_rounded,
             keyboardType: TextInputType.phone,
+            validator: (value) => (value == null || !value.startsWith("01")) ? "Phone must start with 01" : null,
           ),
           const SizedBox(height: 15),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _buildDropdownField<String>(
@@ -413,6 +426,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                   initialValue: _gender,
                   items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (val) => setState(() => _gender = val!),
+                  validator: (val) => val == null ? "Required" : null,
                 ),
               ),
               const SizedBox(width: 8),
@@ -433,6 +447,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                       setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
                     }
                   },
+                  validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
                 ),
               ),
             ],
@@ -463,6 +478,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             controller: _addressController,
             label: "Address",
             icon: Icons.location_on_outlined,
+            validator: (value) => (value == null || value.isEmpty) ? "Address is required" : null,
           ),
         ],
       );
@@ -553,6 +569,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+        errorMaxLines: 6,
       ),
       validator: validator ?? (value) => (value == null || value.isEmpty) ? "Required" : null,
     );
@@ -564,6 +581,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     required T? initialValue,
     required List<DropdownMenuItem<T>> items,
     required Function(T?) onChanged,
+    String? Function(T?)? validator,
   }) {
     return DropdownButtonFormField<T>(
       isExpanded: true,
@@ -588,8 +606,11 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+        errorMaxLines: 2,
       ),
-      validator: (val) => val == null ? "Required" : null,
+      validator: validator ?? (val) => val == null ? "Required" : null,
     );
   }
 }
