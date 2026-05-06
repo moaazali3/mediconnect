@@ -37,7 +37,7 @@ class ApiResponse {
 // https://wisdom-frisk-exciting.ngrok-free.dev/api
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   // ملاحظة: تأكد من أن هذا الرابط هو نفس الرابط الظاهر في Terminal الخاص بـ ngrok
-  final String baseUrl = "https://recipient-prelaunch-handclap.ngrok-free.dev/api";
+  final String baseUrl = "https://medicon.runasp.net/api";
   
   // Static cache for doctor images
   static final Map<String, String?> _doctorImagesCache = {};
