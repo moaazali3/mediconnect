@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/qr_scanner_page.dart';
-import 'package:mediconnect/admin/today_appointments_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/receptionist/receptionist_pending_appointments_page.dart';
+import 'package:mediconnect/receptionist/receptionist_profile_page.dart';
 
 class ReceptionistDashboard extends StatefulWidget {
   const ReceptionistDashboard({super.key});
@@ -15,12 +16,21 @@ class ReceptionistDashboard extends StatefulWidget {
 }
 
 class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
+  int _currentIndex = 0;
   String _receptionistName = "Receptionist";
+  String? _userId;
+
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _loadInfo();
+    _pages = [
+      const ReceptionistPendingAppointmentsPage(),
+      const QRScannerPage(),
+      const ReceptionistProfilePage(),
+    ];
   }
 
   Future<void> _loadInfo() async {
@@ -28,6 +38,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
     if (mounted) {
       setState(() {
         _receptionistName = prefs.getString('user_name') ?? "Receptionist";
+        _userId = prefs.getString('user_id');
       });
     }
   }
@@ -47,143 +58,71 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
     );
   }
 
-  Future<void> _refreshData() async {
-    await _loadInfo();
-  }
-
   @override
   Widget build(BuildContext context) {
+    String pageTitle = "Pending Appointments";
+    if (_currentIndex == 1) pageTitle = "Scan QR Code";
+    if (_currentIndex == 2) pageTitle = "My Profile";
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
       appBar: CommonAppBar(
-        pageName: "Reception Portal",
+        pageName: pageTitle,
         userName: _receptionistName,
-        onRefresh: _refreshData,
+        onRefresh: () => setState(() {}),
         onLogout: _signOut,
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        color: primaryColor,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Quick Actions",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3142)),
-                    ),
-                    const SizedBox(height: 15),
-                    _buildActionsGrid(context),
-                  ],
-                ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            selectedItemColor: primaryColor,
+            unselectedItemColor: Colors.grey.shade400,
+            showSelectedLabels: true,
+            showUnselectedLabels: false,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_month_rounded),
+                activeIcon: Icon(Icons.calendar_month_rounded, size: 30),
+                label: "Appointments",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.qr_code_scanner_rounded),
+                activeIcon: Icon(Icons.qr_code_scanner_rounded, size: 30),
+                label: "Scan QR",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_rounded),
+                activeIcon: Icon(Icons.person_rounded, size: 30),
+                label: "Profile",
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(25, 20, 25, 45),
-      decoration: const BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Hello, $_receptionistName",
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Manage today's appointments and check-ins.",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionsGrid(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 15,
-      crossAxisSpacing: 15,
-      childAspectRatio: 1.1,
-      children: [
-        _buildActionCard(
-          context,
-          "Scan QR",
-          "Check-in patient",
-          Icons.qr_code_scanner_rounded,
-          Colors.orange.shade700,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Today's List",
-          "View appointments",
-          Icons.calendar_today_rounded,
-          Colors.green.shade600,
-          () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage())),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-          ],
         ),
       ),
     );
