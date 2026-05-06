@@ -9,6 +9,7 @@ import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
+import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
@@ -37,6 +38,7 @@ class ApiResponse {
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   // ملاحظة: تأكد من أن هذا الرابط هو نفس الرابط الظاهر في Terminal الخاص بـ ngrok
   final String baseUrl = "https://recipient-prelaunch-handclap.ngrok-free.dev/api";
+ // final String baseUrl = "https://10.54.182.161/api";
   //https://recipient-prelaunch-handclap.ngrok-free.dev/
   //https://wisdom-frisk-exciting.ngrok-free.dev/api
   // Static cache for doctor images

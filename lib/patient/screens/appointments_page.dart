@@ -226,15 +226,16 @@ class AppointmentCard extends StatelessWidget {
           ),
           const Divider(height: 30),
 
-          // الحل هنا: استخدمنا Wrap بدل Row عشان لو الشاشة ضيقة ينزل الباقي في السطر اللي تحته
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            spacing: 8, // المسافة الأفقية بين العناصر
-            runSpacing: 10, // المسافة الرأسية لو نزلوا في سطر جديد
+          // التصليح السحري: هنستخدم Row متقسم بالتساوي بـ Expanded
+          // كده هيستحيل يضرب مساحة لأن كل قسم هياخد 33% من الشاشة بالظبط
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, date)),
+              const SizedBox(width: 4), // فاصل صغير جداً
               Expanded(child: _buildInfoItem(Icons.access_time_rounded, time)),
-              Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue: #$queue")),
+              const SizedBox(width: 4), // فاصل صغير جداً
+              Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #$queue")),
             ],
           ),
         ],
@@ -244,16 +245,17 @@ class AppointmentCard extends StatelessWidget {
 
   Widget _buildInfoItem(IconData icon, String text) {
     return Row(
-      mainAxisSize: MainAxisSize.min, // مهمة جداً عشان الـ Wrap يعرف حجم العنصر بالظبط ومياخدش مساحة زيادة
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
-        const SizedBox(width: 5),
-        Flexible(
+        const SizedBox(width: 4),
+        // استخدمنا Expanded هنا كمان عشان لو الكلمة طويلة تتحول لـ نقط (...) وماتطلعش بره
+        Expanded(
           child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
           ),
         ),
       ],

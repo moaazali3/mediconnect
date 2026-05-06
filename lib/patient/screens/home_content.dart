@@ -12,7 +12,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeContent extends StatefulWidget {
-  final String? userId; 
+  final String? userId;
   const HomeContent({super.key, this.userId});
 
   @override
@@ -23,7 +23,7 @@ class _HomeContentState extends State<HomeContent> {
   final ApiService _apiService = ApiService();
   String selectedSpecialization = "All";
   String searchQuery = "";
-  
+
   List<SpecializationModel> _specializations = [];
   List<DoctorModel> _doctors = [];
   bool _isLoadingDoctors = true;
@@ -34,7 +34,7 @@ class _HomeContentState extends State<HomeContent> {
   void initState() {
     super.initState();
     _checkConnectivity();
-    _loadCachedData(); 
+    _loadCachedData();
     _refreshData();
   }
 
@@ -48,7 +48,7 @@ class _HomeContentState extends State<HomeContent> {
             const SnackBar(content: Text("You are offline. Showing cached data.")),
           );
         } else {
-          _refreshData(); 
+          _refreshData();
         }
       }
     });
@@ -69,7 +69,7 @@ class _HomeContentState extends State<HomeContent> {
         if (cachedDoctors != null) {
           Iterable l = json.decode(cachedDoctors);
           _doctors = List<DoctorModel>.from(l.map((model) => DoctorModel.fromJson(model)));
-          _apiService.cacheDoctorImages(_doctors); 
+          _apiService.cacheDoctorImages(_doctors);
           _isLoadingDoctors = false;
         }
       });
@@ -78,7 +78,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _refreshData() async {
     _fetchSpecializations();
-    _fetchDoctors();
+    _fetchDoctors(); // هيجيب كل الدكاترة في الأول
   }
 
   Future<void> _fetchSpecializations() async {
@@ -95,12 +95,11 @@ class _HomeContentState extends State<HomeContent> {
   Future<void> _fetchDoctors() async {
     if (mounted) setState(() => _isLoadingDoctors = true);
     try {
-      final docs = await _apiService.getAllDoctors(specializationName: selectedSpecialization);
-      _apiService.cacheDoctorImages(docs); 
+      // هنجيب كل الدكاترة دايماً من السيرفر عشان الفلترة تبقى سريعة عندنا
+      final docs = await _apiService.getAllDoctors(specializationName: "All");
+      _apiService.cacheDoctorImages(docs);
       final prefs = await SharedPreferences.getInstance();
-      if (selectedSpecialization == "All") {
-        await prefs.setString('cached_doctors', json.encode(docs.map((d) => d.toJson()).toList()));
-      }
+      await prefs.setString('cached_doctors', json.encode(docs.map((d) => d.toJson()).toList()));
       if (mounted) setState(() { _doctors = docs; _isLoadingDoctors = false; });
     } catch (e) {
       if (mounted) setState(() => _isLoadingDoctors = false);
@@ -110,6 +109,16 @@ class _HomeContentState extends State<HomeContent> {
   @override
   Widget build(BuildContext context) {
     var filteredDoctors = List<DoctorModel>.from(_doctors);
+
+    // 1. الفلترة بالتخصص (التعديل الجديد)
+    if (selectedSpecialization != "All") {
+      filteredDoctors = filteredDoctors.where((doc) {
+        // استخدمنا trim و toLowerCase عشان لو في مسافات أو حروف كابيتال في الداتابيز مايبوظش الفلتر
+        return doc.specializationName.trim().toLowerCase() == selectedSpecialization.trim().toLowerCase();
+      }).toList();
+    }
+
+    // 2. الفلترة بالبحث بالاسم
     if (searchQuery.isNotEmpty) {
       filteredDoctors = filteredDoctors.where((doc) {
         final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
@@ -149,29 +158,29 @@ class _HomeContentState extends State<HomeContent> {
           const SizedBox(height: 20),
           const HomeBanner(),
           const SizedBox(height: 20),
-          
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text("Specializations", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 10),
-          
-          _isLoadingSpecs && _specializations.isEmpty 
-            ? _buildSpecsShimmer()
-            : _buildSpecsList(),
+
+          _isLoadingSpecs && _specializations.isEmpty
+              ? _buildSpecsShimmer()
+              : _buildSpecsList(),
 
           const SizedBox(height: 20),
-          
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text("Top Doctors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 10),
 
-          _isLoadingDoctors && filteredDoctors.isEmpty
-            ? _buildDoctorsShimmer()
-            : _buildDoctorsList(filteredDoctors),
-            
+          _isLoadingDoctors && filteredDoctors.isEmpty && selectedSpecialization == "All" && searchQuery.isEmpty
+              ? _buildDoctorsShimmer()
+              : _buildDoctorsList(filteredDoctors),
+
           const SizedBox(height: 20),
         ],
       ),
@@ -232,8 +241,8 @@ class _HomeContentState extends State<HomeContent> {
     return GestureDetector(
       onTap: () {
         if (selectedSpecialization != title) {
+          // هنا شيلنا استدعاء الـ API وسبناها تفلتر محلي بس عشان تبقى سريعة
           setState(() => selectedSpecialization = title);
-          _fetchDoctors();
         }
       },
       child: Container(

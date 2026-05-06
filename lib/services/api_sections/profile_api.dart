@@ -70,4 +70,39 @@ mixin ProfileApi {
       throw parent.handleError(e);
     }
   }
+
+  Future<ReceptionistProfileModel> getReceptionistProfile(String id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(Uri.parse('${parent.baseUrl}/Profile/Receptionist/$id'), headers: parent._headers);
+      if (response.statusCode == 200) {
+        return ReceptionistProfileModel.fromJson(jsonDecode(response.body));
+      } else {
+        throw "Failed to load receptionist profile data";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<bool> updateReceptionistProfile(String id, ReceptionistProfileModel profile) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Profile/Receptionist/$id'),
+        headers: parent._headers,
+        body: jsonEncode(profile.toJson()),
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        final body = jsonDecode(response.body);
+        String errorMessage = body['errors']?.toString() ?? "Failed to update receptionist profile";
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
 }
