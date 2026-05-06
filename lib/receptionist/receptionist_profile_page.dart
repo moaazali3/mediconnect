@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// ماتنساش تتأكد إن مسار ملف التعديل ده صح عندك
+import 'package:mediconnect/receptionist/edit_receptionist_profile.dart';
 
 class ReceptionistProfilePage extends StatefulWidget {
   final String? userId;
@@ -15,42 +17,28 @@ class ReceptionistProfilePage extends StatefulWidget {
 
 class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   final ApiService _apiService = ApiService();
-  final _formKey = GlobalKey<FormState>();
-  
   bool _isLoading = true;
-  bool _isEditMode = false;
   ReceptionistProfileModel? _profile;
-
-  // Controllers for editing
-  late TextEditingController _firstNameController;
-  late TextEditingController _lastNameController;
-  late TextEditingController _emailController;
-  late TextEditingController _phoneController;
-  late TextEditingController _addressController;
-  late TextEditingController _dobController;
-  String? _selectedGender;
 
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController();
-    _lastNameController = TextEditingController();
-    _emailController = TextEditingController();
-    _phoneController = TextEditingController();
-    _addressController = TextEditingController();
-    _dobController = TextEditingController();
     _fetchProfile();
   }
 
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _dobController.dispose();
-    super.dispose();
+  String _calculateAge(String? dobString) {
+    if (dobString == null || dobString.isEmpty) return "N/A";
+    try {
+      DateTime dob = DateTime.parse(dobString);
+      DateTime today = DateTime.now();
+      int age = today.year - dob.year;
+      if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
+        age--;
+      }
+      return "$age Years";
+    } catch (e) {
+      return "N/A";
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -59,150 +47,75 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
       final prefs = await SharedPreferences.getInstance();
       final id = widget.userId ?? prefs.getString('user_id') ?? "1";
       final profile = await _apiService.getReceptionistProfile(id);
-      
+
       setState(() {
         _profile = profile;
-        _firstNameController.text = profile.firstName;
-        _lastNameController.text = profile.lastName;
-        _emailController.text = profile.email;
-        _phoneController.text = profile.phoneNumber;
-        _addressController.text = profile.address ?? '';
-        _dobController.text = profile.dateOfBirth ?? '';
-        _selectedGender = profile.gender;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
     }
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final id = widget.userId ?? prefs.getString('user_id') ?? "1";
-      
-      final updatedProfile = ReceptionistProfileModel(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        email: _emailController.text,
-        phoneNumber: _phoneController.text,
-        address: _addressController.text,
-        dateOfBirth: _dobController.text,
-        gender: _selectedGender ?? '',
-        doctorName: _profile?.doctorName,
-      );
-
-      final success = await _apiService.updateReceptionistProfile(id, updatedProfile);
-      
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Profile updated successfully!"), backgroundColor: Colors.green),
-          );
-        }
-        await _fetchProfile();
-        setState(() => _isEditMode = false);
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Update failed: $e"), backgroundColor: Colors.red),
-        );
-      }
-    }
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _profile == null) {
-      return const Center(child: CircularProgressIndicator(color: primaryColor));
+      return const Scaffold(backgroundColor: Color(0xFFF8FAFF), body: Center(child: CircularProgressIndicator(color: primaryColor)));
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderCard(),
-              const SizedBox(height: 25),
-              _buildSectionTitle("Personal Information"),
-              _buildProfileCard([
-                _buildInfoField(Icons.person_outline, "First Name", _firstNameController, isEditable: _isEditMode),
-                _buildDivider(),
-                _buildInfoField(Icons.person_outline, "Last Name", _lastNameController, isEditable: _isEditMode),
-                _buildDivider(),
-                _buildInfoField(Icons.email_outlined, "Email", _emailController, isEditable: false),
-                _buildDivider(),
-                _buildInfoField(Icons.phone_android_rounded, "Phone", _phoneController, isEditable: _isEditMode),
-              ]),
-              const SizedBox(height: 25),
-              _buildSectionTitle("Work Details"),
-              _buildProfileCard([
-                _buildInfoField(Icons.badge_outlined, "Assigned Doctor", TextEditingController(text: _profile?.doctorName ?? "N/A"), isEditable: false),
-                _buildDivider(),
-                _buildGenderDropdown(),
-                _buildDivider(),
-                _buildInfoField(Icons.location_on_outlined, "Address", _addressController, isEditable: _isEditMode),
-                _buildDivider(),
-                _buildDatePickerField(),
-              ]),
-              const SizedBox(height: 30),
-              _buildActionButtons(),
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
-      ),
-      child: Row(
+      body: Column( // شيلنا الـ SafeArea والـ ScrollView من هنا وبدأنا بـ Column
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 35,
-            backgroundColor: primaryColor.withOpacity(0.1),
-            child: Icon(
-              _selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-              size: 45, 
-              color: primaryColor
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "${_profile?.firstName} ${_profile?.lastName}",
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+          _buildCurvedHeader(), // الهيدر الأزرق بقى ثابت فوق بره السكرول
+
+          Expanded( // باقي الصفحة جوه Expanded عشان تاخد المساحة اللي فاضلة وتسكرول براحتها
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    _buildSectionTitle("Personal Information"),
+                    _buildProfileCard([
+                      _buildInfoRow(Icons.email_outlined, "Email", _profile?.email ?? "N/A"),
+                      _buildDivider(),
+                      _buildInfoRow(Icons.person_outline, "First Name", _profile?.firstName ?? "N/A"),
+                      _buildDivider(),
+                      _buildInfoRow(Icons.person_outline, "Last Name", _profile?.lastName ?? "N/A"),
+                      _buildDivider(),
+                      _buildInfoRow(Icons.cake_rounded, "Age", _calculateAge(_profile?.dateOfBirth)),
+                    ]),
+
+                    const SizedBox(height: 25),
+
+                    _buildSectionTitle("Work Details"),
+                    _buildProfileCard([
+                      _buildInfoRow(Icons.phone_android_rounded, "Phone Number", _profile?.phoneNumber ?? "N/A"),
+                      _buildDivider(),
+                      _buildInfoRow(Icons.medical_services_outlined, "Assigned Doctor", _profile?.doctorName != null && _profile!.doctorName!.isNotEmpty ? "Dr. ${_profile!.doctorName}" : "Not Assigned"),
+                    ]),
+
+                    const SizedBox(height: 40),
+                    _buildActionButtons(),
+                    const SizedBox(height: 30),
+                  ],
                 ),
-                const Text(
-                  "Medical Receptionist",
-                  style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w500),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -210,13 +123,59 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
     );
   }
 
+  Widget _buildCurvedHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primaryColor, Color(0xFF1E88E5)],
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+      ),
+      padding: const EdgeInsets.only(top: 60, bottom: 25, left: 20, right: 20),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.white,
+                child: Icon(Icons.face_3_rounded, size: 50, color: primaryColor),
+              ),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${_profile?.firstName ?? ''} ${_profile?.lastName ?? ''}",
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "Medical Receptionist",
+                    style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 5, bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
-      ),
+      child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
     );
   }
 
@@ -225,147 +184,40 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(children: children),
     );
   }
 
-  Widget _buildInfoField(IconData icon, String label, TextEditingController controller, {required bool isEditable}) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.all(15),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: primaryColor.withOpacity(0.08), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: primaryColor, size: 22),
           ),
           const SizedBox(width: 15),
           Expanded(
-            child: isEditable 
-              ? TextFormField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText: label,
-                    labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                  style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600),
-                  validator: (val) => (val == null || val.isEmpty) ? "Required" : null,
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(controller.text, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
-                  ],
-                ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGenderDropdown() {
-    return Padding(
-      padding: const EdgeInsets.all(15),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.wc_rounded, color: primaryColor, size: 22),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: _isEditMode
-              ? DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (val) => setState(() => _selectedGender = val),
-                  decoration: const InputDecoration(
-                    labelText: "Gender",
-                    labelStyle: TextStyle(color: Colors.black54, fontSize: 13),
-                    border: InputBorder.none,
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Gender", style: TextStyle(color: Colors.black54, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(_selectedGender ?? "Not Specified", style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDatePickerField() {
-    return Padding(
-      padding: const EdgeInsets.all(15),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.cake_rounded, color: primaryColor, size: 22),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: _isEditMode
-              ? TextFormField(
-                  controller: _dobController,
-                  readOnly: true,
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(2000),
-                      firstDate: DateTime(1950),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    labelText: "Date of Birth",
-                    labelStyle: TextStyle(color: Colors.black54, fontSize: 13),
-                    border: InputBorder.none,
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Date of Birth", style: TextStyle(color: Colors.black54, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(_dobController.text, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildDivider() {
+    return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
   }
 
   Widget _buildActionButtons() {
@@ -375,46 +227,40 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
           width: double.infinity,
           height: 55,
           child: ElevatedButton.icon(
-            onPressed: () {
-              if (_isEditMode) {
-                _saveProfile();
-              } else {
-                setState(() => _isEditMode = true);
+            onPressed: () async {
+              // نفتح صفحة التعديل الجديدة، ولما نرجع نعمل Refresh
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => EditReceptionistProfile(userId: widget.userId)),
+              );
+              if (result == true) {
+                _fetchProfile();
               }
             },
-            icon: Icon(_isEditMode ? Icons.check_circle_rounded : Icons.edit_note_rounded),
-            label: Text(_isEditMode ? "SAVE CHANGES" : "EDIT PROFILE", 
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.edit_note_rounded, color: Colors.white),
+            label: const Text("Update Profile Info", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isEditMode ? Colors.green : primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: primaryColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               elevation: 2,
             ),
           ),
         ),
-        if (_isEditMode) ...[
-          const SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: OutlinedButton.icon(
-              onPressed: () => setState(() => _isEditMode = false),
-              icon: const Icon(Icons.close_rounded),
-              label: const Text("CANCEL", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              ),
+        const SizedBox(height: 15),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: OutlinedButton.icon(
+            onPressed: _signOut,
+            icon: const Icon(Icons.power_settings_new_rounded, color: Colors.red),
+            label: const Text("Sign Out", style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.red, width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             ),
           ),
-        ],
+        ),
       ],
     );
-  }
-
-  Widget _buildDivider() {
-    return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
   }
 }

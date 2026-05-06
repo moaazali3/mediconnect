@@ -17,59 +17,82 @@ class ReceptionistDashboard extends StatefulWidget {
 
 class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
   int _currentIndex = 0;
-  String _receptionistName = "Receptionist";
-  String? _userId;
+  String _receptionistName = "Receptionist"; // القيمة الافتراضية
 
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    _loadInfo();
     _pages = [
       const ReceptionistPendingAppointmentsPage(),
-      const QRScannerPage(),
+      const SizedBox.shrink(), // مكان فاضي للاسكان عشان هنفتحه في شاشة منفصلة
       const ReceptionistProfilePage(),
     ];
+    // استدعاء دالة جلب الاسم أول ما الصفحة تفتح
+    _fetchAndSetUserName();
   }
 
-  Future<void> _loadInfo() async {
+  // الدالة دي بتجيب الاسم سواء من الكاش أو من السيرفر
+  Future<void> _fetchAndSetUserName() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _receptionistName = prefs.getString('user_name') ?? "Receptionist";
-        _userId = prefs.getString('user_id');
-      });
+
+    // 1. نجرب نجيب الاسم من الكاش الأول
+    String? cachedName = prefs.getString('user_name');
+    String? userId = prefs.getString('user_id');
+
+    if (cachedName != null && cachedName.isNotEmpty && cachedName != "null") {
+      if (mounted) {
+        setState(() {
+          _receptionistName = cachedName;
+        });
+      }
+    } else if (userId != null) {
+      // 2. لو مفيش اسم في الكاش بس فيه ID، نجيبه من السيرفر
+      try {
+        final profile = await ApiService().getReceptionistProfile(userId);
+        final fullName = "${profile.firstName} ${profile.lastName}";
+
+        if (mounted) {
+          setState(() {
+            _receptionistName = fullName;
+          });
+        }
+        // نحفظه في الكاش عشان منجبوش من السيرفر تاني
+        await prefs.setString('user_name', fullName);
+      } catch (e) {
+        // لو حصل مشكلة، نسيب القيمة الافتراضية
+        print("Error fetching user name: $e");
+      }
     }
   }
 
   Future<void> _signOut() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('user_role');
-    await prefs.remove('user_id');
-    await prefs.remove('user_name');
+    await prefs.clear();
 
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
-      (route) => false,
+          (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     String pageTitle = "Pending Appointments";
-    if (_currentIndex == 1) pageTitle = "Scan QR Code";
     if (_currentIndex == 2) pageTitle = "My Profile";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
-      appBar: CommonAppBar(
+      // الـ AppBar الأساسي بتاع الشاشة كلها
+      appBar: _currentIndex == 2
+          ? null // بنخفيه في صفحة البروفايل بس
+          : CommonAppBar(
         pageName: pageTitle,
         userName: _receptionistName,
-        onRefresh: () => setState(() {}),
+        onRefresh: _fetchAndSetUserName, // بنعمل ريفريش للاسم لو داس على السهم المدور
         onLogout: _signOut,
       ),
       body: IndexedStack(
@@ -101,9 +124,18 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
             backgroundColor: Colors.white,
             elevation: 0,
             onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
+              if (index == 1) {
+                // لما يدوس على الاسكان، نفتحله الصفحة الكبيرة اللي عملناها
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const QRScannerPage()),
+                );
+              } else {
+                // لما يدوس على المواعيد أو البروفايل يقلب عادي
+                setState(() {
+                  _currentIndex = index;
+                });
+              }
             },
             items: const [
               BottomNavigationBarItem(

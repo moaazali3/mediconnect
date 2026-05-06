@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -13,6 +15,8 @@ class ReceptionistPendingAppointmentsPage extends StatefulWidget {
 class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendingAppointmentsPage> {
   final ApiService _apiService = ApiService();
   bool _isProcessing = false;
+
+  // مش محتاجين متغير الاسم هنا ولا الـ loadUserName لأن الـ AppBar اتشال من هنا
 
   Future<void> _updateStatus(String id, bool isAccept) async {
     setState(() => _isProcessing = true);
@@ -27,11 +31,11 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!"),
+            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!", style: const TextStyle(color: Colors.white)),
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
-        setState(() {}); 
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
@@ -48,6 +52,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
+      // الـ AppBar اتشال من هنا خالص عشان ميحصلش تكرار مع الـ Dashboard
       body: Stack(
         children: [
           FutureBuilder<List<AppointmentModel>>(
@@ -205,7 +210,7 @@ class PendingAppointmentCard extends StatelessWidget {
                     side: const BorderSide(color: Colors.red),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text("Cancel"),
+                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -218,7 +223,7 @@ class PendingAppointmentCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
-                  child: const Text("Accept"),
+                  child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -236,10 +241,10 @@ class PendingAppointmentCard extends StatelessWidget {
         const SizedBox(width: 4),
         Expanded(
           child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
           ),
         ),
       ],
