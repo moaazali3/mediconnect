@@ -76,6 +76,19 @@ mixin AppointmentApi {
     throw "خطأ في جلب مواعيد المريض";
   }
 
+  Future<List<AppointmentModel>> getReceptionistAppointments(String receptionistId) async {
+    final ApiService parent = this as ApiService;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Appointment/receptionist/$receptionistId'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      return body.map((item) => AppointmentModel.fromJson(item)).toList();
+    }
+    throw "Error fetching receptionist appointments";
+  }
+
   Future<int> getExpectedNumber(String doctorId, String appointmentDate) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(

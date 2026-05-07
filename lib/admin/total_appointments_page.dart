@@ -128,15 +128,15 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
 
           for (var appt in filtered) {
             // Priority 1: specializationName from API
-            String? spec = (appt.specializationName?.trim() ?? "").isNotEmpty 
-                ? appt.specializationName!.trim() 
+            String? spec = (appt.specializationName != null && appt.specializationName!.trim().isNotEmpty)
+                ? appt.specializationName!.trim()
                 : null;
 
             // Priority 2 & 3: Fallback to doctor list lookup
             if (spec == null) {
-              String docId = appt.doctorId.trim().toLowerCase();
-              String cleanName = appt.doctorName.trim().toLowerCase();
-              
+              String docId = appt.doctorId != null ? appt.doctorId.toString().trim().toLowerCase() : "";
+              String cleanName = appt.doctorName != null ? appt.doctorName.toString().trim().toLowerCase() : "";
+
               if (docId.isNotEmpty && docIdToSpec.containsKey(docId)) {
                 spec = docIdToSpec[docId];
               } else if (cleanName.isNotEmpty && docNameToSpec.containsKey(cleanName)) {
@@ -144,17 +144,21 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
               }
             }
 
-            String normalizedSpec = (spec != null && specLookup.containsKey(spec.toLowerCase())) 
-                ? specLookup[spec.toLowerCase()]! 
-                : (spec ?? "General / Others");
-            
-            String docName = appt.doctorName.trim().isNotEmpty ? appt.doctorName.trim() : "Unknown Doctor";
+            // تأمين إضافي للمسافات وحالة الأحرف
+            String safeSpecKey = spec?.toLowerCase().trim() ?? "";
+
+            String normalizedSpec = (spec != null && specLookup.containsKey(safeSpecKey))
+                ? specLookup[safeSpecKey]!
+                : (spec != null && spec.trim().isNotEmpty ? spec.trim() : "General / Others");
+
+            String docName = (appt.doctorName != null && appt.doctorName.trim().isNotEmpty)
+                ? appt.doctorName.trim()
+                : "Unknown Doctor";
 
             groupedData.putIfAbsent(normalizedSpec, () => {});
             groupedData[normalizedSpec]!.putIfAbsent(docName, () => []);
             groupedData[normalizedSpec]![docName]!.add(appt);
           }
-
           var sortedSpecs = groupedData.entries.toList()
             ..sort((a, b) {
               int sumA = a.value.values.fold(0, (p, c) => p + c.length);
