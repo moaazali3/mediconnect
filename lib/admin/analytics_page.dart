@@ -359,7 +359,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       childAspectRatio: 1.4,
       children: [
         _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
-        _buildSmallStat("Total Appts", _stats!.totalAppointments.toString(), Icons.calendar_today_rounded, Colors.indigo, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalAppointmentsPage()))),
         _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
         _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
       ],
