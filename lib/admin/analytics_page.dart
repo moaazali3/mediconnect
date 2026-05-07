@@ -27,7 +27,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   AdminDashboardModel? _stats;
   int _uniquePatientsCount = 0;
   
-  List<MapEntry<String, int>> _topDoctors = [];
+  // Top Doctor Info
+  String? _topDoctorName;
+  String? _topDoctorSpec;
+  int _topDoctorBookings = 0;
+  
   List<MapEntry<String, int>> _topSpecializations = [];
 
   @override
@@ -66,7 +70,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       Map<String, String> docIdToSpec = {for (var d in allDoctors) d.id.trim().toLowerCase(): d.specializationName.trim()};
       Map<String, String> docNameToSpec = {for (var d in allDoctors) "${d.firstName} ${d.lastName}".trim().toLowerCase(): d.specializationName.trim()};
 
-      // 3. Initialize Spec Counts with ALL specializations from DB
+      // 3. Initialize Spec Counts
       Map<String, int> specCounts = {for (var s in allSpecs) s.name.trim(): 0};
       Map<String, int> doctorCounts = {};
 
@@ -86,10 +90,23 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         specCounts[spec] = (specCounts[spec] ?? 0) + 1;
       }
 
+      // Find Top Doctor
+      String? topName;
+      String? topSpec;
+      int topBookings = 0;
+      if (doctorCounts.isNotEmpty) {
+        var sortedDocs = doctorCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+        topName = sortedDocs.first.key;
+        topBookings = sortedDocs.first.value;
+        topSpec = docNameToSpec[topName.toLowerCase()] ?? "General";
+      }
+
       if (mounted) {
         setState(() {
           _uniquePatientsCount = uniqueNames.length;
-          _topDoctors = doctorCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+          _topDoctorName = topName;
+          _topDoctorSpec = topSpec;
+          _topDoctorBookings = topBookings;
           _topSpecializations = specCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
           _stats = stats.copyWith(
             totalDoctorsToday: activeDoctors.length,
@@ -125,11 +142,134 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             _buildQuickStats(),
             const SizedBox(height: 20),
             _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
-            const SizedBox(height: 15),
-            _buildSummaryCard("Top Performing Doctors", _topDoctors, Icons.person_rounded),
+            const SizedBox(height: 20),
+            _buildTopDoctorPerformanceCard(),
             const SizedBox(height: 30),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopDoctorPerformanceCard() {
+    if (_topDoctorName == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryColor, primaryColor.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              Icons.star_rounded,
+              size: 100,
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    "Top Performing Doctor",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _topDoctorName!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _topDoctorSpec ?? "General",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        "$_topDoctorBookings",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        "Bookings",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -153,7 +293,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ],
           ),
           const SizedBox(height: 15),
-          ...data.take(10).map((entry) => Padding( // Increased take to 10
+          ...data.take(5).map((entry) => Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -214,28 +354,60 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 2.2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.4,
       children: [
-        _buildSmallStat("Patients", _uniquePatientsCount.toString(), Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
-        _buildSmallStat("Total Appts", _stats!.totalAppointments.toString(), Colors.indigo, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalAppointmentsPage()))),
+        _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
+        _buildSmallStat("Total Appts", _stats!.totalAppointments.toString(), Icons.calendar_today_rounded, Colors.indigo, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalAppointmentsPage()))),
+        _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
+        _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
       ],
     );
   }
 
-  Widget _buildSmallStat(String label, String value, Color color, {VoidCallback? onTap}) {
+  Widget _buildSmallStat(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: color.withOpacity(0.05), borderRadius: BorderRadius.circular(15), border: Border.all(color: color.withOpacity(0.1))),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12))),
-            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
