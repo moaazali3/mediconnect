@@ -26,12 +26,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   String? _error;
   AdminDashboardModel? _stats;
   int _uniquePatientsCount = 0;
-  
+
   // Top Doctor Info
   String? _topDoctorName;
   String? _topDoctorSpec;
   int _topDoctorBookings = 0;
-  
+
   List<MapEntry<String, int>> _topSpecializations = [];
 
   @override
@@ -45,12 +45,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     setState(() { _isLoading = true; _error = null; });
 
     try {
-      final results = await Future.wait([
-        _apiService.getAdminDashboardStats(),
+      // التعديل هنا: زودنا <dynamic> وغيرنا اسم الدالة
+      final results = await Future.wait<dynamic>([
+        _apiService.getAdminDashboard(),
         _apiService.getTodayAppointments(),
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
-        _apiService.getAllAppointments(pageSize: 5000), 
+        _apiService.getAllAppointments(pageSize: 5000),
         _apiService.getAllDoctors(pageSize: 2000),
         _apiService.getAllSpecializations(),
       ]);
@@ -85,7 +86,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           String docId = appt.doctorId.trim().toLowerCase();
           spec = docIdToSpec[docId] ?? docNameToSpec[docName.toLowerCase()] ?? "General";
         }
-        
+
         spec = spec.trim();
         specCounts[spec] = (specCounts[spec] ?? 0) + 1;
       }

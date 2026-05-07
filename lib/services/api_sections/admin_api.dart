@@ -1,7 +1,8 @@
 part of '../api_service.dart';
 
 mixin AdminApi {
-  Future<AdminDashboardModel> getAdminDashboardStats() async {
+  // 1. جلب بيانات الداشبورد (تم تعديل الاسم لـ getAdminDashboard)
+  Future<AdminDashboardModel> getAdminDashboard() async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.get(Uri.parse('${parent.baseUrl}/Admin/dashboard'), headers: parent._headers);
@@ -148,29 +149,39 @@ mixin AdminApi {
     }
   }
 
-  Future<Map<String, dynamic>> getDoctorRevenue(String doctorId) async {
+  // 2. جلب أرباح دكتور معين (معدلة لترجع رقم double)
+  Future<double> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw "Failed to load doctor revenue: ${response.statusCode}";
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        return double.tryParse(response.body.toString()) ?? 0.0;
+      } else {
+        return 0.0;
+      }
+    } catch (e) {
+      return 0.0;
     }
   }
 
-  Future<Map<String, dynamic>> getSpecializationRevenue(String specializationName) async {
+  // 3. جلب أرباح تخصص معين (معدلة لترجع رقم double)
+  Future<double> getSpecializationRevenue(String specializationName) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw "Failed to load specialization revenue: ${response.statusCode}";
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        return double.tryParse(response.body.toString()) ?? 0.0;
+      } else {
+        return 0.0;
+      }
+    } catch (e) {
+      return 0.0;
     }
   }
 
@@ -195,7 +206,7 @@ mixin AdminApi {
         headers: parent._headers,
         body: jsonEncode(receptionist.toJson()),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
