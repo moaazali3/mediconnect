@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
@@ -28,7 +29,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!", style: const TextStyle(color: Colors.white)),
+            content: Text(isAccept ? "Appointment Completed!" : "Appointment Cancelled!", style: const TextStyle(color: Colors.white)),
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
@@ -42,6 +43,21 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  void _navigateToProfile(String patientId) {
+    if (patientId.isNotEmpty && patientId != "0") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileScreen(
+            userId: patientId,
+            readOnly: true,
+            showMedicalHistory: false,
+          ),
+        ),
+      );
     }
   }
 
@@ -95,6 +111,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                     appointment: appointment,
                     onAccept: () => _updateStatus(appointment.appointmentId, true),
                     onCancel: () => _updateStatus(appointment.appointmentId, false),
+                    onTapProfile: () => _navigateToProfile(appointment.patientId),
                     isProcessing: _isProcessing,
                   );
                 },
@@ -116,6 +133,7 @@ class PendingAppointmentCard extends StatelessWidget {
   final AppointmentModel appointment;
   final VoidCallback onAccept;
   final VoidCallback onCancel;
+  final VoidCallback onTapProfile;
   final bool isProcessing;
 
   const PendingAppointmentCard({
@@ -123,6 +141,7 @@ class PendingAppointmentCard extends StatelessWidget {
     required this.appointment,
     required this.onAccept,
     required this.onCancel,
+    required this.onTapProfile,
     required this.isProcessing,
   });
 
@@ -130,7 +149,6 @@ class PendingAppointmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -142,96 +160,115 @@ class PendingAppointmentCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundColor: primaryColor.withOpacity(0.1),
-                child: const Icon(Icons.person, color: primaryColor, size: 30),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      appointment.patientName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Color(0xFF263238),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTapProfile,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundColor: primaryColor.withOpacity(0.1),
+                        child: const Icon(Icons.person, color: primaryColor, size: 30),
                       ),
-                    ),
-                    Text(
-                      "Doctor: ${appointment.doctorName}",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  "Pending",
-                  style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, appointment.appointmentDate)),
-              const SizedBox(width: 4),
-              Expanded(child: _buildInfoItem(Icons.access_time_rounded, appointment.startTime)),
-              const SizedBox(width: 4),
-              Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #${appointment.queueNumber}")),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isProcessing ? null : onCancel,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              appointment.patientName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF263238),
+                              ),
+                            ),
+                            Text(
+                              "Doctor: ${appointment.doctorName}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          "Pending",
+                          style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: isProcessing ? null : onAccept,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
+            ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, appointment.appointmentDate)),
+                      const SizedBox(width: 4),
+                      Expanded(child: _buildInfoItem(Icons.access_time_rounded, appointment.startTime)),
+                      const SizedBox(width: 4),
+                      Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #${appointment.queueNumber}")),
+                    ],
                   ),
-                  child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isProcessing ? null : onCancel,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isProcessing ? null : onAccept,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            elevation: 0,
+                          ),
+                          child: const Text("Completed", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
