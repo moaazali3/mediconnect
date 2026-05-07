@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -27,11 +29,11 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!"),
+            content: Text(isAccept ? "Appointment Accepted!" : "Appointment Cancelled!", style: const TextStyle(color: Colors.white)),
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
-        setState(() {}); 
+        setState(() {});
       }
     } catch (e) {
       if (mounted) {
@@ -44,6 +46,41 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
     }
   }
 
+  Future<List<AppointmentModel>> _fetchPendingAppointments() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    if (userId == null) return [];
+
+    // 1. Get receptionist profile to find the associated doctorId
+    final profile = await _apiService.getReceptionistProfile(userId);
+    final doctorId = profile.doctorId;
+    
+    if (doctorId == null || doctorId.isEmpty) {
+      return [];
+    }
+
+    // 2. Fetch appointments for this specific doctor
+    final doctorAppointments = await _apiService.getDoctorAppointments(doctorId);
+
+    // 3. Convert DoctorAppointmentModel to AppointmentModel and filter by pending status
+    return doctorAppointments
+        .where((da) => da.status.toLowerCase() == 'pending')
+        .map((da) => AppointmentModel(
+              appointmentId: da.appointmentId,
+              patientId: da.patientId,
+              patientName: da.patientName,
+              doctorId: da.doctorId,
+              doctorName: profile.doctorName ?? "Doctor",
+              appointmentDate: da.appointmentDate,
+              dayOfWeek: da.dayOfWeek,
+              startTime: da.startTime,
+              endTime: da.endTime,
+              queueNumber: da.queueNumber,
+              status: da.status,
+            ))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,7 +88,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       body: Stack(
         children: [
           FutureBuilder<List<AppointmentModel>>(
-            future: _apiService.getAllAppointments(),
+            future: _fetchPendingAppointments(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: primaryColor));
@@ -63,9 +100,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                 ));
               }
 
-              final appointments = (snapshot.data ?? [])
-                  .where((a) => a.status.toLowerCase() == 'pending')
-                  .toList();
+              final appointments = snapshot.data ?? [];
 
               // Sort appointments by date and time
               appointments.sort((a, b) {
@@ -205,7 +240,7 @@ class PendingAppointmentCard extends StatelessWidget {
                     side: const BorderSide(color: Colors.red),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text("Cancel"),
+                  child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 10),
@@ -218,7 +253,7 @@ class PendingAppointmentCard extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     elevation: 0,
                   ),
-                  child: const Text("Accept"),
+                  child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -236,10 +271,10 @@ class PendingAppointmentCard extends StatelessWidget {
         const SizedBox(width: 4),
         Expanded(
           child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
           ),
         ),
       ],

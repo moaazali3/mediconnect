@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class AppointmentsPage extends StatefulWidget {
@@ -148,11 +149,9 @@ class AppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-
     Widget profileImage;
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      String fullImageUrl = imageUrl!.startsWith('http') ? imageUrl! : "$baseUrl$imageUrl";
+      String fullImageUrl = imageUrl!.startsWith('http') ? imageUrl! : "${ApiConstants.serverUrl}$imageUrl";
       profileImage = ClipRRect(
         borderRadius: BorderRadius.circular(25),
         child: Image.network(
@@ -226,15 +225,13 @@ class AppointmentCard extends StatelessWidget {
           ),
           const Divider(height: 30),
 
-          // التصليح السحري: هنستخدم Row متقسم بالتساوي بـ Expanded
-          // كده هيستحيل يضرب مساحة لأن كل قسم هياخد 33% من الشاشة بالظبط
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, date)),
-              const SizedBox(width: 4), // فاصل صغير جداً
+              const SizedBox(width: 4),
               Expanded(child: _buildInfoItem(Icons.access_time_rounded, time)),
-              const SizedBox(width: 4), // فاصل صغير جداً
+              const SizedBox(width: 4),
               Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #$queue")),
             ],
           ),
@@ -249,7 +246,6 @@ class AppointmentCard extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
         const SizedBox(width: 4),
-        // استخدمنا Expanded هنا كمان عشان لو الكلمة طويلة تتحول لـ نقط (...) وماتطلعش بره
         Expanded(
           child: Text(
               text,

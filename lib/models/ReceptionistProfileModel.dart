@@ -2,7 +2,7 @@ class ReceptionistProfileModel {
   final String? id;
   final String firstName;
   final String lastName;
-  final String email;
+  final String? email;
   final String phoneNumber;
   final String? gender;
   final String? dateOfBirth;
@@ -16,7 +16,7 @@ class ReceptionistProfileModel {
     this.id,
     required this.firstName,
     required this.lastName,
-    required this.email,
+    this.email,
     required this.phoneNumber,
     this.gender,
     this.dateOfBirth,
@@ -32,7 +32,7 @@ class ReceptionistProfileModel {
       id: json['id']?.toString(),
       firstName: json['firstName'] ?? json['FirstName'] ?? '',
       lastName: json['lastName'] ?? json['LastName'] ?? '',
-      email: json['email'] ?? json['Email'] ?? '',
+      email: json['email'] ?? json['Email'],
       phoneNumber: json['phoneNumber'] ?? json['PhoneNumber'] ?? '',
       gender: json['gender'] ?? json['Gender'],
       dateOfBirth: json['dateOfBirth'] ?? json['DateOfBirth'],

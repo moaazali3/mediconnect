@@ -5,6 +5,7 @@ import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
@@ -158,11 +159,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Widget _buildFixedHeader(DoctorProfileModel doctor, String? displayImage) {
-    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-    
     Widget imageWidget;
     if (displayImage != null && displayImage.isNotEmpty) {
-      final String fullImageUrl = displayImage.startsWith('http') ? displayImage : "$imageBaseUrl$displayImage";
+      final String fullImageUrl = displayImage.startsWith('http') ? displayImage : "${ApiConstants.serverUrl}$displayImage";
       imageWidget = CircleAvatar(
         radius: 40,
         backgroundColor: Colors.white,

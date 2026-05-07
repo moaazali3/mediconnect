@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class PatientHistoryScreen extends StatefulWidget {
   final String? userId; 
@@ -65,8 +66,6 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
   }
 
   Widget _buildHistoryCard(MedicalRecordModel record) {
-    const String baseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-    
     String displaySpec = record.doctorSpecialty.trim();
     if (displaySpec.isEmpty || displaySpec.toLowerCase() == "null") {
       displaySpec = "Medical Specialist";
@@ -108,7 +107,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                   radius: 30,
                   backgroundColor: primaryColor.withOpacity(0.1),
                   backgroundImage: (record.doctorImageUrl != null && record.doctorImageUrl!.isNotEmpty)
-                      ? NetworkImage(record.doctorImageUrl!.startsWith('http') ? record.doctorImageUrl! : "$baseUrl${record.doctorImageUrl}")
+                      ? NetworkImage(record.doctorImageUrl!.startsWith('http') ? record.doctorImageUrl! : "${ApiConstants.serverUrl}${record.doctorImageUrl}")
                       : null,
                   child: (record.doctorImageUrl == null || record.doctorImageUrl!.isEmpty)
                       ? const Icon(Icons.person, color: primaryColor, size: 30)

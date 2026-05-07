@@ -85,6 +85,28 @@ mixin ProfileApi {
     }
   }
 
+  // Method to fetch receptionist by doctor ID - now returns nullable to handle doctors without receptionists
+  Future<ReceptionistProfileModel?> getReceptionistByDoctorId(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(Uri.parse('${parent.baseUrl}/Receptionist/$doctorId'), headers: parent._headers);
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return ReceptionistProfileModel.fromJson(decoded);
+        }
+        return null;
+      } else {
+        // If doctor doesn't have a receptionist, it might return 404 or other status. 
+        // We return null instead of throwing to avoid breaking the UI.
+        return null;
+      }
+    } catch (e) {
+      // Return null on any connection or parsing error for this specific optional data
+      return null;
+    }
+  }
+
   Future<bool> updateReceptionistProfile(String id, ReceptionistProfileModel profile) async {
     final ApiService parent = this as ApiService;
     try {

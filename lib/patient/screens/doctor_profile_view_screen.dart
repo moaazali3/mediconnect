@@ -3,6 +3,8 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/models/ReceptionistProfileModel.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DoctorProfileViewScreen extends StatefulWidget {
   final String doctorId;
@@ -32,10 +34,36 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     }
   }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri url = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchDoctorAndReceptionist() async {
+    final results = await Future.wait([
+      _apiService.getDoctorDetails(widget.doctorId, widget.patientId ?? ""),
+      _apiService.getReceptionistByDoctorId(widget.doctorId).catchError((_) => null),
+    ]);
+    return {
+      'doctor': results[0] as DoctorFullModel,
+      'receptionist': results[1],
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DoctorFullModel>(
-      future: _apiService.getDoctorDetails(widget.doctorId, widget.patientId ?? ""),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDoctorAndReceptionist(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
@@ -48,7 +76,12 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
           );
         }
 
-        final doctor = snapshot.data!;
+        final doctor = snapshot.data!['doctor'] as DoctorFullModel;
+        final receptionist = snapshot.data!['receptionist'] as ReceptionistProfileModel?;
+        
+        // Print the profile picture URL for debugging
+        debugPrint("Doctor Profile URL: ${doctor.profilePictureUrl}");
+
         final age = _calculateAge(doctor.dateOfBirth);
         final String displayImage = (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty)
             ? doctor.profilePictureUrl!
@@ -75,6 +108,11 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
                 const SizedBox(height: 25),
                 _buildStatsRow(doctor, age),
                 const SizedBox(height: 30),
+                if (receptionist != null) ...[
+                  _buildSectionTitle("Contact Receptionist"),
+                  _buildReceptionistCard(receptionist),
+                  const SizedBox(height: 25),
+                ],
                 _buildSectionTitle("Biography"),
                 _buildInfoCard(doctor.biography),
                 const SizedBox(height: 25),
@@ -119,13 +157,13 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
                 Text(
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  softWrap: true, // Ensures full name is displayed by wrapping
+                  softWrap: true,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   doctor.specializationName.isEmpty ? "Specialist" : doctor.specializationName,
                   style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600),
-                  softWrap: true, // Allows specialty to wrap if long
+                  softWrap: true,
                 ),
               ],
             ),
@@ -162,6 +200,60 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReceptionistCard(ReceptionistProfileModel receptionist) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: CircleAvatar(
+              backgroundColor: primaryColor.withOpacity(0.1),
+              child: const Icon(Icons.support_agent_rounded, color: primaryColor),
+            ),
+            title: Text("${receptionist.firstName} ${receptionist.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(receptionist.phoneNumber, style: const TextStyle(fontSize: 13)),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _makePhoneCall(receptionist.phoneNumber),
+                  icon: const Icon(Icons.phone_rounded, size: 18),
+                  label: const Text("Call"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _openWhatsApp(receptionist.phoneNumber),
+                  icon: const Icon(Icons.chat_rounded, size: 18),
+                  label: const Text("WhatsApp"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          )
+        ],
       ),
     );
   }

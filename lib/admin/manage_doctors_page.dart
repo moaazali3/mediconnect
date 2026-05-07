@@ -5,6 +5,7 @@ import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/edit_doctor_management_page.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class ManageDoctorsPage extends StatefulWidget {
   const ManageDoctorsPage({super.key});
@@ -306,12 +307,11 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   }
 
   Widget _buildDoctorCard(DoctorModel doctor) {
-    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
     String? fullImageUrl;
     if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
       fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
           ? doctor.profilePictureUrl 
-          : "$imageBaseUrl${doctor.profilePictureUrl}";
+          : "${ApiConstants.serverUrl}${doctor.profilePictureUrl}";
     }
 
     return Container(

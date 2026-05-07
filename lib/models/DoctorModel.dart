@@ -1,4 +1,5 @@
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class DoctorModel {
   final String id;
@@ -32,7 +33,7 @@ class DoctorModel {
   factory DoctorModel.fromJson(Map<String, dynamic> json) {
     String? imgUrl = json['profilePictureUrl'] ?? json['ProfilePictureUrl'];
     if (imgUrl != null && imgUrl.isNotEmpty && !imgUrl.startsWith('http')) {
-      imgUrl = "https://wisdom-frisk-exciting.ngrok-free.dev${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
+      imgUrl = "${ApiConstants.serverUrl}${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
     }
 
     // دالة آمنة لتحويل القيم المنطقية (Booleans)
