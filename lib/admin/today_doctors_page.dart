@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/admin/manage_bookings_page.dart'; 
 import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class TodayDoctorsPage extends StatefulWidget {
@@ -271,98 +270,81 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // فتح مواعيد الطبيب مباشرة
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DoctorBookingsDetail(doctor: doctor),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5),
               ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5),
+              child: CircleAvatar(
+                radius: 26,
+                backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withValues(alpha: 0.1),
+                backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
+                    ? NetworkImage(doctor.profilePictureUrl!)
+                    : null,
+                child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
+                    ? Icon(
+                        doctor.gender == "Male" ? Icons.male : Icons.female, 
+                        size: 26, 
+                        color: doctor.gender == "Male" ? Colors.blue : Colors.pink
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Dr. ${doctor.firstName} ${doctor.lastName}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF2D3142),
+                    ),
                   ),
-                  child: CircleAvatar(
-                    radius: 26,
-                    backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withValues(alpha: 0.1),
-                    backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
-                        ? NetworkImage(doctor.profilePictureUrl!)
-                        : null,
-                    child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
-                        ? Icon(
-                            doctor.gender == "Male" ? Icons.male : Icons.female, 
-                            size: 26, 
-                            color: doctor.gender == "Male" ? Colors.blue : Colors.pink
-                          )
-                        : null,
+                  const SizedBox(height: 2),
+                  Text(
+                    doctor.specializationName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: primaryColor.withValues(alpha: 0.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  const SizedBox(height: 6),
+                  Row(
                     children: [
-                      Text(
-                        "Dr. ${doctor.firstName} ${doctor.lastName}",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF2D3142),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        doctor.specializationName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: primaryColor.withValues(alpha: 0.8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(Icons.access_time_rounded, color: Colors.grey.shade500, size: 14),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              "${_formatTime(schedule.startTime)} - ${_formatTime(schedule.endTime)}",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                      Icon(Icons.access_time_rounded, color: Colors.grey.shade500, size: 14),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          "${_formatTime(schedule.startTime)} - ${_formatTime(schedule.endTime)}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
