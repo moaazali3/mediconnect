@@ -176,9 +176,9 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       debugPrint("Booking error: $e");
       String errorMessage = e.toString();
-      
+
       // Handle duplicate booking error from backend
-      if (errorMessage.toLowerCase().contains("already") || 
+      if (errorMessage.toLowerCase().contains("already") ||
           errorMessage.toLowerCase().contains("appointment exists")) {
         errorMessage = "You already have an appointment with this doctor on this day.";
       }
@@ -421,28 +421,28 @@ class _BookingScreenState extends State<BookingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded( // 👈 التعديل الأول: استخدام Expanded لضمان عدم خروج النص
+              const Expanded(
                 child: Row(
                     children: [
                       Icon(Icons.info_outline, color: Colors.white70, size: 20),
                       SizedBox(width: 8),
-                      Flexible( // 👈 التعديل الثاني: Flexible عشان يقصر النص لو الشاشة ضاقت جداً
+                      Flexible(
                           child: Text("Estimated Turn", style: TextStyle(color: Colors.white70, fontSize: 14), overflow: TextOverflow.ellipsis)
                       )
                     ]
                 ),
               ),
-              const SizedBox(width: 10), // مسافة أمان
+              const SizedBox(width: 10),
               if (_expectedTurn != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // 👈 التعديل التالت: تقليل البادينج الداخلي شوية
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 15), // تصغير الأيقونة بيكسل واحد
+                      const Icon(Icons.access_time_rounded, color: Colors.white, size: 15),
                       const SizedBox(width: 6),
-                      Text(estimatedTime, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)), // تصغير الخط درجة
+                      Text(estimatedTime, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                     ],
                   ),
                 ),
@@ -451,7 +451,16 @@ class _BookingScreenState extends State<BookingScreen> {
           const SizedBox(height: 10),
           _isFetchingTurn
               ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-              : Text(_expectedTurn != null ? "#$_expectedTurn" : "TBD", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+              : (_expectedTurn != null
+              ? Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline, // عشان الكلمة والرقم يبقوا على نفس السطر المظبوط
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              const Text("Queue No. ", style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500)),
+              Text("$_expectedTurn", style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+            ],
+          )
+              : const Text("TBD", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold))),
           const SizedBox(height: 10),
           const Text("* Please arrive 15 mins before the estimated time.", style: TextStyle(color: Colors.white60, fontSize: 11, fontStyle: FontStyle.italic)),
         ],

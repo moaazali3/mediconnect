@@ -3,7 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/patient/screens/profile.dart'; 
+import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:intl/intl.dart';
 
 class DoctorPendingAppointmentsPage extends StatefulWidget {
@@ -16,15 +16,15 @@ class DoctorPendingAppointmentsPage extends StatefulWidget {
 
 class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointmentsPage> {
   final ApiService _apiService = ApiService();
-  
+
   List<DoctorAppointmentModel> _allAppointments = [];
   List<DoctorScheduleModel> _schedule = [];
   List<DateTime> _availableDates = [];
   bool _isLoading = true;
   String? _errorMessage;
 
-  String _selectedDate = "All"; 
-  String _searchQuery = ""; 
+  String _selectedDate = "All";
+  String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -172,22 +172,22 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                   ],
                 ))
               else if (apps.isEmpty && _selectedDate != "All")
-                Center(child: Padding(
-                  padding: const EdgeInsets.all(40.0),
-                  child: Text("No pending appointments on ${DateFormat('EEE, d MMM').format(DateTime.parse(_selectedDate))}"),
-                ))
-              else if (apps.isEmpty)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: Text("No pending appointments found"),
-                ))
-              else
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: apps.map((app) => _buildAppointmentCard(app)).toList(),
-                  ),
-                ),
+                  Center(child: Padding(
+                    padding: const EdgeInsets.all(40.0),
+                    child: Text("No pending appointments on ${DateFormat('EEE, d MMM').format(DateTime.parse(_selectedDate))}"),
+                  ))
+                else if (apps.isEmpty)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: Text("No pending appointments found"),
+                    ))
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: apps.map((app) => _buildAppointmentCard(app)).toList(),
+                      ),
+                    ),
 
               const SizedBox(height: 20),
             ],
@@ -269,26 +269,26 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
     );
   }
 
+  // التعديل هنا: نفس التصميم بالظبط بتاع صفحة الـ History
   Widget _buildFilterItem(String label, String value) {
     bool isSelected = _selectedDate == value;
     return GestureDetector(
       onTap: () => setState(() => _selectedDate = value),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
-          boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
         ),
         child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade700,
-            fontWeight: FontWeight.bold,
-            fontSize: 13
-          )
+            label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 13
+            )
         ),
       ),
     );
@@ -298,9 +298,9 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -318,8 +318,8 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                         radius: 28,
                         backgroundColor: const Color(0xFFE3F2FD),
                         child: Text(
-                          app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1976D2), fontSize: 20)
+                            app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1976D2), fontSize: 20)
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -342,13 +342,13 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              "${app.dayOfWeek}, ${app.appointmentDate}",
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
+                                "${app.dayOfWeek}, ${app.appointmentDate}",
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              app.status,
-                              style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold)
+                                app.status,
+                                style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold)
                             ),
                           ],
                         ),
@@ -382,8 +382,8 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    "Q No: ${app.queueNumber}",
-                    style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 15)
+                      "Q No: ${app.queueNumber}",
+                      style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 15)
                   ),
                 ],
               ),

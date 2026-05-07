@@ -1,9 +1,23 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
-import 'package:mediconnect/models/AppointmentModels.dart';
-import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+
+// --- كلاسات مساعدة لتنظيم الداتا في الشاشة ---
+class SpecRevenueData {
+  final String name;
+  final double totalRevenue;
+  List<DoctorRevenueData> doctors = [];
+  SpecRevenueData({required this.name, required this.totalRevenue});
+}
+
+class DoctorRevenueData {
+  final String id;
+  final String name;
+  final double revenue;
+  DoctorRevenueData({required this.id, required this.name, required this.revenue});
+}
 
 class TotalRevenuePage extends StatefulWidget {
   const TotalRevenuePage({super.key});
@@ -15,7 +29,8 @@ class TotalRevenuePage extends StatefulWidget {
 class _TotalRevenuePageState extends State<TotalRevenuePage> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
-  List<Map<String, dynamic>> _transactions = [];
+
+  List<SpecRevenueData> _specializationsData = [];
   double _totalRevenue = 0.0;
   int _totalAppointments = 0;
 
@@ -28,52 +43,69 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
+
     try {
-      // Fetch data
-      final results = await Future.wait([
-        _apiService.getAllAppointments(),
-        _apiService.getAllDoctors(pageSize: 1000),
-      ]);
+      // 1. جلب إجمالي الأرباح والحجوزات من الداشبورد
+      final dashboard = await _apiService.getAdminDashboard();
 
-      final List<AppointmentModel> allAppointments = results[0] as List<AppointmentModel>;
-      final List<DoctorModel> allDoctors = results[1] as List<DoctorModel>;
+      // 2. جلب كل التخصصات والدكاترة
+      final specializations = await _apiService.getAllSpecializations();
+      final doctors = await _apiService.getAllDoctors(pageSize: 1000);
 
-      // Create a map for quick doctor lookup with trimmed IDs
-      Map<String, DoctorModel> doctorMap = {for (var d in allDoctors) d.id.trim(): d};
-      
-      double calculatedTotalRevenue = 0;
-      List<Map<String, dynamic>> transactions = [];
+      List<SpecRevenueData> finalSpecs = [];
 
-      for (var app in allAppointments) {
-        final doctorId = app.doctorId.trim();
-        final doc = doctorMap[doctorId];
-        
-        final status = app.status.toLowerCase().trim();
-        
-        // Include any successful/completed status
-        if (status == 'completed' || status == 'confirmed' || status == 'paid' || status == 'success') {
-          double fee = doc?.consultationFee ?? 0.0;
-          calculatedTotalRevenue += fee;
-          
-          transactions.add({
-            "patientName": app.patientName.isNotEmpty ? app.patientName : "Patient",
-            "doctorName": doc != null ? "Dr. ${doc.firstName} ${doc.lastName}" : (app.doctorName.isNotEmpty ? app.doctorName : "Doctor"),
-            "specialization": doc?.specializationName ?? (app.specializationName ?? "General"),
-            "fee": fee,
-            "date": app.appointmentDate,
-            "status": app.status,
-          });
+      // 3. بناء الداتا بذكاء (لمعالجة أي باج في الباك إند)
+      for (var spec in specializations) {
+
+        // فلترة دكاترة التخصص ده (بمقارنة دقيقة تتجاهل المسافات والحروف الكابيتال)
+        var specDoctors = doctors.where((d) =>
+        (d.specializationName ?? "").trim().toLowerCase() == spec.name.trim().toLowerCase()
+        ).toList();
+
+        double calculatedSpecRev = 0.0;
+        List<DoctorRevenueData> tempDocsList = [];
+
+        // جلب أرباح دكاترة التخصص ده باستخدام Endpoint الدكتور
+        final docRevs = await Future.wait(
+            specDoctors.map((doc) => _apiService.getDoctorRevenue(doc.id))
+        );
+
+        // تجميع بيانات الدكاترة اللي حققوا أرباح
+        for (int i = 0; i < specDoctors.length; i++) {
+          if (docRevs[i] > 0) {
+            calculatedSpecRev += docRevs[i];
+            tempDocsList.add(DoctorRevenueData(
+              id: specDoctors[i].id,
+              name: "Dr. ${specDoctors[i].firstName} ${specDoctors[i].lastName}",
+              revenue: docRevs[i],
+            ));
+          }
+        }
+
+        // جلب أرباح التخصص من Endpoint التخصص
+        double apiSpecRev = await _apiService.getSpecializationRevenue(spec.name);
+
+        // لو الباك إند رجع صفر بسبب مشكلة في الاسم، بنعتمد على المجموع اللي إحنا حسبناه من الدكاترة
+        double actualSpecRev = apiSpecRev > 0 ? apiSpecRev : calculatedSpecRev;
+
+        // لو التخصص ده فيه أرباح، هنضيفه في الشاشة
+        if (actualSpecRev > 0 || tempDocsList.isNotEmpty) {
+          tempDocsList.sort((a, b) => b.revenue.compareTo(a.revenue)); // ترتيب الدكاترة من الأعلى للأقل
+
+          SpecRevenueData specData = SpecRevenueData(name: spec.name, totalRevenue: actualSpecRev);
+          specData.doctors = tempDocsList;
+          finalSpecs.add(specData);
         }
       }
 
-      // Sort by date descending (Newest first)
-      transactions.sort((a, b) => b['date'].compareTo(a['date']));
+      // ترتيب التخصصات من الأعلى للأقل
+      finalSpecs.sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
 
       if (mounted) {
         setState(() {
-          _totalRevenue = calculatedTotalRevenue;
-          _totalAppointments = transactions.length;
-          _transactions = transactions;
+          _totalRevenue = dashboard.totalRevenue;
+          _totalAppointments = dashboard.totalCompletedAppointments;
+          _specializationsData = finalSpecs;
           _isLoading = false;
         });
       }
@@ -82,7 +114,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text("Error loading revenue: $e"),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -93,7 +125,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), 
+      backgroundColor: const Color(0xFFF1F5F9),
       appBar: CommonAppBar(
         title: "Revenue Details",
         showBackButton: true,
@@ -102,23 +134,23 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
           : RefreshIndicator(
-              onRefresh: _loadData,
-              color: primaryColor,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-                children: [
-                  _buildTotalCard(),
-                  const SizedBox(height: 30),
-                  _buildSectionTitle("All Transactions"),
-                  const SizedBox(height: 15),
-                  if (_transactions.isEmpty)
-                    _buildEmptyState()
-                  else
-                    ..._transactions.map((item) => _buildTransactionItem(item)).toList(),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
+        onRefresh: _loadData,
+        color: primaryColor,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+          children: [
+            _buildTotalCard(),
+            const SizedBox(height: 30),
+            _buildSectionTitle("Revenue by Specialization"),
+            const SizedBox(height: 15),
+            if (_specializationsData.isEmpty)
+              _buildEmptyState()
+            else
+              ..._specializationsData.map((item) => _buildSpecializationItem(item)),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
     );
   }
 
@@ -137,8 +169,8 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.bold, 
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
             color: Color(0xFF334155),
           ),
         ),
@@ -158,7 +190,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           Icon(Icons.receipt_long_outlined, size: 60, color: Colors.grey.shade300),
           const SizedBox(height: 15),
           const Text(
-            "No successful transactions found",
+            "No revenue data found yet",
             style: TextStyle(color: Colors.grey, fontSize: 15),
             textAlign: TextAlign.center,
           ),
@@ -173,15 +205,15 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
       padding: const EdgeInsets.all(30),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [primaryColor, Color(0xFF1E3A8A)], 
+          colors: [primaryColor, Color(0xFF1E3A8A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.3), 
-            blurRadius: 20, 
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 20,
             offset: const Offset(0, 10),
           )
         ],
@@ -189,7 +221,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
       child: Column(
         children: [
           const Text(
-            "Total Accumulated Revenue", 
+            "Total Accumulated Revenue",
             style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.5),
           ),
           const SizedBox(height: 12),
@@ -197,8 +229,8 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
             child: Text(
               "${_totalRevenue.toStringAsFixed(0)} EGP",
               style: const TextStyle(
-                color: Colors.white, 
-                fontSize: 42, 
+                color: Colors.white,
+                fontSize: 42,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
               ),
@@ -210,7 +242,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
             children: [
               _buildSmallStat(Icons.calendar_month, "All Time"),
               const SizedBox(width: 20),
-              _buildSmallStat(Icons.people_outline, "$_totalAppointments Appts"),
+              _buildSmallStat(Icons.check_circle_outline, "$_totalAppointments Completed"),
             ],
           ),
         ],
@@ -238,71 +270,71 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
     );
   }
 
-  Widget _buildTransactionItem(Map<String, dynamic> item) {
+  Widget _buildSpecializationItem(SpecRevenueData spec) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: primaryColor, size: 24),
+            child: const Icon(Icons.category_rounded, color: primaryColor, size: 24),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item['patientName'],
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  spec.name,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "${item['specialization']} - ${item['doctorName']}",
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  item['date'],
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "${item['fee'].toStringAsFixed(0)} EGP",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Color(0xFF059669),
-                ),
               ),
-              const Text(
-                "Paid",
-                style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+              Text(
+                "${spec.totalRevenue.toStringAsFixed(0)} EGP",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF059669)),
               ),
             ],
           ),
-        ],
+          childrenPadding: const EdgeInsets.only(bottom: 12),
+          children: spec.doctors.isEmpty
+              ? [const Padding(padding: EdgeInsets.all(8.0), child: Text("No doctors with revenue", style: TextStyle(color: Colors.grey)))]
+              : spec.doctors.map((doc) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            child: Row(
+              children: [
+                const SizedBox(width: 35),
+                const Icon(Icons.subdirectory_arrow_right_rounded, color: Colors.grey, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    doc.name,
+                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500, fontSize: 14),
+                  ),
+                ),
+                Text(
+                  "${doc.revenue.toStringAsFixed(0)} EGP",
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 14),
+                ),
+              ],
+            ),
+          )).toList(),
+        ),
       ),
     );
   }

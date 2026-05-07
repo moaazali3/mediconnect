@@ -4,7 +4,7 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/patient/screens/profile.dart'; 
+import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:intl/intl.dart';
 
 class DoctorAppointmentsPage extends StatefulWidget {
@@ -17,16 +17,16 @@ class DoctorAppointmentsPage extends StatefulWidget {
 
 class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
   final ApiService _apiService = ApiService();
-  
+
   List<DoctorAppointmentModel> _allAppointments = [];
   List<DoctorScheduleModel> _schedule = [];
   List<DateTime> _availableDates = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _isProcessing = false;
-  
-  String _selectedDate = "All"; 
-  String _searchQuery = ""; 
+
+  String _selectedDate = "All";
+  String _searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
   final _diagnosisController = TextEditingController();
@@ -107,7 +107,11 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         }
       }
     }
-    _availableDates.sort();
+
+    // السر هنا: لازم نضيف التواريخ اللي جمعناها للستة الأساسية الأول
+    _availableDates.addAll(dateSet);
+    // رتبناهم من الأحدث للأقدم عشان ده History
+    _availableDates.sort((a, b) => b.compareTo(a));
   }
 
   List<DoctorAppointmentModel> get _filteredAppointments {
@@ -269,10 +273,10 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       bool success = isEdit
           ? await _apiService.updateMedicalRecord(existingRecord!.medicalRecordId, _diagnosisController.text, _prescriptionController.text)
           : await _apiService.createMedicalRecord(CreateMedicalRecordModel(
-              appointmentId: appointment.appointmentId,
-              diagnosis: _diagnosisController.text,
-              prescription: _prescriptionController.text,
-            ));
+        appointmentId: appointment.appointmentId,
+        diagnosis: _diagnosisController.text,
+        prescription: _prescriptionController.text,
+      ));
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Successfully saved!"), backgroundColor: Colors.green));
         _fetchData();
@@ -337,7 +341,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                 children: [
                   _buildHeader(isSmallScreen),
                   const SizedBox(height: 15),
-                  _buildSearchField(), 
+                  _buildSearchField(),
                   const SizedBox(height: 15),
                   _buildDateFilterSection(isSmallScreen),
                   const SizedBox(height: 15),
@@ -418,9 +422,9 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text("Filter Date", style: TextStyle(fontSize: isSmall ? 14 : 16, fontWeight: FontWeight.bold)),
+          child: Text("Filter by Date", style: TextStyle(fontSize: isSmall ? 14 : 16, fontWeight: FontWeight.bold)),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -439,19 +443,27 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     );
   }
 
+  // التعديل هنا: ظبطنا الديزاين عشان يبقى زي الصورة بالمللي (Radius 20 و Padding أكبر)
   Widget _buildFilterItem(String label, String value) {
     bool isSelected = _selectedDate == value;
     return GestureDetector(
       onTap: () => setState(() => _selectedDate = value),
       child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
         ),
-        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade700, fontWeight: FontWeight.bold, fontSize: 11)),
+        child: Text(
+            label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 13
+            )
+        ),
       ),
     );
   }
@@ -460,9 +472,9 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))]
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))]
       ),
       child: Column(
         children: [
