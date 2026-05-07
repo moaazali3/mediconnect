@@ -85,18 +85,25 @@ mixin ProfileApi {
     }
   }
 
-  // Method to fetch receptionist by doctor ID
-  Future<ReceptionistProfileModel> getReceptionistByDoctorId(String doctorId) async {
+  // Method to fetch receptionist by doctor ID - now returns nullable to handle doctors without receptionists
+  Future<ReceptionistProfileModel?> getReceptionistByDoctorId(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.get(Uri.parse('${parent.baseUrl}/Receptionist/$doctorId'), headers: parent._headers);
       if (response.statusCode == 200) {
-        return ReceptionistProfileModel.fromJson(jsonDecode(response.body));
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return ReceptionistProfileModel.fromJson(decoded);
+        }
+        return null;
       } else {
-        throw "Failed to load receptionist data for this doctor";
+        // If doctor doesn't have a receptionist, it might return 404 or other status. 
+        // We return null instead of throwing to avoid breaking the UI.
+        return null;
       }
     } catch (e) {
-      throw parent.handleError(e);
+      // Return null on any connection or parsing error for this specific optional data
+      return null;
     }
   }
 

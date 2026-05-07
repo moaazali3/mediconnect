@@ -10,7 +10,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/shimmer_loading.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
+import 'package:mediconnect/patient/screens/booking_screen.dart';
 
 class HomeContent extends StatefulWidget {
   final String? userId;
@@ -79,7 +79,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _refreshData() async {
     _fetchSpecializations();
-    _fetchDoctors(); // هيجيب كل الدكاترة في الأول
+    _fetchDoctors(); 
   }
 
   Future<void> _fetchSpecializations() async {
@@ -96,7 +96,6 @@ class _HomeContentState extends State<HomeContent> {
   Future<void> _fetchDoctors() async {
     if (mounted) setState(() => _isLoadingDoctors = true);
     try {
-      // هنجيب كل الدكاترة دايماً من السيرفر عشان الفلترة تبقى سريعة عندنا
       final docs = await _apiService.getAllDoctors(specializationName: "All");
       _apiService.cacheDoctorImages(docs);
       final prefs = await SharedPreferences.getInstance();
@@ -111,15 +110,12 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     var filteredDoctors = List<DoctorModel>.from(_doctors);
 
-    // 1. الفلترة بالتخصص (التعديل الجديد)
     if (selectedSpecialization != "All") {
       filteredDoctors = filteredDoctors.where((doc) {
-        // استخدمنا trim و toLowerCase عشان لو في مسافات أو حروف كابيتال في الداتابيز مايبوظش الفلتر
         return doc.specializationName.trim().toLowerCase() == selectedSpecialization.trim().toLowerCase();
       }).toList();
     }
 
-    // 2. الفلترة بالبحث بالاسم
     if (searchQuery.isNotEmpty) {
       filteredDoctors = filteredDoctors.where((doc) {
         final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
@@ -127,7 +123,6 @@ class _HomeContentState extends State<HomeContent> {
       }).toList();
     }
 
-    // Sort alphabetically, ignoring the "dr" prefix if it exists
     filteredDoctors.sort((a, b) {
       String nameA = "${a.firstName} ${a.lastName}".toLowerCase();
       String nameB = "${b.firstName} ${b.lastName}".toLowerCase();
@@ -230,8 +225,12 @@ class _HomeContentState extends State<HomeContent> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DoctorProfileViewScreen(
+                builder: (context) => BookingScreen(
                   doctorId: doc.id,
+                  doctorName: "Dr. ${doc.firstName} ${doc.lastName}",
+                  specialty: doc.specializationName,
+                  fee: doc.consultationFee.toString(),
+                  doctorImageUrl: doc.profilePictureUrl,
                   patientId: widget.userId,
                 ),
               ),
@@ -247,7 +246,6 @@ class _HomeContentState extends State<HomeContent> {
     return GestureDetector(
       onTap: () {
         if (selectedSpecialization != title) {
-          // هنا شيلنا استدعاء الـ API وسبناها تفلتر محلي بس عشان تبقى سريعة
           setState(() => selectedSpecialization = title);
         }
       },
