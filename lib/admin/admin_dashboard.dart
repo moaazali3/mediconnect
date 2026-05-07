@@ -20,6 +20,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   String _adminName = "Administrator";
 
+  // المفتاح ده السحر اللي هيعمل ريستارت لصفحة الـ Analytics لما ندوس ريفريش
+  Key _analyticsKey = UniqueKey();
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +47,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // --- دالة الريفريش ---
+  void _handleRefresh() {
+    _loadAdminInfo(); // بيجيب اسم الأدمن من تاني
+    setState(() {
+      // تغيير المفتاح بيجبر فلاتر إنه يعيد بناء صفحة الإحصائيات ويسحب داتا جديدة
+      _analyticsKey = UniqueKey();
+    });
+
+    // رسالة تأكيد بسيطة
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Dashboard Refreshed"),
+        duration: Duration(seconds: 1),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     String pageTitle = _currentIndex == 0 ? "Admin Console" : "Advanced Analytics";
@@ -54,19 +75,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
         pageName: pageTitle,
         userName: _adminName,
         onLogout: _signOut,
+        onRefresh: _handleRefresh, // زرار الريفريش ضفناه هنا أهو
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
           _buildConsoleContent(),
-          const AnalyticsPage(),
+          // ربطنا الصفحة بالمفتاح اللي بيتغير مع الريفريش
+          AnalyticsPage(key: _analyticsKey),
         ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withOpacity(0.05), // شيلت withValues عشان التوافق مع كل الإصدارات
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -220,7 +243,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
           ],
         ),
         child: Column(
@@ -230,7 +253,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),

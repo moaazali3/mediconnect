@@ -10,7 +10,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 class DoctorDetailsPage extends StatelessWidget {
   final String doctorId;
-  final String? patientId; 
+  final String? patientId;
 
   const DoctorDetailsPage({super.key, required this.doctorId, this.patientId});
 
@@ -65,22 +65,22 @@ class DoctorDetailsPage extends StatelessWidget {
                       ),
                       onPressed: () async {
                         DateTime now = DateTime.now();
-                        int targetDayIndex = days.indexOf(selectedDay) + 1; 
+                        int targetDayIndex = days.indexOf(selectedDay) + 1;
                         int currentDayIndex = now.weekday;
                         int daysToAdd = (targetDayIndex - currentDayIndex + 7) % 7;
-                        
+
                         DateTime targetDate = now.add(Duration(days: daysToAdd));
                         String formattedDate = DateFormat('yyyy-MM-dd').format(targetDate);
 
                         final appointment = CreateAppointmentModel(
-                          patientId: patientId ?? "1", 
+                          patientId: patientId ?? "1",
                           doctorId: doctorId,
                           dayOfWeek: selectedDay,
                           appointmentDate: formattedDate,
                         );
 
-                        Navigator.pop(context); 
-                        
+                        Navigator.pop(context);
+
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -89,7 +89,7 @@ class DoctorDetailsPage extends StatelessWidget {
 
                         // تم التعديل هنا: استخدام String? بدلاً من bool
                         String? appointmentId = await apiService.createAppointment(appointment);
-                        
+
                         if (context.mounted) {
                           Navigator.pop(context); // إغلاق نافذة التحميل
                           if (appointmentId != null) {
@@ -224,7 +224,8 @@ class DoctorDetailsPage extends StatelessWidget {
                       const Icon(Icons.medical_information_outlined, color: primaryColor),
                       const SizedBox(width: 15),
                       const Expanded(child: Text("General Consultation", style: TextStyle(fontWeight: FontWeight.w600))),
-                      Text("\$${doctor.consultationFee}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                      // التعديل هنا: شيلنا علامة الدولار وحطينا EGP
+                      Text("${doctor.consultationFee} EGP", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -238,7 +239,7 @@ class DoctorDetailsPage extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     ),
-                    child: const Text("Continue to Book", 
+                    child: const Text("Continue to Book",
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),

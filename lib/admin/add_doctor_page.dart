@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/CreateDoctorModel.dart';
@@ -14,9 +15,14 @@ class AddDoctorPage extends StatefulWidget {
 }
 
 class _AddDoctorPageState extends State<AddDoctorPage> {
-  final _formKey = GlobalKey<FormState>();
   final _apiService = ApiService();
-  
+
+  final List<GlobalKey<FormState>> _formKeys = [
+    GlobalKey<FormState>(),
+    GlobalKey<FormState>(),
+    GlobalKey<FormState>(),
+  ];
+
   // Controllers
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -28,10 +34,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   final _experienceController = TextEditingController();
   final _feeController = TextEditingController();
   final _dobController = TextEditingController();
+  final _specializationController = TextEditingController(); // كونترولر لعرض اسم التخصص
 
-  String _gender = 'Male';
+  String? _gender;
   int? _selectedSpecializationId;
   List<SpecializationModel> _specializations = [];
+  bool _isLoadingSpecializations = true; // لمعرفة حالة تحميل التخصصات
+
   bool _isPasswordHidden = true;
   bool _isConfirmPasswordHidden = true;
   int _currentStep = 1;
@@ -40,7 +49,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   void initState() {
     super.initState();
     _loadSpecializations();
-    _dobController.text = DateFormat('yyyy-MM-dd').format(DateTime(1990, 1, 1));
   }
 
   @override
@@ -55,24 +63,112 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     _experienceController.dispose();
     _feeController.dispose();
     _dobController.dispose();
+    _specializationController.dispose();
     super.dispose();
   }
 
+  // --- جلب التخصصات من الباك إند (بدون تعليق) ---
   Future<void> _loadSpecializations() async {
     try {
       final specs = await _apiService.getAllSpecializations();
-      setState(() {
-        _specializations = specs;
-      });
+      if (mounted) {
+        setState(() {
+          _specializations = specs;
+          _isLoadingSpecializations = false;
+        });
+      }
     } catch (e) {
       if (mounted) {
+        setState(() => _isLoadingSpecializations = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading specializations: $e")),
+          SnackBar(content: Text("Error loading specializations: $e"), backgroundColor: Colors.red),
         );
       }
     }
   }
 
+  // --- شاشة البحث عن التخصص ---
+  void _showSpecializationSearchSheet() {
+    List<SpecializationModel> tempFiltered = List.from(_specializations);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text("Select Specialization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                  const SizedBox(height: 15),
+                  TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: "Search specialization...",
+                      prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    ),
+                    onChanged: (value) {
+                      setModalState(() {
+                        tempFiltered = _specializations.where((spec) {
+                          return spec.name.toLowerCase().contains(value.toLowerCase());
+                        }).toList();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  Expanded(
+                    child: tempFiltered.isEmpty
+                        ? const Center(child: Text("No specializations found"))
+                        : ListView.separated(
+                      itemCount: tempFiltered.length,
+                      separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                      itemBuilder: (context, index) {
+                        final spec = tempFiltered[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: primaryColor.withOpacity(0.1),
+                            child: const Icon(Icons.category, color: primaryColor),
+                          ),
+                          title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          onTap: () {
+                            setState(() {
+                              _selectedSpecializationId = spec.id;
+                              _specializationController.text = spec.name;
+                            });
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- الشروط الصارمة (Validators) ---
   String? _validateEmail(String? value) {
     if (value == null || value.isEmpty) return "Email is required";
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -94,8 +190,22 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     return null;
   }
 
+  String? _validateName(String? value, String label) {
+    if (value == null || value.trim().isEmpty) return "$label is required";
+    if (value.trim().length < 3) return "$label must be at least 3 characters";
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) return "Phone number is required";
+    if (value.length != 11) return "Phone must be exactly 11 digits";
+    if (!value.startsWith("01")) return "Phone must start with 01";
+    return null;
+  }
+
+  // --- التنقل بين الخطوات ---
   void _nextStep() {
-    if (_formKey.currentState!.validate()) {
+    if (_formKeys[_currentStep - 1].currentState!.validate()) {
       setState(() => _currentStep++);
     }
   }
@@ -106,9 +216,10 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     }
   }
 
+  // --- رفع الداتا (Submit) ---
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    
+    if (!_formKeys[_currentStep - 1].currentState!.validate()) return;
+
     if (_selectedSpecializationId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a specialization"), backgroundColor: Colors.red),
@@ -126,15 +237,15 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       DateTime dob = DateFormat('yyyy-MM-dd').parse(_dobController.text);
 
       final doctor = CreateDoctorModel(
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        email: _emailController.text,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
-        phoneNumber: _phoneController.text,
-        gender: _gender,
+        phoneNumber: _phoneController.text.trim(),
+        gender: _gender!,
         dateOfBirth: dob,
-        address: _addressController.text,
-        biography: "", // Set biography to empty string as requested
+        address: _addressController.text.trim(),
+        biography: "",
         experienceYears: double.tryParse(_experienceController.text) ?? 0,
         consultationFee: double.tryParse(_feeController.text) ?? 0,
         specializationId: _selectedSpecializationId!,
@@ -144,18 +255,18 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
       if (doctorId != null) {
         if (!mounted) return;
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         _showSuccessDialog();
       } else {
         if (!mounted) return;
-        Navigator.pop(context); // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Failed to create doctor. No ID returned."), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      if (Navigator.canPop(context)) Navigator.pop(context); // Close loading dialog
+      if (Navigator.canPop(context)) Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
       );
@@ -174,8 +285,8 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
           Center(
             child: ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Go back to Management Page
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
               child: const Text("Continue"),
             ),
@@ -211,13 +322,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  primaryColor.withValues(alpha: 0.8),
+                  primaryColor.withOpacity(0.8),
                   Colors.white,
                 ],
               ),
             ),
           ),
-          Container(color: Colors.black.withValues(alpha: 0.05)),
+          Container(color: Colors.black.withOpacity(0.05)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -231,12 +342,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
+                          color: Colors.white.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          border: Border.all(color: Colors.white.withOpacity(0.3)),
                         ),
                         child: Form(
-                          key: _formKey,
+                          key: _formKeys[_currentStep - 1],
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -266,7 +377,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   Widget _buildStepHeader() {
     String title = "";
     IconData icon = Icons.person_add_rounded;
-    
+
     if (_currentStep == 1) {
       title = "Account Credentials";
       icon = Icons.lock_outline_rounded;
@@ -294,7 +405,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
+            color: primaryColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, size: 40, color: primaryColor),
@@ -323,24 +434,16 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
         child: isCompleted
             ? const Icon(Icons.check, color: Colors.white, size: 16)
             : Text(
-                "$step",
-                style: TextStyle(
-                  color: isActive ? Colors.white : Colors.black54,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
+          "$step",
+          style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold, fontSize: 14),
+        ),
       ),
     );
   }
 
   Widget _buildStepLine(int afterStep) {
     bool isPassed = _currentStep > afterStep;
-    return Container(
-      width: 40,
-      height: 2,
-      color: isPassed ? Colors.green : Colors.grey.shade300,
-    );
+    return Container(width: 40, height: 2, color: isPassed ? Colors.green : Colors.grey.shade300);
   }
 
   Widget _buildCurrentStepFields() {
@@ -385,27 +488,18 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       return Column(
         key: const ValueKey(2),
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  controller: _firstNameController,
-                  label: "First Name",
-                  icon: Icons.person_outline,
-                  validator: (value) => (value == null || value.length < 3) ? "First Name must be at least 3 characters" : null,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildTextField(
-                  controller: _lastNameController,
-                  label: "Last Name",
-                  icon: Icons.person_outline,
-                  validator: (value) => (value == null || value.length < 3) ? "Last Name must be at least 3 characters" : null,
-                ),
-              ),
-            ],
+          _buildTextField(
+            controller: _firstNameController,
+            label: "First Name",
+            icon: Icons.person_outline,
+            validator: (v) => _validateName(v, "First Name"),
+          ),
+          const SizedBox(height: 15),
+          _buildTextField(
+            controller: _lastNameController,
+            label: "Last Name",
+            icon: Icons.person_outline,
+            validator: (v) => _validateName(v, "Last Name"),
           ),
           const SizedBox(height: 15),
           _buildTextField(
@@ -413,44 +507,37 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             label: "Phone Number",
             icon: Icons.phone_android_rounded,
             keyboardType: TextInputType.phone,
-            validator: (value) => (value == null || !value.startsWith("01")) ? "Phone must start with 01" : null,
+            maxLength: 11,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: _validatePhone,
+          ),
+          const SizedBox(height: 5),
+          _buildDropdownField<String>(
+            label: "Gender",
+            icon: Icons.wc_rounded,
+            value: _gender,
+            items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+            onChanged: (val) => setState(() => _gender = val),
+            validator: (val) => val == null ? "Please select gender" : null,
           ),
           const SizedBox(height: 15),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _buildDropdownField<String>(
-                  label: "Gender",
-                  icon: Icons.wc_rounded,
-                  initialValue: _gender,
-                  items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
-                  onChanged: (val) => setState(() => _gender = val!),
-                  validator: (val) => val == null ? "Required" : null,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildTextField(
-                  controller: _dobController,
-                  label: "Birth Date",
-                  icon: Icons.calendar_month_rounded,
-                  readOnly: true,
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime(1990),
-                      firstDate: DateTime(1950),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                    }
-                  },
-                  validator: (value) => (value == null || value.isEmpty) ? "Required" : null,
-                ),
-              ),
-            ],
+          _buildTextField(
+            controller: _dobController,
+            label: "Birth Date",
+            icon: Icons.calendar_month_rounded,
+            readOnly: true,
+            onTap: () async {
+              DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime(1990),
+                firstDate: DateTime(1950),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) {
+                setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+              }
+            },
+            validator: (value) => (value == null || value.isEmpty) ? "Please select birth date" : null,
           ),
         ],
       );
@@ -458,27 +545,53 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       return Column(
         key: const ValueKey(3),
         children: [
-          _buildDropdownField<int>(
+          _isLoadingSpecializations
+              ? _buildTextField(
+            controller: TextEditingController(text: "Loading specializations..."),
+            label: "Specialization",
+            icon: Icons.hourglass_empty_rounded,
+            readOnly: true,
+          )
+              : _buildTextField(
+            controller: _specializationController,
             label: "Specialization",
             icon: Icons.category_outlined,
-            initialValue: _selectedSpecializationId,
-            items: _specializations.map((spec) => DropdownMenuItem(value: spec.id, child: Text(spec.name, style: const TextStyle(fontSize: 13)))).toList(),
-            onChanged: (val) => setState(() => _selectedSpecializationId = val),
+            readOnly: true,
+            onTap: _showSpecializationSearchSheet,
+            validator: (value) => _selectedSpecializationId == null ? "Please select specialization" : null,
           ),
           const SizedBox(height: 15),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _buildTextField(controller: _experienceController, label: "Exp. (Years)", icon: Icons.work_outline, keyboardType: TextInputType.number)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _experienceController,
+                  label: "Exp. (Years)",
+                  icon: Icons.work_outline,
+                  keyboardType: TextInputType.number,
+                  validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _buildTextField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
+              Expanded(
+                child: _buildTextField(
+                  controller: _feeController,
+                  label: "Fee (EGP)",
+                  icon: Icons.payments_outlined,
+                  keyboardType: TextInputType.number,
+                  validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 15),
+          // التعديل هنا: شيلنا الـ maxLines خالص عشان يبقى زي الباقي
           _buildTextField(
             controller: _addressController,
             label: "Address",
             icon: Icons.location_on_outlined,
-            validator: (value) => (value == null || value.isEmpty) ? "Address is required" : null,
+            validator: (value) => (value == null || value.trim().isEmpty) ? "Address is required" : null,
           ),
         ],
       );
@@ -534,6 +647,8 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     VoidCallback? onTap,
     String? Function(String?)? validator,
     int? maxLines = 1,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
@@ -542,34 +657,40 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       readOnly: readOnly,
       onTap: onTap,
       maxLines: maxLines,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        counterText: maxLength == null ? "" : null,
+        errorStyle: const TextStyle(fontSize: 11, height: 1.2),
+        errorMaxLines: 5,
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
+            color: primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         suffixIcon: isPassword
             ? IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(isPasswordHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
-                onPressed: onTogglePassword,
-              )
+          padding: EdgeInsets.zero,
+          icon: Icon(isPasswordHidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
+          onPressed: onTogglePassword,
+        )
+            : (onTap != null && maxLines == 1)
+            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
             : null,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1)),
-        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
-        errorMaxLines: 6,
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
       ),
       validator: validator ?? (value) => (value == null || value.isEmpty) ? "Required" : null,
     );
@@ -578,37 +699,37 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   Widget _buildDropdownField<T>({
     required String label,
     required IconData icon,
-    required T? initialValue,
+    required T? value,
     required List<DropdownMenuItem<T>> items,
     required Function(T?) onChanged,
     String? Function(T?)? validator,
   }) {
     return DropdownButtonFormField<T>(
       isExpanded: true,
-      value: initialValue,
+      value: value,
       items: items,
       onChanged: onChanged,
       style: const TextStyle(fontSize: 14, color: Colors.black),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        errorStyle: const TextStyle(fontSize: 11, height: 1.2),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
+            color: primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1)),
-        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
-        errorMaxLines: 2,
+        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
+        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
       ),
       validator: validator ?? (val) => val == null ? "Required" : null,
     );
