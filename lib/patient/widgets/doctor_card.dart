@@ -5,61 +5,70 @@ import 'package:mediconnect/constants/api_constants.dart';
 
 class DoctorCard extends StatelessWidget {
   final DoctorModel doctor;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const DoctorCard({
     super.key,
     required this.doctor,
-    this.onTap,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    // لوجيك الصورة المظبوط
     String? fullImageUrl;
     if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
-      fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
-          ? doctor.profilePictureUrl 
+      fullImageUrl = doctor.profilePictureUrl!.startsWith('http')
+          ? doctor.profilePictureUrl
           : "${ApiConstants.serverUrl}${doctor.profilePictureUrl}";
     }
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: Row(
           children: [
-            // Doctor Image
+            // 1. الصورة الدائرية
             Container(
-              width: 80,
-              height: 80,
+              width: 75,
+              height: 75,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade100, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(15),
+              child: ClipOval(
                 child: fullImageUrl != null
                     ? Image.network(
-                        fullImageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: primaryColor, size: 40),
-                      )
-                    : const Icon(Icons.person, color: primaryColor, size: 40),
+                  fullImageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+                )
+                    : _buildFallbackImage(),
               ),
             ),
             const SizedBox(width: 15),
-            // Doctor Info
+
+            // 2. بيانات الدكتور (شيلنا السعر من هنا وخلينا الخبرة بس)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,55 +76,91 @@ class DoctorCard extends StatelessWidget {
                   Text(
                     "Dr. ${doctor.firstName} ${doctor.lastName}",
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF263238),
+                      color: Color(0xFF1E293B),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
-                    doctor.specializationName,
-                    style: TextStyle(
-                      color: primaryColor.withOpacity(0.8),
-                      fontSize: 13,
+                    doctor.specializationName.isEmpty ? "Specialist" : doctor.specializationName,
+                    style: const TextStyle(
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
+                      color: primaryColor,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildStat(Icons.work_outline, "${doctor.experienceYears.toStringAsFixed(0)} Yrs"),
-                      const SizedBox(width: 15),
-                      _buildStat(Icons.payments_outlined, "${doctor.consultationFee.toStringAsFixed(0)} EGP"),
-                    ],
-                  ),
+
+                  // الخبرة بس هي اللي هتظهر بره
+                  _buildStat(Icons.workspace_premium_outlined, "${doctor.experienceYears.toStringAsFixed(0)} Years Exp."),
                 ],
               ),
             ),
-            // Arrow
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
+
+            const SizedBox(width: 5),
+
+            // 3. الزرار الأزرق
+            Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  // ويدجت أيقونة الخبرة
   Widget _buildStat(IconData icon, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey),
+        Icon(icon, size: 14, color: Colors.grey.shade500),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
+    );
+  }
+
+  // الصورة البديلة
+  Widget _buildFallbackImage() {
+    return Container(
+      color: primaryColor.withOpacity(0.1),
+      child: const Icon(Icons.person_rounded, color: primaryColor, size: 40),
     );
   }
 }
