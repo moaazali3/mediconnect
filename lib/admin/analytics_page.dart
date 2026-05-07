@@ -9,6 +9,7 @@ import 'package:mediconnect/admin/today_revenue_page.dart';
 import 'package:mediconnect/admin/total_doctors_page.dart';
 import 'package:mediconnect/admin/total_appointments_page.dart';
 import 'package:mediconnect/admin/total_revenue_page.dart';
+import 'package:mediconnect/admin/total_patients_page.dart';
 import 'package:intl/intl.dart';
 
 class AnalyticsPage extends StatefulWidget {
@@ -325,7 +326,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       crossAxisSpacing: 10,
       childAspectRatio: 2.2,
       children: [
-        _buildSmallStat("Total Patients", _stats!.totalPatients.toString(), Colors.blue),
+        _buildSmallStat(
+          "Total Patients", 
+          _stats!.totalPatients.toString(), 
+          Colors.blue,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage())),
+        ),
         _buildSmallStat(
           "Total Doctors",
           _stats!.totalDoctors.toString(), 

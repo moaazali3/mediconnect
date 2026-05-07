@@ -33,6 +33,30 @@ mixin AdminApi {
     }
   }
 
+  Future<List<PatientProfileModel>> getAllPatients() async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/patients'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          data = decoded['data'] ?? decoded['patients'] ?? decoded['items'] ?? decoded['values'] ?? [];
+        }
+        return data.map((item) => PatientProfileModel.fromJson(item)).toList();
+      } else {
+        throw "Failed to load patients: ${response.statusCode}";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
   Future<Map<String, dynamic>> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(

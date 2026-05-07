@@ -452,6 +452,13 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               ),
             ],
           ),
+          const SizedBox(height: 15),
+          _buildTextField(
+            controller: _addressController,
+            label: "Address",
+            icon: Icons.location_on_outlined,
+            validator: (value) => (value == null || value.isEmpty) ? "Address is required" : null,
+          ),
         ],
       );
     } else {
@@ -472,13 +479,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
               const SizedBox(width: 8),
               Expanded(child: _buildTextField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
             ],
-          ),
-          const SizedBox(height: 15),
-          _buildTextField(
-            controller: _addressController,
-            label: "Address",
-            icon: Icons.location_on_outlined,
-            validator: (value) => (value == null || value.isEmpty) ? "Address is required" : null,
           ),
         ],
       );
