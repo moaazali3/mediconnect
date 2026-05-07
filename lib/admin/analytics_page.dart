@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/today_appointments_page.dart';
 import 'package:mediconnect/admin/today_doctors_page.dart';
@@ -10,7 +11,6 @@ import 'package:mediconnect/admin/total_doctors_page.dart';
 import 'package:mediconnect/admin/total_appointments_page.dart';
 import 'package:mediconnect/admin/total_revenue_page.dart';
 import 'package:mediconnect/admin/total_patients_page.dart';
-import 'package:intl/intl.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -24,6 +24,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   bool _isLoading = true;
   String? _error;
   AdminDashboardModel? _stats;
+  int _uniquePatientsCount = 0;
+  String? _topDoctorName;
+  String? _topDoctorSpecialization;
+  String? _topDoctorImageUrl;
+  int _topDoctorBookings = 0;
 
   @override
   void initState() {
@@ -32,6 +37,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -40,42 +46,80 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     try {
       final results = await Future.wait([
         _apiService.getAdminDashboardStats(),
-        _apiService.getAllDoctors(),
-        _apiService.getAllAppointments(),
+        _apiService.getTodayAppointments(),
+        _apiService.getDoctorsWorkingToday(),
+        _apiService.getAllPatients(),
+        _apiService.getAllAppointments(pageSize: 2000),
+        _apiService.getAllDoctors(pageSize: 1000),
       ]);
 
-      var stats = results[0] as AdminDashboardModel;
-      final allDoctors = results[1] as List;
-      final allAppointments = results[2] as List<AppointmentModel>;
+      final stats = results[0] as AdminDashboardModel;
+      final todayAppts = results[1] as List<AppointmentModel>;
+      final activeDoctors = results[2] as List;
+      final allPatients = results[3] as List;
+      final allAppts = results[4] as List<AppointmentModel>;
+      final allDoctors = results[5] as List<DoctorModel>;
 
-      final DateTime now = DateTime.now();
-      final String todayYMD = DateFormat('yyyy-MM-dd').format(now);
-      final String todayDMY = DateFormat('dd/MM/yyyy').format(now);
+      // Count unique patients
+      final Set<String> uniqueNames = {};
+      for (var p in allPatients) {
+        uniqueNames.add("${p.firstName} ${p.lastName}".toLowerCase().trim());
+      }
 
-      final todayAppts = allAppointments.where((app) {
-        String date = app.appointmentDate;
-        return date.contains(todayYMD) || date.contains(todayDMY);
-      }).toList();
+      // Calculate most booked doctor
+      String? topDocId;
+      int maxBookings = 0;
+      String? topDocName;
+      String? topDocSpec;
+      String? topDocImage;
+      
+      if (allAppts.isNotEmpty) {
+        Map<String, int> doctorBookingsCount = {};
+        Map<String, String> doctorNamesMap = {};
+        
+        for (var appt in allAppts) {
+          // Use doctorId if available, fallback to doctorName to ensure we count something
+          final id = appt.doctorId.trim().isNotEmpty ? appt.doctorId.trim() : appt.doctorName.trim();
+          if (id.isNotEmpty) {
+            doctorBookingsCount[id] = (doctorBookingsCount[id] ?? 0) + 1;
+            if (appt.doctorName.isNotEmpty) {
+              doctorNamesMap[id] = appt.doctorName;
+            }
+          }
+        }
+        
+        if (doctorBookingsCount.isNotEmpty) {
+          var sorted = doctorBookingsCount.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          
+          topDocId = sorted.first.key;
+          maxBookings = sorted.first.value;
+          topDocName = doctorNamesMap[topDocId] ?? topDocId;
 
-      final int currentWeekday = DateTime.now().weekday;
-      int activeDoctorsCount = 0;
-
-      for (var doctor in allDoctors) {
-        try {
-          final schedules = await _apiService.getDoctorSchedule(doctor.id);
-          bool isAvailableToday = schedules.any((schedule) {
-            return schedule.isScheduledFor(currentWeekday) && schedule.isAvailable;
-          });
-          if (isAvailableToday) activeDoctorsCount++;
-        } catch (e) {
-          debugPrint("Error checking schedule: $e");
+          // Try to find more details from allDoctors list
+          try {
+            final doctor = allDoctors.firstWhere((d) => 
+              d.id.trim() == topDocId || 
+              "${d.firstName} ${d.lastName}".trim().toLowerCase() == topDocName?.toLowerCase()
+            );
+            topDocName = "${doctor.firstName} ${doctor.lastName}";
+            topDocSpec = doctor.specializationName;
+            topDocImage = doctor.profilePictureUrl;
+          } catch (_) {
+            // If not found in allDoctors, keep what we have from appointments
+          }
         }
       }
 
       if (mounted) {
         setState(() {
+          _uniquePatientsCount = uniqueNames.length;
+          _topDoctorName = topDocName;
+          _topDoctorSpecialization = topDocSpec;
+          _topDoctorImageUrl = topDocImage;
+          _topDoctorBookings = maxBookings;
           _stats = stats.copyWith(
-            totalDoctorsToday: activeDoctorsCount,
+            totalDoctorsToday: activeDoctors.length,
             totalAppointmentsToday: todayAppts.length,
             totalCompletedAppointmentsToday: todayAppts.where((a) => a.status.toLowerCase() == 'completed').length,
             totalPendingAppointmentsToday: todayAppts.where((a) => a.status.toLowerCase() == 'pending' || a.status.toLowerCase() == 'confirmed').length,
@@ -99,7 +143,25 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return _isLoading
         ? const Center(child: CircularProgressIndicator(color: primaryColor))
         : _error != null
-            ? Center(child: Text(_error!))
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                      const SizedBox(height: 16),
+                      Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadData,
+                        style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                        child: const Text("Retry", style: TextStyle(color: Colors.white)),
+                      )
+                    ],
+                  ),
+                ),
+              )
             : RefreshIndicator(
                 onRefresh: _loadData,
                 color: primaryColor,
@@ -109,7 +171,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSectionHeader("Overview"),
+                      _buildSectionHeader("Overview Today"),
                       const SizedBox(height: 15),
                       if (_stats != null) _buildStatsGrid(_stats!),
                       const SizedBox(height: 15),
@@ -121,6 +183,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       const SizedBox(height: 30),
                       _buildSectionHeader("System Summary"),
                       const SizedBox(height: 15),
+                      _buildTopDoctorCard(),
+                      const SizedBox(height: 15),
                       if (_stats != null) _buildQuickStats(),
                       const SizedBox(height: 30),
                     ],
@@ -131,6 +195,97 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildSectionHeader(String title) {
     return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)));
+  }
+
+  Widget _buildTopDoctorCard() {
+    if (_topDoctorName == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [primaryColor, Color(0xFF475AD1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 65,
+            height: 65,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(35),
+              child: _topDoctorImageUrl != null && _topDoctorImageUrl!.isNotEmpty
+                  ? Image.network(
+                      _topDoctorImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, color: Colors.white, size: 35),
+                    )
+                  : const Icon(Icons.star_rounded, color: Colors.white, size: 35),
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Most Booked Doctor",
+                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _topDoctorName!,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                if (_topDoctorSpecialization != null && _topDoctorSpecialization!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _topDoctorSpecialization!,
+                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  _topDoctorBookings.toString(),
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const Text(
+                  "Bookings",
+                  style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStatsGrid(AdminDashboardModel stats) {
@@ -167,15 +322,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           Colors.green, 
           isFullWidth: true,
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage())),
-        ),
-        const SizedBox(height: 15),
-        _buildStatCard(
-          "Total Appts", 
-          stats.totalAppointments.toString(), 
-          Icons.history_rounded, 
-          Colors.indigo, 
-          isFullWidth: true,
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalAppointmentsPage())),
         ),
       ],
     );
@@ -328,7 +474,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       children: [
         _buildSmallStat(
           "Total Patients", 
-          _stats!.totalPatients.toString(), 
+          _uniquePatientsCount.toString(), 
           Colors.blue,
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage())),
         ),

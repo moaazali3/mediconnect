@@ -26,18 +26,39 @@ class AppointmentModel {
   });
 
   factory AppointmentModel.fromJson(Map<String, dynamic> json) {
+    // Helper to extract nested doctor info
+    String extractDoctorName(Map<String, dynamic> json) {
+      if (json['doctorName'] != null) return json['doctorName'].toString();
+      if (json['DoctorName'] != null) return json['DoctorName'].toString();
+      if (json['doctor'] is Map) {
+        final doc = json['doctor'];
+        return (doc['name'] ?? doc['fullName'] ?? doc['firstName'] ?? '').toString();
+      }
+      return '';
+    }
+
+    String extractDoctorId(Map<String, dynamic> json) {
+      if (json['doctorId'] != null) return json['doctorId'].toString();
+      if (json['DoctorId'] != null) return json['DoctorId'].toString();
+      if (json['doctor'] is Map) {
+        final doc = json['doctor'];
+        return (doc['id'] ?? doc['doctorId'] ?? doc['Id'] ?? '').toString();
+      }
+      return '';
+    }
+
     return AppointmentModel(
-      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
-      patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
-      patientName: json['patientName'] ?? '',
-      doctorId: (json['doctorId'] ?? json['doctorid'] ?? json['doctorID'] ?? '').toString(),
-      doctorName: json['doctorName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
-      status: json['status'] ?? '',
+      appointmentId: (json['appointmentId'] ?? json['AppointmentId'] ?? json['id'] ?? json['Id'] ?? '').toString(),
+      patientId: (json['patientId'] ?? json['PatientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? json['UserId'] ?? '').toString(),
+      patientName: (json['patientName'] ?? json['PatientName'] ?? json['patient']?['name'] ?? json['patient']?['fullName'] ?? '').toString(),
+      doctorId: extractDoctorId(json),
+      doctorName: extractDoctorName(json),
+      appointmentDate: (json['appointmentDate'] ?? json['AppointmentDate'] ?? '').toString(),
+      dayOfWeek: (json['dayOfWeek'] ?? json['DayOfWeek'] ?? '').toString(),
+      startTime: (json['startTime'] ?? json['StartTime'] ?? '').toString(),
+      endTime: (json['endTime'] ?? json['EndTime'] ?? '').toString(),
+      queueNumber: json['queueNumber'] ?? json['QueueNumber'] ?? 0,
+      status: (json['status'] ?? json['Status'] ?? '').toString(),
     );
   }
 }
@@ -106,16 +127,16 @@ class DoctorAppointmentModel {
 
   factory DoctorAppointmentModel.fromJson(Map<String, dynamic> json) {
     return DoctorAppointmentModel(
-      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
-      patientId: (json['patientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? '').toString(),
-      doctorId: (json['doctorId'] ?? json['doctorid'] ?? json['doctorID'] ?? '').toString(),
-      patientName: json['patientName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      status: json['status'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
+      appointmentId: (json['appointmentId'] ?? json['AppointmentId'] ?? json['id'] ?? json['Id'] ?? '').toString(),
+      patientId: (json['patientId'] ?? json['PatientId'] ?? json['patientID'] ?? json['patient_id'] ?? json['patient_Id'] ?? json['userId'] ?? json['UserId'] ?? '').toString(),
+      doctorId: (json['doctorId'] ?? json['DoctorId'] ?? json['doctorid'] ?? json['doctorID'] ?? '').toString(),
+      patientName: (json['patientName'] ?? json['PatientName'] ?? '').toString(),
+      appointmentDate: (json['appointmentDate'] ?? json['AppointmentDate'] ?? '').toString(),
+      dayOfWeek: (json['dayOfWeek'] ?? json['DayOfWeek'] ?? '').toString(),
+      startTime: (json['startTime'] ?? json['StartTime'] ?? '').toString(),
+      endTime: (json['endTime'] ?? json['EndTime'] ?? '').toString(),
+      status: (json['status'] ?? json['Status'] ?? '').toString(),
+      queueNumber: json['queueNumber'] ?? json['QueueNumber'] ?? 0,
     );
   }
 }
@@ -147,15 +168,15 @@ class PatientAppointmentModel {
 
   factory PatientAppointmentModel.fromJson(Map<String, dynamic> json) {
     return PatientAppointmentModel(
-      appointmentId: (json['appointmentId'] ?? json['id'] ?? '').toString(),
-      doctorId: (json['doctorId'] ?? json['doctorid'] ?? json['doctorID'] ?? '').toString(),
-      doctorName: json['doctorName'] ?? '',
-      appointmentDate: json['appointmentDate'] ?? '',
-      dayOfWeek: json['dayOfWeek'] ?? '',
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      status: json['status'] ?? '',
-      queueNumber: json['queueNumber'] ?? 0,
+      appointmentId: (json['appointmentId'] ?? json['AppointmentId'] ?? json['id'] ?? json['Id'] ?? '').toString(),
+      doctorId: (json['doctorId'] ?? json['DoctorId'] ?? json['doctorid'] ?? json['doctorID'] ?? '').toString(),
+      doctorName: (json['doctorName'] ?? json['DoctorName'] ?? '').toString(),
+      appointmentDate: (json['appointmentDate'] ?? json['AppointmentDate'] ?? '').toString(),
+      dayOfWeek: (json['dayOfWeek'] ?? json['DayOfWeek'] ?? '').toString(),
+      startTime: (json['startTime'] ?? json['StartTime'] ?? '').toString(),
+      endTime: (json['endTime'] ?? json['EndTime'] ?? '').toString(),
+      status: (json['status'] ?? json['Status'] ?? '').toString(),
+      queueNumber: json['queueNumber'] ?? json['QueueNumber'] ?? 0,
     );
   }
 }

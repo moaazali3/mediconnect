@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/add_receptionist_page.dart';
+import 'package:mediconnect/admin/manage_receptionists_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/admin/manage_doctors_page.dart';
 import 'package:mediconnect/constants/colors.dart';
@@ -26,27 +27,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _loadAdminInfo();
   }
 
-  Future<void> _loadAdminInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _adminName = prefs.getString('user_name') ?? "Administrator";
-    });
-  }
-
-  Future<void> _signOut() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (route) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    String pageTitle = _currentIndex == 0 ? "Admin Console" : "Advanced Analytics";
+    // Reversed: 0 is Analytics, 1 is Console
+    String pageTitle = _currentIndex == 0 ? "Advanced Analytics" : "Admin Console";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
@@ -58,8 +42,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _buildConsoleContent(),
-          const AnalyticsPage(),
+          const AnalyticsPage(), // Index 0
+          _buildConsoleContent(), // Index 1
         ],
       ),
       bottomNavigationBar: Container(
@@ -82,16 +66,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
           backgroundColor: Colors.white,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_customize_rounded),
-              label: 'Console',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.analytics_rounded),
               label: 'Analytics',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_customize_rounded),
+              label: 'Console',
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _loadAdminInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _adminName = prefs.getString('user_name') ?? "Administrator";
+    });
+  }
+
+  Future<void> _signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
     );
   }
 
@@ -165,47 +167,77 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildManagementGrid(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final childRatio = screenWidth < 360 ? 0.75 : (screenWidth < 400 ? 0.85 : 1.0);
+    
+    // Calculate approximate height of a grid item to maintain consistency
+    final double itemWidth = (screenWidth - 40 - 15) / 2;
+    final double itemHeight = itemWidth / childRatio;
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 15,
-      crossAxisSpacing: 15,
-      childAspectRatio: childRatio,
+    final List<Widget> cards = [
+      _buildActionCard(
+        context,
+        "Add Doctor",
+        "Register staff",
+        Icons.person_add_alt_1_rounded,
+        Colors.blue.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Add Receptionist",
+        "Support staff",
+        Icons.person_add_alt_rounded,
+        Colors.indigo.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Doctors List",
+        "Schedules & Fees",
+        Icons.medical_services_rounded,
+        Colors.teal.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Receptionists List",
+        "Assigned Doctors",
+        Icons.people_alt_rounded,
+        Colors.purple.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageReceptionistsPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Specialties",
+        "Manage list",
+        Icons.category_rounded,
+        Colors.amber.shade700,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
+      ),
+    ];
+
+    final bool isLastOdd = cards.length % 2 != 0;
+    final List<Widget> gridItems = isLastOdd ? cards.sublist(0, cards.length - 1) : cards;
+
+    return Column(
       children: [
-        _buildActionCard(
-          context,
-          "Add Doctor",
-          "Register staff",
-          Icons.person_add_alt_1_rounded,
-          Colors.blue.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Add Receptionist",
-          "Support staff",
-          Icons.person_add_alt_rounded,
-          Colors.indigo.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Doctors List",
-          "Schedules & Fees",
-          Icons.medical_services_rounded,
-          Colors.teal.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Specialties",
-          "Manage list",
-          Icons.category_rounded,
-          Colors.amber.shade700,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
-        ),
+        if (gridItems.isNotEmpty)
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 15,
+            crossAxisSpacing: 15,
+            childAspectRatio: childRatio,
+            children: gridItems,
+          ),
+        if (isLastOdd) ...[
+          if (gridItems.isNotEmpty) const SizedBox(height: 15),
+          SizedBox(
+            width: double.infinity,
+            height: itemHeight,
+            child: cards.last,
+          ),
+        ],
       ],
     );
   }
