@@ -1,4 +1,5 @@
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class DoctorFullModel {
   final String id;
@@ -38,10 +39,9 @@ class DoctorFullModel {
   factory DoctorFullModel.fromJson(Map<String, dynamic> json) {
     String? imgUrl = json['profilePictureUrl'] ?? json['ProfilePictureUrl'];
     if (imgUrl != null && imgUrl.isNotEmpty && !imgUrl.startsWith('http')) {
-      imgUrl = "https://wisdom-frisk-exciting.ngrok-free.dev${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
+      imgUrl = "${ApiConstants.serverUrl}${imgUrl.startsWith('/') ? '' : '/'}${imgUrl.replaceAll('\\', '/')}";
     }
 
-    // التحقق من كافة المسميات المحتملة للمواعيد
     var schedulesJson = json['doctorSchedules'] ?? json['DoctorSchedules'] ?? json['schedules'] ?? json['Schedules'];
 
     return DoctorFullModel(
@@ -92,7 +92,6 @@ class DoctorFullModel {
     };
   }
 
-  // ميثود مساعدة لنسخ الكائن مع تحديث المواعيد
   DoctorFullModel copyWith({List<DoctorScheduleModel>? schedules}) {
     return DoctorFullModel(
       id: id,

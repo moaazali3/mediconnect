@@ -6,6 +6,7 @@ import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/patient/screens/profile.dart'; 
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -90,8 +91,6 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-
     return Scaffold(
       appBar: CommonAppBar(
         title: "Manage Bookings",
@@ -119,7 +118,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                               if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
                                 fullImageUrl = doctor.profilePictureUrl!.startsWith('http') 
                                     ? doctor.profilePictureUrl 
-                                    : "$imageBaseUrl${doctor.profilePictureUrl}";
+                                    : "${ApiConstants.serverUrl}${doctor.profilePictureUrl}";
                               }
 
                               return Card(
@@ -285,14 +284,6 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
 
   @override
   Widget build(BuildContext context) {
-    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-    String? fullImageUrl;
-    if (widget.doctor.profilePictureUrl != null && widget.doctor.profilePictureUrl!.isNotEmpty) {
-      fullImageUrl = widget.doctor.profilePictureUrl!.startsWith('http') 
-          ? widget.doctor.profilePictureUrl 
-          : "$imageBaseUrl${widget.doctor.profilePictureUrl}";
-    }
-
     return Scaffold(
       appBar: CommonAppBar(
         title: "Bookings: ${widget.doctor.firstName}",

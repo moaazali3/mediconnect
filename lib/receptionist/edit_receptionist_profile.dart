@@ -43,7 +43,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
         _originalProfile = profile;
         fNameController.text = profile.firstName;
         lNameController.text = profile.lastName;
-        emailController.text = profile.email;
+        emailController.text = profile.email ?? '';
         phoneController.text = profile.phoneNumber;
         dobController.text = profile.dateOfBirth ?? '';
         doctorController.text = profile.doctorName != null && profile.doctorName!.isNotEmpty ? "Dr. ${profile.doctorName}" : "Not Assigned";

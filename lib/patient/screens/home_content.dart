@@ -10,6 +10,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/shimmer_loading.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/patient/screens/doctor_profile_view_screen.dart';
 
 class HomeContent extends StatefulWidget {
   final String? userId;
@@ -224,13 +225,18 @@ class _HomeContentState extends State<HomeContent> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: docs.map((doc) => DoctorCard(
-          id: doc.id,
-          name: "${doc.firstName} ${doc.lastName}",
-          spec: doc.specializationName.isEmpty ? "Specialist" : doc.specializationName,
-          gender: doc.gender,
-          experience: doc.experienceYears,
-          imageUrl: doc.profilePictureUrl,
-          patientId: widget.userId,
+          doctor: doc,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DoctorProfileViewScreen(
+                  doctorId: doc.id,
+                  patientId: widget.userId,
+                ),
+              ),
+            );
+          },
         )).toList(),
       ),
     );

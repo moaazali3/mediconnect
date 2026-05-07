@@ -85,6 +85,21 @@ mixin ProfileApi {
     }
   }
 
+  // Method to fetch receptionist by doctor ID
+  Future<ReceptionistProfileModel> getReceptionistByDoctorId(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(Uri.parse('${parent.baseUrl}/Receptionist/$doctorId'), headers: parent._headers);
+      if (response.statusCode == 200) {
+        return ReceptionistProfileModel.fromJson(jsonDecode(response.body));
+      } else {
+        throw "Failed to load receptionist data for this doctor";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
   Future<bool> updateReceptionistProfile(String id, ReceptionistProfileModel profile) async {
     final ApiService parent = this as ApiService;
     try {

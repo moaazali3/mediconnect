@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:mediconnect/constants/api_constants.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
@@ -17,8 +18,6 @@ import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/models/CreateReceptionistModel.dart';
 import 'package:mediconnect/services/secure_storage.dart';
-
-// استيراد الأجزاء المقسمة
 part 'api_sections/auth_api.dart';
 part 'api_sections/admin_api.dart';
 part 'api_sections/profile_api.dart';
@@ -34,10 +33,9 @@ class ApiResponse {
 
   ApiResponse({required this.success, required this.message, this.data});
 }
-// https://wisdom-frisk-exciting.ngrok-free.dev/api
+
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
-  // ملاحظة: تأكد من أن هذا الرابط هو نفس الرابط الظاهر في Terminal الخاص بـ ngrok
-  final String baseUrl = "https://medicon.runasp.net/api";
+  final String baseUrl = ApiConstants.baseUrl;
   
   // Static cache for doctor images
   static final Map<String, String?> _doctorImagesCache = {};

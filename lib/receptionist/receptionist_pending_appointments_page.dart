@@ -16,8 +16,6 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
   final ApiService _apiService = ApiService();
   bool _isProcessing = false;
 
-  // مش محتاجين متغير الاسم هنا ولا الـ loadUserName لأن الـ AppBar اتشال من هنا
-
   Future<void> _updateStatus(String id, bool isAccept) async {
     setState(() => _isProcessing = true);
     try {
@@ -48,15 +46,49 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
     }
   }
 
+  Future<List<AppointmentModel>> _fetchPendingAppointments() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+    if (userId == null) return [];
+
+    // 1. Get receptionist profile to find the associated doctorId
+    final profile = await _apiService.getReceptionistProfile(userId);
+    final doctorId = profile.doctorId;
+    
+    if (doctorId == null || doctorId.isEmpty) {
+      return [];
+    }
+
+    // 2. Fetch appointments for this specific doctor
+    final doctorAppointments = await _apiService.getDoctorAppointments(doctorId);
+
+    // 3. Convert DoctorAppointmentModel to AppointmentModel and filter by pending status
+    return doctorAppointments
+        .where((da) => da.status.toLowerCase() == 'pending')
+        .map((da) => AppointmentModel(
+              appointmentId: da.appointmentId,
+              patientId: da.patientId,
+              patientName: da.patientName,
+              doctorId: da.doctorId,
+              doctorName: profile.doctorName ?? "Doctor",
+              appointmentDate: da.appointmentDate,
+              dayOfWeek: da.dayOfWeek,
+              startTime: da.startTime,
+              endTime: da.endTime,
+              queueNumber: da.queueNumber,
+              status: da.status,
+            ))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      // الـ AppBar اتشال من هنا خالص عشان ميحصلش تكرار مع الـ Dashboard
       body: Stack(
         children: [
           FutureBuilder<List<AppointmentModel>>(
-            future: _apiService.getAllAppointments(),
+            future: _fetchPendingAppointments(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: primaryColor));
@@ -68,9 +100,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                 ));
               }
 
-              final appointments = (snapshot.data ?? [])
-                  .where((a) => a.status.toLowerCase() == 'pending')
-                  .toList();
+              final appointments = snapshot.data ?? [];
 
               // Sort appointments by date and time
               appointments.sort((a, b) {

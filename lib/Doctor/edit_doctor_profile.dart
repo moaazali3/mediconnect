@@ -7,6 +7,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
+import 'package:mediconnect/constants/api_constants.dart';
 
 class EditDoctorProfile extends StatefulWidget {
   final String? doctorId;
@@ -201,8 +202,6 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
 
   @override
   Widget build(BuildContext context) {
-    const String imageBaseUrl = "https://wisdom-frisk-exciting.ngrok-free.dev";
-    
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
@@ -232,7 +231,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                           radius: 60,
                           backgroundColor: primaryColor.withOpacity(0.1),
                           backgroundImage: currentImageUrl != null && currentImageUrl!.isNotEmpty
-                              ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "$imageBaseUrl$currentImageUrl")
+                              ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "${ApiConstants.serverUrl}$currentImageUrl")
                               : null,
                           child: currentImageUrl == null || currentImageUrl!.isEmpty
                               ? const Icon(Icons.person, size: 60, color: primaryColor)
