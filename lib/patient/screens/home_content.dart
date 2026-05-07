@@ -79,7 +79,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Future<void> _refreshData() async {
     _fetchSpecializations();
-    _fetchDoctors(); 
+    _fetchDoctors();
   }
 
   Future<void> _fetchSpecializations() async {
@@ -110,12 +110,14 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     var filteredDoctors = List<DoctorModel>.from(_doctors);
 
+    // 1. فلترة بالتخصص
     if (selectedSpecialization != "All") {
       filteredDoctors = filteredDoctors.where((doc) {
         return doc.specializationName.trim().toLowerCase() == selectedSpecialization.trim().toLowerCase();
       }).toList();
     }
 
+    // 2. فلترة بالبحث
     if (searchQuery.isNotEmpty) {
       filteredDoctors = filteredDoctors.where((doc) {
         final fullName = "${doc.firstName} ${doc.lastName}".toLowerCase();
@@ -123,20 +125,10 @@ class _HomeContentState extends State<HomeContent> {
       }).toList();
     }
 
+    // 3. الترتيب (حسب سنين الخبرة من الأكبر للأصغر)
     filteredDoctors.sort((a, b) {
-      String nameA = "${a.firstName} ${a.lastName}".toLowerCase();
-      String nameB = "${b.firstName} ${b.lastName}".toLowerCase();
-
-      if (nameA.startsWith("dr")) {
-        nameA = nameA.substring(2).trim();
-        if (nameA.startsWith(".")) nameA = nameA.substring(1).trim();
-      }
-      if (nameB.startsWith("dr")) {
-        nameB = nameB.substring(2).trim();
-        if (nameB.startsWith(".")) nameB = nameB.substring(1).trim();
-      }
-
-      return nameA.compareTo(nameB);
+      // بنستخدم b.compareTo(a) عشان نرتب تنازلياً (من الكبير للصغير)
+      return b.experienceYears.compareTo(a.experienceYears);
     });
 
     return RefreshIndicator(

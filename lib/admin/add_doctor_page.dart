@@ -34,12 +34,12 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
   final _experienceController = TextEditingController();
   final _feeController = TextEditingController();
   final _dobController = TextEditingController();
-  final _specializationController = TextEditingController(); // كونترولر لعرض اسم التخصص
+  final _specializationController = TextEditingController();
 
   String? _gender;
   int? _selectedSpecializationId;
   List<SpecializationModel> _specializations = [];
-  bool _isLoadingSpecializations = true; // لمعرفة حالة تحميل التخصصات
+  bool _isLoadingSpecializations = true;
 
   bool _isPasswordHidden = true;
   bool _isConfirmPasswordHidden = true;
@@ -67,7 +67,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     super.dispose();
   }
 
-  // --- جلب التخصصات من الباك إند (بدون تعليق) ---
   Future<void> _loadSpecializations() async {
     try {
       final specs = await _apiService.getAllSpecializations();
@@ -87,7 +86,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
     }
   }
 
-  // --- شاشة البحث عن التخصص ---
   void _showSpecializationSearchSheet() {
     List<SpecializationModel> tempFiltered = List.from(_specializations);
 
@@ -205,6 +203,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
   // --- التنقل بين الخطوات ---
   void _nextStep() {
+    // التأكد التام من صحة بيانات الصفحة الحالية قبل الانتقال للتالية
     if (_formKeys[_currentStep - 1].currentState!.validate()) {
       setState(() => _currentStep++);
     }
@@ -218,6 +217,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
   // --- رفع الداتا (Submit) ---
   Future<void> _submit() async {
+    // مراجعة أخيرة للبيانات قبل الرفع
     if (!_formKeys[_currentStep - 1].currentState!.validate()) return;
 
     if (_selectedSpecializationId == null) {
@@ -255,7 +255,7 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
 
       if (doctorId != null) {
         if (!mounted) return;
-        Navigator.pop(context);
+        Navigator.pop(context); // غلق اللودينج
         _showSuccessDialog();
       } else {
         if (!mounted) return;
@@ -266,9 +266,22 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (Navigator.canPop(context)) Navigator.pop(context); // غلق اللودينج
+
+      String errorMessage = e.toString();
+
+      // التعديل السحري: لقط إيرور الإيميل المستخدم من قبل وتحويله لرسالة مفهومة
+      if (errorMessage.toLowerCase().contains("already") ||
+          errorMessage.toLowerCase().contains("taken") ||
+          errorMessage.toLowerCase().contains("exists") ||
+          errorMessage.toLowerCase().contains("duplicate")) {
+        errorMessage = "This email is already in use. Please use a different email.";
+      } else {
+        errorMessage = "Error: $e";
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
       );
     }
   }
@@ -285,8 +298,8 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
           Center(
             child: ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // قفل الـ Dialog
+                Navigator.of(context).pop(); // قفل الشاشة والرجوع للخلف
               },
               child: const Text("Continue"),
             ),
@@ -586,7 +599,6 @@ class _AddDoctorPageState extends State<AddDoctorPage> {
             ],
           ),
           const SizedBox(height: 15),
-          // التعديل هنا: شيلنا الـ maxLines خالص عشان يبقى زي الباقي
           _buildTextField(
             controller: _addressController,
             label: "Address",
