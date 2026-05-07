@@ -37,9 +37,22 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
     setState(() => _isLoading = true);
     try {
       final patients = await _apiService.getAllPatients();
+      
+      // حذف التكرار بناءً على الاسم الكامل
+      final Set<String> seenNames = {};
+      final List<PatientProfileModel> uniquePatients = [];
+      
+      for (var p in patients) {
+        final fullName = "${p.firstName} ${p.lastName}".toLowerCase().trim();
+        if (!seenNames.contains(fullName)) {
+          seenNames.add(fullName);
+          uniquePatients.add(p);
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _patients = patients;
+          _patients = uniquePatients;
           _applySearch();
           _isLoading = false;
         });
