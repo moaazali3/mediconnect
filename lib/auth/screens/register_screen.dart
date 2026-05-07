@@ -19,7 +19,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int currentStep = 0;
   bool registerPasswordObscured = true;
   bool confirmPasswordObscured = true;
-  bool _isJustRegistered = false; 
+  bool _isJustRegistered = false;
 
   // Use separate keys for each step to avoid validation state bleeding between steps
   final List<GlobalKey<FormState>> _formKeys = [
@@ -102,8 +102,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String? _validateName(String? value, String label) {
-    if (value == null || value.isEmpty) return "$label is required";
-    if (value.length < 3) return "$label must be at least 3 characters";
+    if (value == null || value.trim().isEmpty) return "$label is required";
+    if (value.trim().length < 3) return "$label must be at least 3 characters";
     return null;
   }
 
@@ -129,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   String? _validateAddress(String? value) {
-    if (value == null || value.isEmpty) return "Address is required";
+    if (value == null || value.trim().isEmpty) return "Address is required";
     return null;
   }
 
@@ -143,18 +143,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       DateTime dob = DateFormat('yyyy-MM-dd').parse(dobController.text);
       final response = await ApiService().registerUser(
-        firstName: fNameController.text,
-        lastName: lNameController.text,
-        email: emailController.text,
+        firstName: fNameController.text.trim(),
+        lastName: lNameController.text.trim(),
+        email: emailController.text.trim(),
         password: passController.text,
-        phone: phoneController.text,
+        phone: phoneController.text.trim(),
         gender: selectedGender!,
         height: double.tryParse(heightController.text) ?? 0.0,
         weight: double.tryParse(weightController.text) ?? 0.0,
         dateOfBirth: dob,
         bloodType: selectedBloodType!,
-        address: addressController.text,
-        emergencyContact: emergencyController.text,
+        address: addressController.text.trim(),
+        emergencyContact: emergencyController.text.trim(),
       );
 
       if (!mounted) return;
@@ -203,7 +203,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
                     const SizedBox(height: 10),
-                    Text("We have sent a 6-digit verification code to\n$email",
+                    // التعديل هنا: زودنا رسالة مجلد الـ Spam
+                    Text("We have sent a 6-digit verification code to\n$email\n\n(Please check your inbox and spam folder)",
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5)),
                     const SizedBox(height: 30),
@@ -404,8 +405,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       SizedBox(height: isSmallScreen ? 15 : 20),
                                       _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
                                       SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: phoneController, label: "Phone", icon: Icons.phone_android, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Phone")),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
+                                      // التعديل هنا: ضفنا العداد والـ InputFormatters للتليفون
+                                      _buildTextField(
+                                          controller: phoneController,
+                                          label: "Phone",
+                                          icon: Icons.phone_android,
+                                          keyboardType: TextInputType.phone,
+                                          maxLength: 11,
+                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                          validator: (v) => _validatePhone(v, "Phone")
+                                      ),
+                                      SizedBox(height: isSmallScreen ? 5 : 10), // صغرنا المسافة عشان العداد
                                       isVeryNarrow
                                           ? Column(children: [
                                         _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
@@ -428,7 +438,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       SizedBox(height: isSmallScreen ? 15 : 20),
                                       _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number, validator: _validateHeight),
                                       SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: emergencyController, label: "Emergency Phone", icon: Icons.contact_emergency, keyboardType: TextInputType.phone, validator: (v) => _validatePhone(v, "Emergency Phone")),
+                                      // التعديل هنا: ضفنا العداد والـ InputFormatters لرقم الطوارئ
+                                      _buildTextField(
+                                          controller: emergencyController,
+                                          label: "Emergency Phone",
+                                          icon: Icons.contact_emergency,
+                                          keyboardType: TextInputType.phone,
+                                          maxLength: 11,
+                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                          validator: (v) => _validatePhone(v, "Emergency Phone")
+                                      ),
                                     ],
 
                                     SizedBox(height: isSmallScreen ? 20 : 35),
@@ -527,6 +546,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // التعديل هنا: ضفنا البارامترات الجديدة (maxLength و inputFormatters) عشان العداد
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -538,6 +558,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     bool readOnly = false,
     VoidCallback? onTap,
     String? Function(String?)? validator,
+    int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
@@ -545,10 +567,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       keyboardType: keyboardType,
       readOnly: readOnly,
       onTap: onTap,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        counterText: maxLength == null ? "" : null, // لو مفيش طول محدد متظهرش العداد
         errorStyle: const TextStyle(fontSize: 11, height: 1.2),
         errorMaxLines: 5,
         prefixIcon: Container(
@@ -653,7 +678,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
+                      (route) => false,
                 );
               },
               style: ElevatedButton.styleFrom(

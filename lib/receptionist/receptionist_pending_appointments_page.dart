@@ -3,7 +3,6 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mediconnect/auth/screens/login_screen.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -51,34 +50,8 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
     final userId = prefs.getString('user_id');
     if (userId == null) return [];
 
-    // 1. Get receptionist profile to find the associated doctorId
-    final profile = await _apiService.getReceptionistProfile(userId);
-    final doctorId = profile.doctorId;
-    
-    if (doctorId == null || doctorId.isEmpty) {
-      return [];
-    }
-
-    // 2. Fetch appointments for this specific doctor
-    final doctorAppointments = await _apiService.getDoctorAppointments(doctorId);
-
-    // 3. Convert DoctorAppointmentModel to AppointmentModel and filter by pending status
-    return doctorAppointments
-        .where((da) => da.status.toLowerCase() == 'pending')
-        .map((da) => AppointmentModel(
-              appointmentId: da.appointmentId,
-              patientId: da.patientId,
-              patientName: da.patientName,
-              doctorId: da.doctorId,
-              doctorName: profile.doctorName ?? "Doctor",
-              appointmentDate: da.appointmentDate,
-              dayOfWeek: da.dayOfWeek,
-              startTime: da.startTime,
-              endTime: da.endTime,
-              queueNumber: da.queueNumber,
-              status: da.status,
-            ))
-        .toList();
+    final appointments = await _apiService.getReceptionistAppointments(userId);
+    return appointments.where((a) => a.status.toLowerCase() == 'pending').toList();
   }
 
   @override
