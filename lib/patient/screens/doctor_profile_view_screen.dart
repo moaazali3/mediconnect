@@ -19,21 +19,6 @@ class DoctorProfileViewScreen extends StatefulWidget {
 class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   final ApiService _apiService = ApiService();
 
-  int _calculateAge(String dobString) {
-    if (dobString.isEmpty) return 0;
-    try {
-      DateTime dob = DateTime.parse(dobString);
-      DateTime today = DateTime.now();
-      int age = today.year - dob.year;
-      if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
-        age--;
-      }
-      return age;
-    } catch (e) {
-      return 0;
-    }
-  }
-
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri url = Uri.parse('tel:$phoneNumber');
     if (await canLaunchUrl(url)) {
@@ -78,11 +63,9 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
 
         final doctor = snapshot.data!['doctor'] as DoctorFullModel;
         final receptionist = snapshot.data!['receptionist'] as ReceptionistProfileModel?;
-        
-        // Print the profile picture URL for debugging
+
         debugPrint("Doctor Profile URL: ${doctor.profilePictureUrl}");
 
-        final age = _calculateAge(doctor.dateOfBirth);
         final String displayImage = (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty)
             ? doctor.profilePictureUrl!
             : "https://via.placeholder.com/150";
@@ -106,7 +89,8 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
               children: [
                 _buildIdentityCard(doctor, displayImage),
                 const SizedBox(height: 25),
-                _buildStatsRow(doctor, age),
+                // شلنا العُمر (age) من الدالة دي
+                _buildStatsRow(doctor),
                 const SizedBox(height: 30),
                 if (receptionist != null) ...[
                   _buildSectionTitle("Contact Receptionist"),
@@ -173,12 +157,12 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     );
   }
 
-  Widget _buildStatsRow(DoctorFullModel doctor, int age) {
+  // التعديل هنا: شلنا كارت العمر وسبنا الخبرة والسعر
+  Widget _buildStatsRow(DoctorFullModel doctor) {
     return Row(
       children: [
         _buildStatItem("Experience", "${doctor.experienceYears.toStringAsFixed(0)} Yrs", Icons.work, Colors.blue),
         _buildStatItem("Fee", "${doctor.consultationFee.toStringAsFixed(0)} EGP", Icons.payments, Colors.green),
-        _buildStatItem("Age", age > 0 ? "$age Yrs" : "N/A", Icons.cake, Colors.orange),
       ],
     );
   }
