@@ -139,11 +139,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             const SizedBox(height: 30),
             _buildSectionHeader("System Summary"),
             const SizedBox(height: 15),
-            _buildQuickStats(),
+            _buildTopDoctorPerformanceCard(),
             const SizedBox(height: 20),
             _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
             const SizedBox(height: 20),
-            _buildTopDoctorPerformanceCard(),
+            _buildQuickStats(),
             const SizedBox(height: 30),
           ],
         ),
@@ -197,13 +197,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     child: const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 24),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    "Top Performing Doctor",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                  const Expanded(
+                    child: Text(
+                      "Top Performing Doctor",
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ],
@@ -219,6 +222,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       children: [
                         Text(
                           _topDoctorName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 22,
@@ -234,6 +239,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                           ),
                           child: Text(
                             _topDoctorSpec ?? "General",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
@@ -289,7 +296,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             children: [
               Icon(icon, color: primaryColor, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))),
+              Expanded(
+                child: Text(
+                  title, 
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 15),
@@ -298,8 +311,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: Text(entry.key, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500))),
-                Text("${entry.value} Bookings", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                Expanded(
+                  child: Text(
+                    entry.key, 
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "${entry.value} Bookings", 
+                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)
+                ),
               ],
             ),
           )),
@@ -320,13 +343,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildStatsGrid(AdminDashboardModel stats) {
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage())))),
-        const SizedBox(width: 15),
-        Expanded(child: _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage())))),
-      ],
-    );
+    final items = [
+      _buildStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()))),
+      _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
+      _buildStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
+    ];
+    return _buildDynamicGrid(items, spacing: 15, aspectRatio: 1.2);
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
@@ -334,15 +356,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 15),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(label, style: const TextStyle(fontSize: 13, color: Colors.grey)),
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 10),
+            FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
@@ -350,19 +373,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildQuickStats() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
-      children: [
-        _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
-        _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
-        _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
-      ],
-    );
+    final items = [
+      _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
+      _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
+      _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
+    ];
+    return _buildDynamicGrid(items, spacing: 12, aspectRatio: 1.2);
   }
 
   Widget _buildSmallStat(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
@@ -370,7 +386,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -387,30 +403,55 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.w500),
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDynamicGrid(List<Widget> items, {required double spacing, required double aspectRatio}) {
+    List<Widget> rows = [];
+    for (int i = 0; i < items.length; i += 2) {
+      if (i + 1 < items.length) {
+        rows.add(
+          Row(
+            children: [
+              Expanded(child: AspectRatio(aspectRatio: aspectRatio, child: items[i])),
+              SizedBox(width: spacing),
+              Expanded(child: AspectRatio(aspectRatio: aspectRatio, child: items[i + 1])),
+            ],
+          ),
+        );
+      } else {
+        // Last one full width
+        rows.add(AspectRatio(aspectRatio: aspectRatio * 2.2, child: items[i]));
+      }
+      rows.add(SizedBox(height: spacing));
+    }
+    if (rows.isNotEmpty) rows.removeLast();
+    return Column(children: rows);
   }
 
   Widget _buildErrorState() {
