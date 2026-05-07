@@ -6,12 +6,19 @@ import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/patient/screens/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
   final bool readOnly; 
+  final bool showMedicalHistory;
 
-  const ProfileScreen({super.key, this.userId, this.readOnly = false});
+  const ProfileScreen({
+    super.key, 
+    this.userId, 
+    this.readOnly = false,
+    this.showMedicalHistory = true,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -20,11 +27,14 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _apiService = ApiService();
   late Future<PatientProfileModel> _profileFuture;
+  String? _userRole;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadUserData();
   }
 
   void _loadProfile() {
@@ -32,7 +42,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileFuture = _apiService.getPatientProfile(targetId);
   }
 
-  Future<void> _launchWhatsApp() async {
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userRole = prefs.getString('user_role');
+      _currentUserId = prefs.getString('user_id');
+    });
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri url = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber) async {
+    // Remove non-digit characters
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    
+    // Add Egypt country code (2) if it starts with 01 and doesn't have 20 already
+    if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
+      cleanNumber = '2$cleanNumber';
+    } else if (cleanNumber.startsWith('1') && cleanNumber.length == 10) {
+      cleanNumber = '20$cleanNumber';
+    }
+    
+    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not launch WhatsApp")),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchWhatsAppSupport() async {
     const String phoneNumber = "201000000000";
     const String message = "Hello MediConnect, I need help with my account.";
     final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
@@ -95,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           final profile = snapshot.data!;
           final String targetId = widget.userId ?? "1"; 
+          final bool isMyProfile = (widget.userId == null || widget.userId == _currentUserId);
 
           return Column(
             children: [
@@ -108,31 +157,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       if (widget.readOnly) _buildReadOnlySimpleHeader(profile),
                       
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => PatientHistoryScreen(userId: targetId)),
-                            );
-                          },
-                          icon: const Icon(Icons.history_rounded, color: primaryColor),
-                          label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: primaryColor, width: 1.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      if (widget.showMedicalHistory)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => PatientHistoryScreen(userId: targetId)),
+                              );
+                            },
+                            icon: const Icon(Icons.history_rounded, color: primaryColor),
+                            label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: primaryColor, width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
+                      if (widget.showMedicalHistory) const SizedBox(height: 30),
 
                       _buildSectionTitle("Personal Information"),
                       _buildProfileCard([
                         _buildInfoRow(Icons.email_outlined, "Email", profile.email),
                         _buildDivider(),
-                        _buildInfoRow(Icons.phone_android_rounded, "Phone", profile.phoneNumber),
+                        _buildInfoRow(
+                          Icons.phone_android_rounded, 
+                          "Phone", 
+                          profile.phoneNumber,
+                          trailing: (!isMyProfile && _userRole?.toLowerCase() == "receptionist") ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.phone_rounded, color: Colors.green, size: 20),
+                                onPressed: () => _makePhoneCall(profile.phoneNumber),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.chat_rounded, color: Color(0xFF25D366), size: 20),
+                                onPressed: () => _openWhatsApp(profile.phoneNumber),
+                              ),
+                            ],
+                          ) : null,
+                        ),
                         _buildDivider(),
                         _buildInfoRow(Icons.location_on_outlined, "Address", profile.address ?? "No Address"),
                       ]),
@@ -341,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: double.infinity,
           height: 55,
           child: ElevatedButton.icon(
-            onPressed: _launchWhatsApp,
+            onPressed: _launchWhatsAppSupport,
             icon: const Icon(Icons.chat_rounded, color: Colors.white),
             label: const Text("Contact Support (WhatsApp)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
             style: ElevatedButton.styleFrom(
@@ -382,7 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value, {Widget? trailing}) {
     return Padding(
       padding: const EdgeInsets.all(15),
       child: Row(
@@ -406,6 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
+          if (trailing != null) trailing,
         ],
       ),
     );
