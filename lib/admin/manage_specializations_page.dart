@@ -45,82 +45,103 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
     final nameController = TextEditingController(text: spec?.name ?? "");
     final descriptionController = TextEditingController(text: spec?.description ?? "");
     final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          spec == null ? "Add Specialization" : "Edit Specialization",
-          style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: "Name",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.category_rounded),
-                ),
-                validator: (val) => val == null || val.isEmpty ? "Required" : null,
-              ),
-              const SizedBox(height: 15),
-              TextFormField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: "Description",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.description_rounded),
-                ),
-                maxLines: 2,
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            spec == null ? "Add Specialization" : "Edit Specialization",
+            style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: "Name",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.category_rounded),
+                  ),
+                  validator: (val) => val == null || val.isEmpty ? "Required" : null,
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(
+                    labelText: "Description",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: const Icon(Icons.description_rounded),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
             ),
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final createModel = CreateSpecializationModel(
-                  name: nameController.text,
-                  description: descriptionController.text,
-                );
-                
-                bool success;
-                if (spec == null) {
-                  success = await _apiService.createSpecialization(createModel);
-                } else {
-                  success = await _apiService.updateSpecialization(spec.id, createModel);
-                }
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: isSaving ? null : () async {
+                if (formKey.currentState!.validate()) {
+                  setDialogState(() => isSaving = true);
+                  
+                  final createModel = CreateSpecializationModel(
+                    name: nameController.text,
+                    description: descriptionController.text,
+                  );
+                  
+                  try {
+                    bool success;
+                    if (spec == null) {
+                      success = await _apiService.createSpecialization(createModel);
+                    } else {
+                      success = await _apiService.updateSpecialization(spec.id, createModel);
+                    }
 
-                if (mounted) {
-                  Navigator.pop(context);
-                  if (success) {
-                    _fetchSpecializations();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Action failed")),
-                    );
+                    if (mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(spec == null ? "Created successfully" : "Updated successfully"),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        _fetchSpecializations();
+                      }
+                    }
+                  } catch (e) {
+                    setDialogState(() => isSaving = false);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Error: $e"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 }
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
+              },
+              child: isSaving 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text("Save"),
+            ),
+          ],
+        ),
       ),
     );
   }

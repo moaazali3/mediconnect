@@ -39,11 +39,11 @@ mixin AdminApi {
     }
   }
 
-  Future<List<AppointmentModel>> getTodayAppointments() async {
+  Future<List<AppointmentModel>> getTodayAppointments({int pageNumber = 1}) async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/today-appointments'),
+        Uri.parse('${parent.baseUrl}/Admin/today-appointments?pageNumber=$pageNumber'),
         headers: parent._headers,
       );
       if (response.statusCode == 200) {

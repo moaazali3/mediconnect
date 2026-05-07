@@ -249,9 +249,21 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-      return response.statusCode == 200 || response.statusCode == 204;
+      
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to update specialization";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorBody['title'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
     } catch (e) {
-      return false;
+      throw e.toString();
     }
   }
 
@@ -263,9 +275,21 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        String errorMessage = "Failed to create specialization";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorBody['title'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
     } catch (e) {
-      return false;
+      throw e.toString();
     }
   }
 
