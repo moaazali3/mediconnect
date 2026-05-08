@@ -174,7 +174,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                         builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
                                       );
 
-                                      var response = await ApiService().login(emailController.text, passwordController.text);
+                                      var response = await ApiService().login(
+                                        emailController.text, 
+                                        passwordController.text,
+                                        rememberMe: rememberMe,
+                                      );
 
                                       if (!mounted) return;
                                       Navigator.pop(context); 
