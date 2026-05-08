@@ -30,7 +30,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   State<CommonAppBar> createState() => _CommonAppBarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(80); // Increased height slightly
+  Size get preferredSize => const Size.fromHeight(80);
 }
 
 class _CommonAppBarState extends State<CommonAppBar> {
@@ -140,16 +140,20 @@ class _CommonAppBarState extends State<CommonAppBar> {
                       ),
                     ),
                     if (displaySubtitle.isNotEmpty)
-                      Text(
-                        displaySubtitle,
-                        // التعديل هنا: خليناه ياخد لحد سطرين ويلف الكلام براحته
-                        maxLines: 2,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                    // التعديل السحري هنا: FittedBox هتصغر الخط بدل ما تنزل سطر وتبوظ الارتفاع
+                      SizedBox(
+                        width: double.infinity,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            displaySubtitle,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                   ],

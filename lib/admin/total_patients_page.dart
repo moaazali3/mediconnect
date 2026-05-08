@@ -49,6 +49,13 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
         }
       }
 
+      // Sort unique patients alphabetically by first name then last name
+      uniquePatients.sort((a, b) {
+        final nameA = "${a.firstName} ${a.lastName}".toLowerCase();
+        final nameB = "${b.firstName} ${b.lastName}".toLowerCase();
+        return nameA.compareTo(nameB);
+      });
+
       if (mounted) {
         setState(() {
           _patients = uniquePatients;
@@ -229,15 +236,6 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Color(0xFF1E293B),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Patient ID: ${patient.id.length > 8 ? patient.id.substring(0, 8).toUpperCase() : patient.id.toUpperCase()}",
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

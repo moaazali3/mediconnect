@@ -112,6 +112,9 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         }
       }));
 
+      // Sort by experience years (Descending)
+      doctorsWithSchedules.sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
+
       if (mounted) {
         setState(() {
           _todayDoctors = doctorsWithSchedules;

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class EditReceptionistManagementPage extends StatefulWidget {
   final String receptionistId;
@@ -17,13 +16,17 @@ class EditReceptionistManagementPage extends StatefulWidget {
 class _EditReceptionistManagementPageState extends State<EditReceptionistManagementPage> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
-  
+
+  // الخطوة الحالية
+  int _currentStep = 1;
+
   final _fNameController = TextEditingController();
   final _lNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
+  final _doctorController = TextEditingController();
 
   String _gender = 'Male';
   String? _selectedDoctorId;
@@ -45,6 +48,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     _dobController.dispose();
     _emailController.dispose();
     _addressController.dispose();
+    _doctorController.dispose();
     super.dispose();
   }
 
@@ -66,19 +70,18 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
       _dobController.text = profile.dateOfBirth?.split('T')[0] ?? '';
       _addressController.text = profile.address ?? '';
       _gender = profile.gender ?? 'Male';
-      
-      // منطق اختيار الدكتور المبدئي
+
       String? foundId = profile.doctorId?.toString();
+      String doctorNameDisplay = "Not Assigned";
+
       if (foundId != null && (foundId.isEmpty || foundId == "0")) foundId = null;
 
-      // التأكد من أن الـ ID موجود في القائمة
       bool idInList = _doctors.any((d) => (d['doctorId']?.toString() ?? d['id']?.toString()) == foundId);
 
-      // إذا لم نجد الـ ID، نبحث بالاسم (مثل doma doma)
       if (!idInList && profile.doctorName != null && profile.doctorName!.isNotEmpty) {
         final String pName = profile.doctorName!.toLowerCase().trim();
         final match = _doctors.firstWhere(
-          (d) {
+              (d) {
             final String dName = (d['doctorName'] ?? d['name'])?.toString().toLowerCase().trim() ?? "";
             return dName == pName || dName == "dr. $pName" || pName == "dr. $dName";
           },
@@ -86,11 +89,18 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
         );
         if (match.isNotEmpty) {
           foundId = (match['doctorId'] ?? match['id'])?.toString();
+          doctorNameDisplay = "Dr. ${(match['doctorName'] ?? match['name'])}";
         }
+      } else if (idInList) {
+        final match = _doctors.firstWhere((d) => (d['doctorId']?.toString() ?? d['id']?.toString()) == foundId);
+        doctorNameDisplay = "Dr. ${(match['doctorName'] ?? match['name'])}";
       }
 
       setState(() {
         _selectedDoctorId = foundId;
+        if (foundId != null) {
+          _doctorController.text = doctorNameDisplay;
+        }
         _isLoading = false;
       });
     } catch (e) {
@@ -99,9 +109,92 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     }
   }
 
+  void _showDoctorSearchSheet() {
+    List<Map<String, dynamic>> tempFiltered = List.from(_doctors);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text("Select Assigned Doctor", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                  const SizedBox(height: 15),
+                  TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: "Search doctor name...",
+                      prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    ),
+                    onChanged: (value) {
+                      setModalState(() {
+                        tempFiltered = _doctors.where((doc) {
+                          final name = (doc['doctorName'] ?? doc['name'])?.toString().toLowerCase() ?? '';
+                          return name.contains(value.toLowerCase());
+                        }).toList();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  Expanded(
+                    child: tempFiltered.isEmpty
+                        ? const Center(child: Text("No doctors found"))
+                        : ListView.separated(
+                      itemCount: tempFiltered.length,
+                      separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                      itemBuilder: (context, index) {
+                        final doc = tempFiltered[index];
+                        final id = (doc['doctorId'] ?? doc['id'])?.toString();
+                        final name = (doc['doctorName'] ?? doc['name'])?.toString() ?? '';
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: primaryColor.withValues(alpha: 0.1),
+                            child: const Icon(Icons.medical_services, color: primaryColor),
+                          ),
+                          title: Text("Dr. $name", style: const TextStyle(fontWeight: FontWeight.w600)),
+                          onTap: () {
+                            setState(() {
+                              _selectedDoctorId = id;
+                              _doctorController.text = "Dr. $name";
+                            });
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _updateReceptionist() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isSaving = true);
     try {
       final updatedProfile = ReceptionistProfileModel(
@@ -117,7 +210,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
       );
 
       final success = await _apiService.updateReceptionistProfile(widget.receptionistId, updatedProfile);
-      
+
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Receptionist profile updated!"), backgroundColor: Colors.green));
@@ -133,20 +226,33 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     }
   }
 
+  void _nextStep() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _currentStep = 2);
+    }
+  }
+
+  void _previousStep() {
+    setState(() => _currentStep = 1);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // حساب القيمة الحالية للـ Dropdown مع التحقق من وجودها في القائمة
-    String? currentDropdownValue;
-    if (_selectedDoctorId != null) {
-      bool exists = _doctors.any((d) => (d['doctorId']?.toString() ?? d['id']?.toString()) == _selectedDoctorId);
-      if (exists) currentDropdownValue = _selectedDoctorId;
-    }
-
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const CommonAppBar(
-        title: "Edit Receptionist",
-        showBackButton: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () {
+            if (_currentStep == 2) {
+              _previousStep();
+            } else {
+              Navigator.pop(context, true);
+            }
+          },
+        ),
       ),
       body: Stack(
         children: [
@@ -162,129 +268,43 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
               ),
             ),
           ),
-          
-          _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 60.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.person_outline_rounded, size: 50, color: primaryColor),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text("Update Receptionist",
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
-                              const SizedBox(height: 35),
+          Container(color: Colors.black.withValues(alpha: 0.05)),
 
-                              _buildSectionTitle("PERSONAL INFORMATION"),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(child: _buildTextField(controller: _fNameController, label: "First Name", icon: Icons.person_outline)),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: _buildTextField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline)),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              _buildTextField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-                              const SizedBox(height: 15),
-                              _buildTextField(controller: _emailController, label: "Email", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildDropdownField<String>(
-                                      label: "Gender",
-                                      icon: Icons.wc_rounded,
-                                      value: _gender,
-                                      items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                                      onChanged: (val) => setState(() => _gender = val!),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _buildTextField(
-                                      controller: _dobController,
-                                      label: "Birth Date",
-                                      icon: Icons.calendar_month_rounded,
-                                      readOnly: true,
-                                      onTap: () async {
-                                        DateTime? picked = await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1995),
-                                          firstDate: DateTime(1950),
-                                          lastDate: DateTime.now(),
-                                        );
-                                        if (picked != null) {
-                                          setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              _buildTextField(controller: _addressController, label: "Address", icon: Icons.location_on_outlined),
+          _isLoading
+              ? const Center(child: CircularProgressIndicator(color: primaryColor))
+              : Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildStepHeader(),
+                            const SizedBox(height: 25),
 
-                              const SizedBox(height: 30),
-                              _buildSectionTitle("ASSIGNMENT"),
-                              const SizedBox(height: 15),
-                              _buildDropdownField<String>(
-                                label: "Assigned Doctor",
-                                icon: Icons.medical_services_outlined,
-                                value: currentDropdownValue,
-                                items: _doctors.map((d) {
-                                  final id = (d['doctorId'] ?? d['id'])?.toString();
-                                  final name = (d['doctorName'] ?? d['name'])?.toString() ?? '';
-                                  return DropdownMenuItem(
-                                    value: id, 
-                                    child: Text("Dr. $name", style: const TextStyle(fontSize: 13))
-                                  );
-                                }).toList(),
-                                onChanged: (val) => setState(() => _selectedDoctorId = val),
-                              ),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: _currentStep == 1
+                                  ? _buildStep1()
+                                  : _buildStep2(),
+                            ),
 
-                              const SizedBox(height: 40),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 55,
-                                child: ElevatedButton(
-                                  onPressed: _isSaving ? null : _updateReceptionist,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    elevation: 5,
-                                  ),
-                                  child: _isSaving 
-                                      ? const CircularProgressIndicator(color: Colors.white) 
-                                      : const Text("SAVE CHANGES", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-                            ],
-                          ),
+                            const SizedBox(height: 30),
+                            _buildNavigationButtons(),
+                          ],
                         ),
                       ),
                     ),
@@ -292,45 +312,195 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: primaryColor.withValues(alpha: 0.7),
-          letterSpacing: 1.2,
+  Widget _buildStepHeader() {
+    String title = _currentStep == 1 ? "Personal Info" : "Additional Info";
+    IconData icon = _currentStep == 1 ? Icons.person_outline : Icons.assignment_ind_outlined;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildStepIndicator(1),
+            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : Colors.grey.shade300),
+            _buildStepIndicator(2),
+          ],
         ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(icon, size: 40, color: primaryColor),
+        ),
+        const SizedBox(height: 10),
+        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor)),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator(int step) {
+    bool isCompleted = _currentStep > step;
+    bool isActive = _currentStep == step;
+
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : Colors.grey.shade300),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: isCompleted
+            ? const Icon(Icons.check, color: Colors.white, size: 16)
+            : Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold, fontSize: 14)),
       ),
     );
   }
 
-  Widget _buildTextField({
+  // --- الخطوة الأولى: 4 خانات أساسية ---
+  Widget _buildStep1() {
+    return Column(
+      key: const ValueKey(1),
+      children: [
+        _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+      ],
+    );
+  }
+
+  // --- الخطوة التانية: 4 خانات إضافية والتخصيص ---
+  Widget _buildStep2() {
+    return Column(
+      key: const ValueKey(2),
+      children: [
+        _buildDropdownField<String>(
+          label: "Gender",
+          icon: Icons.wc_rounded,
+          initialValue: _gender,
+          items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+          onChanged: (val) => setState(() => _gender = val!),
+        ),
+        const SizedBox(height: 15),
+        _buildLoginField(
+          controller: _dobController,
+          label: "Birth Date",
+          icon: Icons.calendar_month_rounded,
+          readOnly: true,
+          onTap: () async {
+            DateTime? picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1995),
+              firstDate: DateTime(1950),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+            }
+          },
+        ),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _addressController, label: "Address", icon: Icons.location_on_outlined),
+        const SizedBox(height: 15),
+        _buildLoginField(
+          controller: _doctorController,
+          label: "Assigned Doctor",
+          icon: Icons.medical_services_outlined,
+          readOnly: true,
+          onTap: _showDoctorSearchSheet,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Row(
+      children: [
+        if (_currentStep == 2)
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _previousStep,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                side: const BorderSide(color: primaryColor),
+              ),
+              child: const Text("BACK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        if (_currentStep == 2) const SizedBox(width: 15),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: _currentStep == 1 ? _nextStep : (_isSaving ? null : _updateReceptionist),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              elevation: 4,
+            ),
+            child: _isSaving
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(
+              _currentStep == 1 ? "NEXT STEP" : "SAVE CHANGES",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
     bool readOnly = false,
     VoidCallback? onTap,
     TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
       readOnly: readOnly,
       onTap: onTap,
       keyboardType: keyboardType,
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: primaryColor, size: 20),
+        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: primaryColor, size: 20),
+        ),
+        suffixIcon: (onTap != null)
+            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
+            : null,
         filled: true,
-        fillColor: Colors.white70,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        fillColor: Colors.white.withValues(alpha: 0.6),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
+        ),
       ),
       validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
     );
@@ -339,23 +509,37 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
   Widget _buildDropdownField<T>({
     required String label,
     required IconData icon,
-    required T? value,
+    required T? initialValue,
     required List<DropdownMenuItem<T>> items,
     required Function(T?) onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      isExpanded: true,
+      value: initialValue,
       items: items,
       onChanged: onChanged,
-      isExpanded: true,
+      style: const TextStyle(fontSize: 14, color: Colors.black),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: primaryColor, size: 20),
+        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: primaryColor, size: 20),
+        ),
         filled: true,
-        fillColor: Colors.white70,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        fillColor: Colors.white.withValues(alpha: 0.6),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
+        ),
       ),
-      validator: (v) => v == null ? "Required" : null,
     );
   }
 }
