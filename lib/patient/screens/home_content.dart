@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
-import 'package:mediconnect/patient/widgets/search_bar.dart';
-import 'package:mediconnect/patient/widgets/home_banner.dart';
 import 'package:mediconnect/patient/widgets/doctor_card.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/shimmer_loading.dart';
@@ -127,13 +125,14 @@ class _HomeContentState extends State<HomeContent> {
 
     // 3. الترتيب (حسب سنين الخبرة من الأكبر للأصغر)
     filteredDoctors.sort((a, b) {
-      // بنستخدم b.compareTo(a) عشان نرتب تنازلياً (من الكبير للصغير)
       return b.experienceYears.compareTo(a.experienceYears);
     });
 
     return RefreshIndicator(
       onRefresh: _refreshData,
+      color: primaryColor,
       child: ListView(
+        padding: EdgeInsets.zero, // عشان الهيدر يلمس حافة الشاشة من فوق
         children: [
           if (isOffline)
             Container(
@@ -141,35 +140,98 @@ class _HomeContentState extends State<HomeContent> {
               color: Colors.redAccent,
               child: const Center(child: Text("Offline Mode", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
             ),
-          const SizedBox(height: 20),
-          SearchBarWidget(onChanged: (value) => setState(() => searchQuery = value.toLowerCase())),
-          const SizedBox(height: 20),
-          const HomeBanner(),
-          const SizedBox(height: 20),
+
+          // --- التصميم الاحترافي الجديد للهيدر ---
+          _buildModernHeader(),
+
+          const SizedBox(height: 25),
 
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text("Specializations", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text("Specializations", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
 
           _isLoadingSpecs && _specializations.isEmpty
               ? _buildSpecsShimmer()
               : _buildSpecsList(),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 30),
 
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text("Top Doctors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text("Top Doctors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 15),
 
           _isLoadingDoctors && filteredDoctors.isEmpty && selectedSpecialization == "All" && searchQuery.isEmpty
               ? _buildDoctorsShimmer()
               : _buildDoctorsList(filteredDoctors),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  // --- دالة تصميم الهيدر الجديد بعد التعديل ---
+  Widget _buildModernHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [primaryColor, Color(0xFF1E3A8A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(35),
+          bottomRight: Radius.circular(35),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // شيلنا الإشعارات وغيرنا الكلمة لـ Doctor
+          const Text("Hello,", style: TextStyle(color: Colors.white70, fontSize: 16)),
+          const SizedBox(height: 5),
+          const Text("Find Your Doctor", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+
+          const SizedBox(height: 30),
+
+          // الـ Search Bar
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                )
+              ],
+            ),
+            child: TextField(
+              onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
+              style: const TextStyle(fontSize: 15),
+              decoration: InputDecoration(
+                hintText: "Search doctor by name...",
+                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                prefixIcon: const Icon(Icons.search_rounded, color: primaryColor, size: 22),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -178,10 +240,10 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildSpecsShimmer() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(children: List.generate(5, (index) => const Padding(
-        padding: EdgeInsets.only(right: 10),
-        child: ShimmerLoading.rectangular(height: 40, width: 80),
+        padding: EdgeInsets.only(right: 12),
+        child: ShimmerLoading.rectangular(height: 45, width: 90),
       ))),
     );
   }
@@ -189,7 +251,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildSpecsList() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
           _buildSpecItem("All"),
@@ -201,33 +263,53 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildDoctorsShimmer() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(children: List.generate(3, (index) => const DoctorCardShimmer())),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(children: List.generate(3, (index) => const Padding(
+        padding: EdgeInsets.only(bottom: 15),
+        child: DoctorCardShimmer(),
+      ))),
     );
   }
 
   Widget _buildDoctorsList(List<DoctorModel> docs) {
-    if (docs.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No doctors found")));
+    if (docs.isEmpty) {
+      return Center(
+          child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.search_off_rounded, size: 60, color: Colors.grey.shade300),
+                  const SizedBox(height: 10),
+                  const Text("No doctors found", style: TextStyle(color: Colors.grey)),
+                ],
+              )
+          )
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: docs.map((doc) => DoctorCard(
-          doctor: doc,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => BookingScreen(
-                  doctorId: doc.id,
-                  doctorName: "Dr. ${doc.firstName} ${doc.lastName}",
-                  specialty: doc.specializationName,
-                  fee: doc.consultationFee.toString(),
-                  doctorImageUrl: doc.profilePictureUrl,
-                  patientId: widget.userId,
+        children: docs.map((doc) => Padding(
+          padding: const EdgeInsets.only(bottom: 15),
+          child: DoctorCard(
+            doctor: doc,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BookingScreen(
+                    doctorId: doc.id,
+                    doctorName: "Dr. ${doc.firstName} ${doc.lastName}",
+                    specialty: doc.specializationName,
+                    fee: doc.consultationFee.toString(),
+                    doctorImageUrl: doc.profilePictureUrl,
+                    patientId: widget.userId,
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         )).toList(),
       ),
     );
@@ -241,15 +323,24 @@ class _HomeContentState extends State<HomeContent> {
           setState(() => selectedSpecialization = title);
         }
       },
-      child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200, width: 1.5),
+          boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
         ),
-        child: Text(title, style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade700, fontWeight: FontWeight.bold)),
+        child: Text(
+            title,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+                fontSize: 14
+            )
+        ),
       ),
     );
   }
