@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:flutter/material.dart';
+import 'package:mediconnect/widgets/password_strength_checker.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mediconnect/constants/colors.dart';
@@ -257,57 +259,76 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-          content: Form(
-            key: passKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
-                const SizedBox(height: 10),
-                _buildPopupField(
-                  controller: newPass,
-                  label: "New Password",
-                  icon: Icons.lock_reset_rounded,
-                  isObscured: isObscured,
-                  suffix: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
-                    onPressed: () => setModalState(() => isObscured = !isObscured),
-                  ),
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: context.cardBg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            content: Form(
+              key: passKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
+                    const SizedBox(height: 10),
+                    _buildPopupField(
+                      controller: newPass,
+                      label: "New Password",
+                      icon: Icons.lock_reset_rounded,
+                      isObscured: isObscured,
+                      onChanged: (val) => setModalState(() {}),
+                      suffix: IconButton(
+                        icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: context.subText, size: 20),
+                        onPressed: () => setModalState(() => isObscured = !isObscured),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    PasswordStrengthChecker(password: newPass.text),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-            ElevatedButton(
-              onPressed: () {
-                if (passKey.currentState!.validate()) {
-                  _changePassword(oldPass.text, newPass.text);
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-              child: const Text("Update", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              ElevatedButton(
+                onPressed: () {
+                  final password = newPass.text;
+                  final hasMinLength = password.length >= 8;
+                  final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+                  final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+                  final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+                  final hasSpecialChar = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
+                  if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please meet all password requirements"), backgroundColor: Colors.red));
+                    return;
+                  }
+                  if (passKey.currentState!.validate()) {
+                    _changePassword(oldPass.text, newPass.text);
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                child: const Text("Update", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix}) {
+  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix, Function(String)? onChanged}) {
     return TextFormField(
       controller: controller,
       obscureText: isObscured,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: primaryColor, size: 20),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: context.inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
       validator: (val) => (val == null || val.isEmpty) ? "Required" : null,
@@ -323,14 +344,14 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFF),
+        backgroundColor: context.scaffoldBg,
         appBar: AppBar(
-          title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-          backgroundColor: Colors.white,
+          title: Text("Edit Profile", style: TextStyle(color: context.onSurface, fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: context.cardBg,
           elevation: 0.5,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.onSurface, size: 18),
             onPressed: () => Navigator.pop(context, _isModified),
           ),
         ),
@@ -467,9 +488,9 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   Widget _buildEditCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(children: children),
     );
@@ -498,11 +519,16 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          labelStyle: TextStyle(color: context.subText, fontSize: 11),
           counterText: maxLength == null ? "" : null,
           errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
           isDense: true,
         ),
         validator: validator ?? (value) => (value == null || value.trim().isEmpty) ? "Required" : null,
@@ -526,10 +552,15 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          labelStyle: TextStyle(color: context.subText, fontSize: 11),
           errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
           isDense: true,
         ),
         validator: (val) => val == null ? "Required" : null,
@@ -537,5 +568,5 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     );
   }
 
-  Widget _buildDivider() => Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
+  Widget _buildDivider() => Divider(height: 1, indent: 45, endIndent: 15, color: context.dividerCol);
 }

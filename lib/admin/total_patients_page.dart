@@ -132,7 +132,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
         },
         decoration: InputDecoration(
           hintText: "Search patients by name...",
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          hintStyle: TextStyle(color: context.subText.withValues(alpha: 0.7), fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
               ? IconButton(
@@ -165,7 +165,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.person_search_rounded, size: 80, color: Colors.grey[300]),
+              Icon(Icons.person_search_rounded, size: 80, color: context.subText.withValues(alpha: 0.5)),
               const SizedBox(height: 15),
               Text(
                 _searchQuery.isEmpty ? "No patients found" : "No results for '$_searchQuery'", 
@@ -190,7 +190,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -203,13 +203,13 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.withOpacity(0.15), width: 0.8),
+                  border: Border.all(color: context.dividerCol, width: 0.8),
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.withOpacity(0.1), width: 0.8),
+                    border: Border.all(color: context.dividerCol, width: 0.8),
                   ),
                   child: CircleAvatar(
                     radius: 28,

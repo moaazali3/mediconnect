@@ -186,14 +186,14 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                       decoration: BoxDecoration(
                         color: context.cardBg,
                         borderRadius: BorderRadius.circular(15),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: Theme(
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           leading: Icon(
                             Icons.medical_services_rounded, 
-                            color: totalSpec > 0 ? primaryColor : Colors.grey
+                            color: totalSpec > 0 ? primaryColor : context.subText
                           ),
                           title: Text(specName, style: TextStyle(
                             fontWeight: FontWeight.bold, 
@@ -203,17 +203,17 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: totalSpec > 0 ? primaryColor : Colors.grey[300], 
+                              color: totalSpec > 0 ? primaryColor : context.filterChipBg, 
                               borderRadius: BorderRadius.circular(10)
                             ),
-                            child: Text("$totalSpec", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: Text("$totalSpec", style: TextStyle(color: totalSpec > 0 ? Colors.white : context.subText, fontWeight: FontWeight.bold)),
                           ),
                           children: doctors.isEmpty 
-                            ? [const Padding(padding: EdgeInsets.all(15), child: Text("No records for this department", style: TextStyle(color: Colors.grey, fontSize: 12)))]
+                            ? [Padding(padding: const EdgeInsets.all(15), child: Text("No records for this department", style: TextStyle(color: context.subText, fontSize: 12)))]
                             : doctors.entries.map<Widget>((doc) {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(color: context.isDark ? const Color(0xFF374151) : Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                                  decoration: BoxDecoration(color: context.inputFill, borderRadius: BorderRadius.circular(12)),
                                   child: ListTile(
                                     title: Text(doc.key, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                     subtitle: Text("${doc.value.length} Bookings", style: const TextStyle(fontSize: 12)),
@@ -254,12 +254,12 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text("${appts.length} Total Bookings", style: const TextStyle(color: Colors.grey)),
+                      Text(doctorName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.onSurface)),
+                      Text("${appts.length} Total Bookings", style: TextStyle(color: context.subText)),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                IconButton(icon: Icon(Icons.close, color: context.onSurface), onPressed: () => Navigator.pop(context)),
               ],
             ),
             const Divider(height: 30),
@@ -272,9 +272,9 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: context.inputFill,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: context.dividerCol),
                     ),
                     child: Row(
                       children: [
@@ -282,15 +282,15 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(appt.patientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                              Text(appt.patientName, style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
+                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime}", style: TextStyle(color: context.subText, fontSize: 12)),
                             ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(appt.status).withOpacity(0.1),
+                            color: _getStatusColor(appt.status).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

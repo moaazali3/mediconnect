@@ -87,7 +87,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
           actions: [
             TextButton(
               onPressed: isSaving ? null : () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+              child: Text("Cancel", style: TextStyle(color: context.subText)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -170,12 +170,12 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-                      const Center(
+                      Center(
                         child: Column(
                           children: [
-                            Icon(Icons.category_outlined, size: 60, color: Colors.grey),
-                            SizedBox(height: 10),
-                            Text("No specializations found", style: TextStyle(color: Colors.grey)),
+                            Icon(Icons.category_outlined, size: 60, color: context.subText.withValues(alpha: 0.5)),
+                            const SizedBox(height: 10),
+                            Text("No specializations found", style: TextStyle(color: context.subText)),
                           ],
                         ),
                       ),
@@ -195,7 +195,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -218,10 +218,10 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                                 children: [
                                   Text(
                                     spec.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 17,
-                                      color: Color(0xFF2D3142),
+                                      color: context.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -238,7 +238,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.edit_rounded, color: Colors.grey),
+                              icon: Icon(Icons.edit_rounded, color: context.subText),
                               onPressed: () => _showAddEditDialog(spec: spec),
                             ),
                           ],

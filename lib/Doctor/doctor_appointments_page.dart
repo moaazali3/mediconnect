@@ -198,12 +198,12 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                    Icon(Icons.person_outline, size: 16, color: context.subText),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         "Patient: ${appointment.patientName}",
-                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey.shade700, fontSize: 13),
+                        style: TextStyle(fontWeight: FontWeight.w600, color: context.subText, fontSize: 13),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -314,9 +314,9 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           decoration: InputDecoration(
             hintText: hint,
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: context.inputFill,
             contentPadding: const EdgeInsets.all(10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: primaryColor)),
           ),
         ),
@@ -355,7 +355,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                   if (_isLoading)
                     const Center(child: Padding(padding: EdgeInsets.all(40.0), child: CircularProgressIndicator(color: primaryColor)))
                   else if (apps.isEmpty)
-                    const Center(child: Padding(padding: EdgeInsets.all(40.0), child: Text("No records available.", style: TextStyle(color: Colors.grey))))
+                    Center(child: Padding(padding: const EdgeInsets.all(40.0), child: Text("No records available.", style: TextStyle(color: context.subText))))
                   else
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -486,12 +486,12 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             leading: CircleAvatar(
               radius: isSmall ? 20 : 24,
-              backgroundColor: primaryColor.withOpacity(0.1),
+              backgroundColor: primaryColor.withValues(alpha: 0.1),
               child: Text(app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?", style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
             ),
-            title: Text(app.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text("${app.appointmentDate} • ${app.startTime}", style: const TextStyle(fontSize: 11)),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+            title: Text(app.patientName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.onSurface), maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text("${app.appointmentDate} • ${app.startTime}", style: TextStyle(fontSize: 11, color: context.subText)),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: primaryColor),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -510,7 +510,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                         Text("${app.startTime} - ${app.endTime}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
                       ],
                     ),
-                    Text("Q No: ${app.queueNumber}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 11)),
+                    Text("Q No: ${app.queueNumber}", style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 10),

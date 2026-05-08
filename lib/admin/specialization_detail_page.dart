@@ -81,7 +81,7 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
       backgroundColor: context.scaffoldBg,
       appBar: AppBar(
         title: Text("${widget.specializationName} Doctors"),
-        backgroundColor: context.isDark ? Colors.grey.shade900 : Colors.white,
+        backgroundColor: context.scaffoldBg,
         foregroundColor: context.onSurface,
         elevation: 0,
       ),
@@ -112,7 +112,7 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -157,9 +157,9 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
                   fontSize: 16,
                 ),
               ),
-              const Text(
+              Text(
                 "Total Revenue",
-                style: TextStyle(color: Colors.grey, fontSize: 11),
+                style: TextStyle(color: context.subText, fontSize: 11),
               ),
             ],
           ),

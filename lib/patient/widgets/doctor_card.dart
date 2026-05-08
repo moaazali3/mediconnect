@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/constants/api_constants.dart';
 
@@ -103,7 +104,7 @@ class DoctorCard extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   // الخبرة بس هي اللي هتظهر بره
-                  _buildStat(Icons.workspace_premium_outlined, "${doctor.experienceYears.toStringAsFixed(0)} Years Exp.", isDark: isDark),
+                  _buildStat(context, Icons.workspace_premium_outlined, "${doctor.experienceYears.toStringAsFixed(0)} Years Exp."),
                 ],
               ),
             ),
@@ -140,17 +141,17 @@ class DoctorCard extends StatelessWidget {
   }
 
   // ويدجت أيقونة الخبرة
-  Widget _buildStat(IconData icon, String text, {required bool isDark}) {
+  Widget _buildStat(BuildContext context, IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: isDark ? const Color(0xFF6B7280) : Colors.grey.shade500),
+        Icon(icon, size: 14, color: context.subText),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             text,
             style: TextStyle(
-              color: isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600,
+              color: context.subText,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

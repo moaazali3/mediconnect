@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/patient/widgets/doctor_card.dart';
@@ -220,13 +221,11 @@ class _HomeContentState extends State<HomeContent> {
           // Search bar
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF1E2235)
-                  : Colors.white,
+              color: context.inputFill,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.08),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 )
@@ -236,16 +235,12 @@ class _HomeContentState extends State<HomeContent> {
               onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
               style: TextStyle(
                 fontSize: 15,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : Colors.black87,
+                color: context.onSurface,
               ),
               decoration: InputDecoration(
                 hintText: "Search doctor by name...",
                 hintStyle: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? const Color(0xFF6B7280)
-                      : Colors.grey.shade400,
+                  color: context.subText,
                   fontSize: 14,
                 ),
                 prefixIcon: const Icon(Icons.search_rounded, color: primaryColor, size: 22),
@@ -300,9 +295,9 @@ class _HomeContentState extends State<HomeContent> {
               padding: const EdgeInsets.all(40),
               child: Column(
                 children: [
-                  Icon(Icons.search_off_rounded, size: 60, color: Colors.grey.shade300),
+                  Icon(Icons.search_off_rounded, size: 60, color: context.subText.withOpacity(0.5)),
                   const SizedBox(height: 10),
-                  const Text("No doctors found", style: TextStyle(color: Colors.grey)),
+                  Text("No doctors found", style: TextStyle(color: context.subText)),
                 ],
               )
           )
@@ -339,7 +334,6 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildSpecItem(String title) {
     bool isSelected = selectedSpecialization == title;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         if (selectedSpecialization != title) {
@@ -353,12 +347,12 @@ class _HomeContentState extends State<HomeContent> {
         decoration: BoxDecoration(
           color: isSelected
               ? primaryColor
-              : (isDark ? const Color(0xFF1E2235) : Colors.white),
+              : context.filterChipBg,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? primaryColor
-                : (isDark ? const Color(0xFF374151) : Colors.grey.shade200),
+                : context.filterChipBorder,
             width: 1.5,
           ),
           boxShadow: isSelected
@@ -370,7 +364,7 @@ class _HomeContentState extends State<HomeContent> {
           style: TextStyle(
             color: isSelected
                 ? Colors.white
-                : (isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700),
+                : context.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),

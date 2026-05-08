@@ -254,9 +254,9 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   Widget _buildDoctorScheduleSection() {
     if (_doctorSchedule.isEmpty) {
       return _buildProfileCard([
-        const Padding(
-          padding: EdgeInsets.all(20),
-          child: Center(child: Text("No schedule available yet.", style: TextStyle(color: Colors.grey))),
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Center(child: Text("No schedule available yet.", style: TextStyle(color: context.subText))),
         )
       ]);
     }

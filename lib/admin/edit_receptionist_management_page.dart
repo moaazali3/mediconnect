@@ -5,6 +5,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditReceptionistManagementPage extends StatefulWidget {
   final String receptionistId;
@@ -28,6 +29,9 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _doctorController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _passwordObscured = true;
 
   String _gender = 'Male';
   String? _selectedDoctorId;
@@ -50,6 +54,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     _emailController.dispose();
     _addressController.dispose();
     _doctorController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -129,7 +134,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Assigned Doctor", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -226,6 +231,21 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
+      final pass = _passwordController.text;
+      if (pass.isNotEmpty) {
+        final ok = pass.length >= 8 &&
+            RegExp(r'[A-Z]').hasMatch(pass) &&
+            RegExp(r'[a-z]').hasMatch(pass) &&
+            RegExp(r'[0-9]').hasMatch(pass) &&
+            RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(pass);
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Please meet all password requirements"),
+            backgroundColor: Colors.red,
+          ));
+          return;
+        }
+      }
       setState(() => _currentStep = 2);
     }
   }
@@ -278,9 +298,9 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                       decoration: BoxDecoration(
-                        color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
+                        color: context.cardBg.withOpacity(0.92),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: context.dividerCol),
                       ),
                       child: Form(
                         key: _formKey,
@@ -323,7 +343,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildStepIndicator(1),
-            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : Colors.grey.shade300),
+            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : context.dividerCol),
             _buildStepIndicator(2),
           ],
         ),
@@ -347,7 +367,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : context.dividerCol),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -360,17 +380,35 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
   // --- الخطوة الأولى: 4 خانات أساسية ---
   Widget _buildStep1() {
-    return Column(
+    return StatefulBuilder(
       key: const ValueKey(1),
-      children: [
-        _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
-      ],
+      builder: (context, setLocalState) {
+        return Column(
+          children: [
+            _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+            const SizedBox(height: 15),
+            _buildLoginField(
+              controller: _passwordController,
+              label: "New Password (optional)",
+              icon: Icons.lock_reset_rounded,
+              isPassword: true,
+              isObscured: _passwordObscured,
+              onToggle: () => setState(() => _passwordObscured = !_passwordObscured),
+              onChanged: (v) => setLocalState(() {}),
+            ),
+            if (_passwordController.text.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              PasswordStrengthChecker(password: _passwordController.text),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -465,6 +503,10 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     VoidCallback? onTap,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool isPassword = false,
+    bool isObscured = false,
+    VoidCallback? onToggle,
+    Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
@@ -472,6 +514,8 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      obscureText: isPassword && isObscured,
+      onChanged: onChanged,
       style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
@@ -482,22 +526,30 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
           decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
-        suffixIcon: (onTap != null)
-            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
-            : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(isObscured ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
+                onPressed: onToggle,
+              )
+            : (onTap != null)
+                ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
+                : null,
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
-      validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+      validator: (v) {
+        if (isPassword) return null; // password is optional
+        return (v == null || v.isEmpty) ? "Required" : null;
+      },
     );
   }
 
@@ -525,11 +577,11 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

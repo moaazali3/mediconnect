@@ -8,6 +8,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditDoctorManagementPage extends StatefulWidget {
   final String doctorId;
@@ -32,6 +33,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final _expController = TextEditingController();
   final _dobController = TextEditingController();
   final _specializationController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _passwordObscured = true;
 
   String _gender = 'Male';
   DoctorProfileModel? _currentProfile;
@@ -56,6 +60,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     _expController.dispose();
     _dobController.dispose();
     _specializationController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -109,7 +114,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Specialization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -238,6 +243,21 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
+      final pass = _passwordController.text;
+      if (pass.isNotEmpty) {
+        final ok = pass.length >= 8 &&
+            RegExp(r'[A-Z]').hasMatch(pass) &&
+            RegExp(r'[a-z]').hasMatch(pass) &&
+            RegExp(r'[0-9]').hasMatch(pass) &&
+            RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(pass);
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Please meet all password requirements"),
+            backgroundColor: Colors.red,
+          ));
+          return;
+        }
+      }
       setState(() => _currentStep = 2);
     }
   }
@@ -290,9 +310,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                       decoration: BoxDecoration(
-                        color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
+                        color: context.cardBg.withOpacity(0.92),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: context.dividerCol),
                       ),
                       child: Form(
                         key: _formKey,
@@ -335,7 +355,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildStepIndicator(1),
-            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : Colors.grey.shade300),
+            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : context.dividerCol),
             _buildStepIndicator(2),
           ],
         ),
@@ -359,7 +379,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : context.dividerCol),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -371,42 +391,59 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   }
 
   Widget _buildStep1() {
-    return Column(
+    return StatefulBuilder(
       key: const ValueKey(1),
-      children: [
-        _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-        const SizedBox(height: 15),
-
-        _buildDropdownField<String>(
-          label: "Gender",
-          icon: Icons.wc_rounded,
-          initialValue: _gender,
-          items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
-          onChanged: (val) => setState(() => _gender = val!),
-        ),
-        const SizedBox(height: 15),
-        _buildLoginField(
-          controller: _dobController,
-          label: "Birth Date",
-          icon: Icons.calendar_month_rounded,
-          readOnly: true,
-          onTap: () async {
-            DateTime? picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
-              firstDate: DateTime(1950),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) {
-              setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-            }
-          },
-        ),
-      ],
+      builder: (context, setLocalState) {
+        return Column(
+          children: [
+            _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+            const SizedBox(height: 15),
+            _buildDropdownField<String>(
+              label: "Gender",
+              icon: Icons.wc_rounded,
+              initialValue: _gender,
+              items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+              onChanged: (val) => setState(() => _gender = val!),
+            ),
+            const SizedBox(height: 15),
+            _buildLoginField(
+              controller: _dobController,
+              label: "Birth Date",
+              icon: Icons.calendar_month_rounded,
+              readOnly: true,
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
+                  firstDate: DateTime(1950),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) {
+                  setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                }
+              },
+            ),
+            const SizedBox(height: 15),
+            _buildLoginField(
+              controller: _passwordController,
+              label: "New Password (optional)",
+              icon: Icons.lock_reset_rounded,
+              isPassword: true,
+              isObscured: _passwordObscured,
+              onToggle: () => setState(() => _passwordObscured = !_passwordObscured),
+              onChanged: (v) => setLocalState(() {}),
+            ),
+            if (_passwordController.text.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              PasswordStrengthChecker(password: _passwordController.text),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -510,7 +547,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           color: Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text("No schedule set yet.", style: TextStyle(color: Colors.grey, fontSize: 13), textAlign: TextAlign.center),
+        child: Text("No schedule set yet.", style: TextStyle(color: context.subText, fontSize: 13), textAlign: TextAlign.center),
       );
     }
     return Column(
@@ -520,7 +557,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         decoration: BoxDecoration(
           color: context.cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+          border: Border.all(color: context.dividerCol),
         ),
         child: Row(
           children: [
@@ -543,6 +580,10 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     VoidCallback? onTap,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool isPassword = false,
+    bool isObscured = false,
+    VoidCallback? onToggle,
+    Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
@@ -550,6 +591,8 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      obscureText: isPassword && isObscured,
+      onChanged: onChanged,
       style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
@@ -560,22 +603,30 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
-        suffixIcon: (onTap != null)
-            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
-            : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(isObscured ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
+                onPressed: onToggle,
+              )
+            : (onTap != null)
+                ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
+                : null,
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
-      validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+      validator: (v) {
+        if (isPassword) return null;
+        return (v == null || v.isEmpty) ? "Required" : null;
+      },
     );
   }
 
@@ -603,11 +654,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -670,7 +721,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2))),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 20),
               const Text("Schedule Setting", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
               const SizedBox(height: 20),
@@ -746,7 +797,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(label, style: TextStyle(fontSize: 11, color: context.subText)),
             const SizedBox(height: 4),
             Text(time.format(context), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryColor)),
           ],
@@ -779,11 +830,11 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

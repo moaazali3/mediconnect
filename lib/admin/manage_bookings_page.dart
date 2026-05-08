@@ -123,6 +123,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                               }
 
                               return Card(
+                                color: context.cardBg,
                                 elevation: 3,
                                 margin: const EdgeInsets.only(bottom: 15),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -322,6 +323,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                   final bool isFinalized = app.status == "Completed" || app.status == "Cancelled" || app.status == "Confirmed";
 
                   return Card(
+                    color: context.cardBg,
                     margin: const EdgeInsets.only(bottom: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     child: Padding(
@@ -437,7 +439,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black12,
+              color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.12),
               child: const Center(child: CircularProgressIndicator(color: primaryColor)),
             ),
         ],

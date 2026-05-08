@@ -127,7 +127,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
         },
         decoration: InputDecoration(
           hintText: "Search by name or specialization...",
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          hintStyle: TextStyle(color: context.subText.withValues(alpha: 0.7), fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
               ? IconButton(icon: const Icon(Icons.clear, size: 20), onPressed: () {
@@ -152,7 +152,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
         color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
@@ -162,13 +162,13 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.withOpacity(0.15), width: 0.8),
+              border: Border.all(color: context.dividerCol, width: 0.8),
             ),
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.withOpacity(0.1), width: 0.8),
+                border: Border.all(color: context.dividerCol, width: 0.8),
               ),
               child: CircleAvatar(
                 radius: 28,
@@ -225,7 +225,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_search_outlined, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.person_search_outlined, size: 80, color: context.subText.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty ? "No doctors registered yet" : "No results for '$_searchQuery'",
