@@ -39,6 +39,10 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
 
     try {
       final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 1000);
+      
+      // Sort by experience years (Descending)
+      doctors.sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
+
       if (mounted) {
         setState(() {
           _allDoctors = doctors;

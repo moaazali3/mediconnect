@@ -150,15 +150,20 @@ class _CommonAppBarState extends State<CommonAppBar> {
                       ),
                     ),
                     if (displaySubtitle.isNotEmpty)
-                      Text(
-                        displaySubtitle,
-                        maxLines: 2,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
+                    // التعديل السحري هنا: FittedBox هتصغر الخط بدل ما تنزل سطر وتبوظ الارتفاع
+                      SizedBox(
+                        width: double.infinity,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            displaySubtitle,
+                            style: TextStyle(
+                              color: subtitleColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                   ],

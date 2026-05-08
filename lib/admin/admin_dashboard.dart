@@ -82,7 +82,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ],
       ),
       bottomNavigationBar: Container(
+        margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(
@@ -90,9 +93,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               blurRadius: 10,
               offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            selectedItemColor: primaryColor,
+            unselectedItemColor:  Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+            showSelectedLabels: true,
+            showUnselectedLabels: false,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.analytics_rounded),
+                activeIcon: Icon(Icons.analytics_rounded, size: 30),
+                label: 'Analytics',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_customize_rounded),
+                activeIcon: Icon(Icons.dashboard_customize_rounded, size: 30),
+                label: 'Console',
+              ),
+            ],
+          ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),

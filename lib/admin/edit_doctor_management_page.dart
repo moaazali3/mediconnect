@@ -7,7 +7,6 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class EditDoctorManagementPage extends StatefulWidget {
   final String doctorId;
@@ -20,7 +19,10 @@ class EditDoctorManagementPage extends StatefulWidget {
 class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
-  
+
+  // الخطوة الحالية
+  int _currentStep = 1;
+
   // Controllers
   final _fNameController = TextEditingController();
   final _lNameController = TextEditingController();
@@ -28,7 +30,8 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final _feeController = TextEditingController();
   final _expController = TextEditingController();
   final _dobController = TextEditingController();
-  
+  final _specializationController = TextEditingController();
+
   String _gender = 'Male';
   DoctorProfileModel? _currentProfile;
   List<SpecializationModel> _specializations = [];
@@ -51,6 +54,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     _feeController.dispose();
     _expController.dispose();
     _dobController.dispose();
+    _specializationController.dispose();
     super.dispose();
   }
 
@@ -60,7 +64,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       _specializations = await _apiService.getAllSpecializations();
       _currentProfile = await _apiService.getDoctorProfile(widget.doctorId);
       _schedules = await _apiService.getDoctorSchedule(widget.doctorId);
-      
+
       _fNameController.text = _currentProfile!.firstName;
       _lNameController.text = _currentProfile!.lastName;
       _phoneController.text = _currentProfile!.phoneNumber;
@@ -68,14 +72,15 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       _expController.text = _currentProfile!.experienceYears.toStringAsFixed(0);
       _dobController.text = _currentProfile!.dateOfBirth.split('T')[0];
       _gender = _currentProfile!.gender;
-      
+
       final spec = _specializations.firstWhere(
-        (s) => s.name == _currentProfile!.specializationName,
-        orElse: () => _specializations.isNotEmpty 
-            ? _specializations.first 
+            (s) => s.name == _currentProfile!.specializationName,
+        orElse: () => _specializations.isNotEmpty
+            ? _specializations.first
             : SpecializationModel(id: 0, name: '', description: ''),
       );
       _selectedSpecId = spec.id;
+      _specializationController.text = spec.name;
 
       setState(() => _isLoading = false);
     } catch (e) {
@@ -84,9 +89,89 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     }
   }
 
+  void _showSpecializationSearchSheet() {
+    List<SpecializationModel> tempFiltered = List.from(_specializations);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                  ),
+                  const SizedBox(height: 15),
+                  const Text("Select Specialization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
+                  const SizedBox(height: 15),
+                  TextField(
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: "Search specialization...",
+                      prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    ),
+                    onChanged: (value) {
+                      setModalState(() {
+                        tempFiltered = _specializations.where((spec) {
+                          return spec.name.toLowerCase().contains(value.toLowerCase());
+                        }).toList();
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  Expanded(
+                    child: tempFiltered.isEmpty
+                        ? const Center(child: Text("No specializations found"))
+                        : ListView.separated(
+                      itemCount: tempFiltered.length,
+                      separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                      itemBuilder: (context, index) {
+                        final spec = tempFiltered[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: primaryColor.withValues(alpha: 0.1),
+                            child: const Icon(Icons.category, color: primaryColor),
+                          ),
+                          title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          onTap: () {
+                            setState(() {
+                              _selectedSpecId = spec.id;
+                              _specializationController.text = spec.name;
+                            });
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _updateDoctorData() async {
     if (!_formKey.currentState!.validate() || _selectedSpecId == null) return;
-    
+
     setState(() => _isSaving = true);
     try {
       final updateModel = UpdateDoctorModel(
@@ -101,11 +186,14 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       );
 
       final success = await _apiService.updateDoctor(widget.doctorId, updateModel);
-      
+
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Doctor profile updated!"), backgroundColor: Colors.green));
-          _fetchInitialData(); 
+
+          // التعديل هنا: الخروج من الصفحة مباشرة بعد الحفظ بنجاح
+          Navigator.pop(context, true);
+
         } else {
           throw "Update failed.";
         }
@@ -150,13 +238,33 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     }
   }
 
+  void _nextStep() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _currentStep = 2);
+    }
+  }
+
+  void _previousStep() {
+    setState(() => _currentStep = 1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const CommonAppBar(
-        title: "Edit Doctor",
-        showBackButton: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () {
+            if (_currentStep == 2) {
+              _previousStep();
+            } else {
+              Navigator.pop(context, true);
+            }
+          },
+        ),
       ),
       body: Stack(
         children: [
@@ -173,158 +281,42 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
             ),
           ),
           Container(color: Colors.black.withValues(alpha: 0.05)),
-          
-          _isLoading 
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : Center(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 60.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.edit_note_rounded, size: 50, color: primaryColor),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text("Update Profile",
-                                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: primaryColor)),
-                              Text("Dr. ${_currentProfile?.firstName} ${_currentProfile?.lastName}",
-                                  style: const TextStyle(fontSize: 16, color: Colors.black54)),
-                              const SizedBox(height: 35),
 
-                              _buildSectionTitle("PERSONAL INFORMATION"),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(child: _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline)),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline)),
-                                ],
-                              ),
-                              const SizedBox(height: 15),
-                              _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildDropdownField<String>(
-                                      label: "Gender",
-                                      icon: Icons.wc_rounded,
-                                      initialValue: _gender,
-                                      items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
-                                      onChanged: (val) => setState(() => _gender = val!),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _buildLoginField(
-                                      controller: _dobController,
-                                      label: "Birth Date",
-                                      icon: Icons.calendar_month_rounded,
-                                      readOnly: true,
-                                      onTap: () async {
-                                        DateTime? picked = await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
-                                          firstDate: DateTime(1950),
-                                          lastDate: DateTime.now(),
-                                        );
-                                        if (picked != null) {
-                                          setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
+          _isLoading
+              ? const Center(child: CircularProgressIndicator(color: primaryColor))
+              : Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildStepHeader(),
+                            const SizedBox(height: 25),
 
-                              const SizedBox(height: 30),
-                              _buildSectionTitle("PROFESSIONAL DETAILS"),
-                              const SizedBox(height: 15),
-                              _buildDropdownField<int>(
-                                label: "Specialization",
-                                icon: Icons.category_outlined,
-                                initialValue: _selectedSpecId,
-                                items: _specializations.map((spec) => DropdownMenuItem(value: spec.id, child: Text(spec.name, style: const TextStyle(fontSize: 13)))).toList(),
-                                onChanged: (val) => setState(() => _selectedSpecId = val),
-                              ),
-                              const SizedBox(height: 15),
-                              Row(
-                                children: [
-                                  Expanded(child: _buildLoginField(controller: _expController, label: "Experience", icon: Icons.work_outline, keyboardType: TextInputType.number)),
-                                  const SizedBox(width: 10),
-                                  Expanded(child: _buildLoginField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
-                                ],
-                              ),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              child: _currentStep == 1
+                                  ? _buildStep1()
+                                  : _buildStep2(),
+                            ),
 
-                              const SizedBox(height: 30),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildSectionTitle("WORK SCHEDULE"),
-                                  if (_schedules.isNotEmpty)
-                                    TextButton(
-                                      onPressed: _clearSchedule,
-                                      child: const Text("Clear All", style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              _buildScheduleList(),
-                              const SizedBox(height: 15),
-                              SizedBox(
-                                width: double.infinity,
-                                child: OutlinedButton.icon(
-                                  onPressed: _manageSchedule,
-                                  icon: const Icon(Icons.add_alarm_rounded, size: 18),
-                                  label: const Text("ADD / UPDATE HOURS"),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: primaryColor,
-                                    side: const BorderSide(color: primaryColor),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 40),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 55,
-                                child: ElevatedButton(
-                                  onPressed: _isSaving ? null : _updateDoctorData,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                                    elevation: 5,
-                                  ),
-                                  child: _isSaving 
-                                      ? const CircularProgressIndicator(color: Colors.white) 
-                                      : const Text("SAVE CHANGES", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                                ),
-                              ),
-                            ],
-                          ),
+                            const SizedBox(height: 30),
+                            _buildNavigationButtons(),
+                          ],
                         ),
                       ),
                     ),
@@ -332,23 +324,185 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: primaryColor.withValues(alpha: 0.7),
-          letterSpacing: 1.2,
+  Widget _buildStepHeader() {
+    String title = _currentStep == 1 ? "Personal Info" : "Professional Details";
+    IconData icon = _currentStep == 1 ? Icons.person_outline : Icons.medical_services_outlined;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildStepIndicator(1),
+            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : Colors.grey.shade300),
+            _buildStepIndicator(2),
+          ],
         ),
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle),
+          child: Icon(icon, size: 40, color: primaryColor),
+        ),
+        const SizedBox(height: 10),
+        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryColor)),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator(int step) {
+    bool isCompleted = _currentStep > step;
+    bool isActive = _currentStep == step;
+
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : Colors.grey.shade300),
+        shape: BoxShape.circle,
       ),
+      child: Center(
+        child: isCompleted
+            ? const Icon(Icons.check, color: Colors.white, size: 16)
+            : Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold, fontSize: 14)),
+      ),
+    );
+  }
+
+  Widget _buildStep1() {
+    return Column(
+      key: const ValueKey(1),
+      children: [
+        _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
+        const SizedBox(height: 15),
+        _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+        const SizedBox(height: 15),
+
+        _buildDropdownField<String>(
+          label: "Gender",
+          icon: Icons.wc_rounded,
+          initialValue: _gender,
+          items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+          onChanged: (val) => setState(() => _gender = val!),
+        ),
+        const SizedBox(height: 15),
+        _buildLoginField(
+          controller: _dobController,
+          label: "Birth Date",
+          icon: Icons.calendar_month_rounded,
+          readOnly: true,
+          onTap: () async {
+            DateTime? picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
+              firstDate: DateTime(1950),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep2() {
+    return Column(
+      key: const ValueKey(2),
+      children: [
+        _buildLoginField(
+          controller: _specializationController,
+          label: "Specialization",
+          icon: Icons.category_outlined,
+          readOnly: true,
+          onTap: _showSpecializationSearchSheet,
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            Expanded(child: _buildLoginField(controller: _expController, label: "Experience", icon: Icons.work_outline, keyboardType: TextInputType.number)),
+            const SizedBox(width: 10),
+            Expanded(child: _buildLoginField(controller: _feeController, label: "Fee (EGP)", icon: Icons.payments_outlined, keyboardType: TextInputType.number)),
+          ],
+        ),
+        const SizedBox(height: 30),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("WORK SCHEDULE", style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: primaryColor, letterSpacing: 1.2)),
+            if (_schedules.isNotEmpty)
+              TextButton(
+                onPressed: _clearSchedule,
+                child: const Text("Clear All", style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildScheduleList(),
+        const SizedBox(height: 15),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _manageSchedule,
+            icon: const Icon(Icons.add_alarm_rounded, size: 18),
+            label: const Text("ADD / UPDATE HOURS"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: primaryColor,
+              side: const BorderSide(color: primaryColor),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationButtons() {
+    return Row(
+      children: [
+        if (_currentStep == 2)
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _previousStep,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                side: const BorderSide(color: primaryColor),
+              ),
+              child: const Text("BACK", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        if (_currentStep == 2) const SizedBox(width: 15),
+        Expanded(
+          flex: 2,
+          child: ElevatedButton(
+            onPressed: _currentStep == 1 ? _nextStep : (_isSaving ? null : _updateDoctorData),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              elevation: 4,
+            ),
+            child: _isSaving
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(
+              _currentStep == 1 ? "NEXT STEP" : "SAVE CHANGES",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -411,16 +565,19 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
+        suffixIcon: (onTap != null)
+            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
+            : null,
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 1.5)
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
       validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
@@ -453,12 +610,12 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 1.5)
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
     );
@@ -543,9 +700,9 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
                     child: _buildTimePickerField(
                       label: "From",
                       time: _startTime,
-                      onTap: () async { 
-                        final t = await showTimePicker(context: context, initialTime: _startTime); 
-                        if (t != null) setState(() => _startTime = t); 
+                      onTap: () async {
+                        final t = await showTimePicker(context: context, initialTime: _startTime);
+                        if (t != null) setState(() => _startTime = t);
                       },
                     ),
                   ),
@@ -554,9 +711,9 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
                     child: _buildTimePickerField(
                       label: "To",
                       time: _endTime,
-                      onTap: () async { 
-                        final t = await showTimePicker(context: context, initialTime: _endTime); 
-                        if (t != null) setState(() => _endTime = t); 
+                      onTap: () async {
+                        final t = await showTimePicker(context: context, initialTime: _endTime);
+                        if (t != null) setState(() => _endTime = t);
                       },
                     ),
                   ),
@@ -564,13 +721,13 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
               ),
               const SizedBox(height: 30),
               SizedBox(
-                width: double.infinity, 
-                height: 55, 
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save, 
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))), 
-                  child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text("SAVE SCHEDULE", style: TextStyle(fontWeight: FontWeight.bold))
-                )
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                      onPressed: _isSaving ? null : _save,
+                      style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                      child: _isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text("SAVE SCHEDULE", style: TextStyle(fontWeight: FontWeight.bold))
+                  )
               ),
               const SizedBox(height: 30),
             ],
@@ -628,12 +785,12 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         fillColor: Colors.white.withValues(alpha: 0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 1.5)
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
     );
