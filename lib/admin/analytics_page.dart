@@ -180,6 +180,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           Text(
             "Welcome, ${widget.adminName}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -225,21 +227,27 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: color,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
-              fontWeight: FontWeight.w500,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -266,7 +274,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             children: [
               const Icon(Icons.pie_chart_rounded, color: primaryColor, size: 20),
               const SizedBox(width: 8),
-              const Text("Overall Appointments Status", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+              const Expanded(
+                child: Text(
+                  "Overall Appointments Status",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -290,7 +304,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   children: [
                     const Text("Success Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
                     const SizedBox(height: 4),
-                    Text("${successRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text("${successRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                    ),
                   ],
                 ),
               ),
@@ -300,7 +317,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   children: [
                     const Text("Failure Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
                     const SizedBox(height: 4),
-                    Text("${failureRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text("${failureRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                    ),
                   ],
                 ),
               ),
@@ -312,16 +332,22 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildDivider() {
-    return Container(height: 30, width: 1, color: Colors.grey.shade200, margin: const EdgeInsets.symmetric(horizontal: 10));
+    return Container(height: 30, width: 1, color: Colors.grey.shade200, margin: const EdgeInsets.symmetric(horizontal: 5));
   }
 
   Widget _buildStatusVertical(String label, String value, Color color) {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+          ),
         ],
       ),
     );

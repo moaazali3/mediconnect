@@ -172,19 +172,17 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
           );
           _fetchDoctors();
         }
-      } else {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to delete doctor"), backgroundColor: Colors.red),
-          );
-        }
       }
     } catch (e) {
+      debugPrint("DELETE DOCTOR ERROR: $e"); // Printing to console
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(e.toString()), 
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }
