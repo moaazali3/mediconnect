@@ -129,7 +129,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Daily Revenue",
         subtitle: DateFormat('EEEE, d MMMM').format(_selectedDate),
@@ -177,14 +177,14 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
                   padding: const EdgeInsets.fromLTRB(25, 10, 25, 15),
                   child: Row(
                     children: [
-                      const Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF334155)),
+                      Icon(Icons.analytics_outlined, size: 18, color: context.onSurface),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           "Breakdown by Specialty",
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF334155)),
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
                         ),
                       ),
                     ],

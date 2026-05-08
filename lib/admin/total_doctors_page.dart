@@ -77,7 +77,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "All Doctors",
         subtitle: "${_allDoctors.length} Total Registered",
@@ -172,7 +172,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
               ),
               child: CircleAvatar(
                 radius: 28,
-                backgroundColor: const Color(0xFFF1F5F9),
+                backgroundColor: context.scaffoldBg,
                 backgroundImage: (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty)
                     ? NetworkImage(doctor.profilePictureUrl!)
                     : null,
@@ -207,9 +207,9 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.work_history_outlined, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.work_history_outlined, size: 14, color: context.subText),
                     const SizedBox(width: 4),
-                    Text("${doctor.experienceYears.toInt()} Years Exp.", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    Text("${doctor.experienceYears.toInt()} Years Exp.", style: TextStyle(color: context.subText, fontSize: 12)),
                   ],
                 ),
               ],
@@ -229,7 +229,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
           const SizedBox(height: 16),
           Text(
             _searchQuery.isEmpty ? "No doctors registered yet" : "No results for '$_searchQuery'",
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+            style: TextStyle(color: context.subText, fontSize: 16),
           ),
         ],
       ),

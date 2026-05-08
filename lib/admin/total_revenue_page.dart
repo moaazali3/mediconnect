@@ -126,7 +126,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Revenue Details",
         showBackButton: true,
@@ -353,7 +353,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
                 Expanded(
                   child: Text(
                     doc.name,
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500, fontSize: 13),
+                    style: TextStyle(color: context.subText, fontWeight: FontWeight.w500, fontSize: 13),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -78,11 +78,11 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
         title: Text("${widget.specializationName} Doctors"),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        backgroundColor: context.isDark ? Colors.grey.shade900 : Colors.white,
+        foregroundColor: context.onSurface,
         elevation: 0,
       ),
       body: _isLoading
@@ -137,11 +137,11 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
               children: [
                 Text(
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
                 ),
                 Text(
                   widget.specializationName,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  style: TextStyle(color: context.subText, fontSize: 13),
                 ),
               ],
             ),

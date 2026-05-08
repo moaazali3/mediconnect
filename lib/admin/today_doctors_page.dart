@@ -151,7 +151,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Doctors by Day",
         subtitle: DateFormat('EEEE, d MMMM').format(_selectedDate),
@@ -245,7 +245,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
               _searchQuery.isEmpty 
                   ? "No doctors available for ${DateFormat('EEEE').format(_selectedDate)}" 
                   : "No results for '$_searchQuery'",
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+              style: TextStyle(color: context.subText, fontSize: 16),
             ),
           ],
         ),
@@ -337,7 +337,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: context.subText,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),

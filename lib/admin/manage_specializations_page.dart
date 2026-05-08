@@ -150,7 +150,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         pageName: "Specializations",
         showBackButton: true,
@@ -229,7 +229,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                                     spec.description,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.grey.shade600,
+                                      color: context.subText,
                                     ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,

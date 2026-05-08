@@ -88,7 +88,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "System Patients",
         subtitle: "${_filteredPatients.length} Total Patients",
@@ -213,7 +213,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
                   ),
                   child: CircleAvatar(
                     radius: 28,
-                    backgroundColor: const Color(0xFFF1F5F9),
+                    backgroundColor: context.scaffoldBg,
                     child: Icon(
                       patient.gender.toLowerCase() == "female" ? Icons.female : Icons.male, 
                       color: primaryColor, 
