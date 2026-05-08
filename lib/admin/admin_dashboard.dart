@@ -18,7 +18,7 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  int _currentIndex = 0;
+  int _currentIndex = 1;
   String _adminName = "Administrator";
 
   Key _analyticsKey = UniqueKey();
@@ -64,7 +64,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    String pageTitle = _currentIndex == 0 ? "Admin Console" : "Advanced Analytics";
+    String pageTitle = _currentIndex == 1 ? "Admin Console" : "Advanced Analytics";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FA),
@@ -77,8 +77,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
+          AnalyticsPage(key: _analyticsKey, adminName: _adminName),
           _buildConsoleContent(),
-          AnalyticsPage(key: _analyticsKey),
         ],
       ),
       bottomNavigationBar: Container(
@@ -101,12 +101,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           backgroundColor: Colors.white,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_customize_rounded),
-              label: 'Console',
-            ),
-            BottomNavigationBarItem(
               icon: Icon(Icons.analytics_rounded),
               label: 'Analytics',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_customize_rounded),
+              label: 'Console',
             ),
           ],
         ),
@@ -120,7 +120,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -132,38 +131,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 const SizedBox(height: 30),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(25, 20, 25, 45),
-      decoration: const BoxDecoration(
-        color: primaryColor,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Welcome, $_adminName",
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Manage your clinic operations efficiently.",
-            style: TextStyle(color: Colors.white70, fontSize: 14),
           ),
         ],
       ),
