@@ -73,7 +73,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
         email: emailController.text,
         phoneNumber: phoneController.text,
         address: _originalProfile?.address ?? '',
-        dateOfBirth: dobController.text, // التعديل في تاريخ الميلاد بيسمع في السن
+        dateOfBirth: dobController.text,
         gender: _originalProfile?.gender ?? '',
         doctorName: _originalProfile?.doctorName ?? '',
       );
@@ -87,7 +87,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true); // يرجع لشاشة العرض ويديلها إشارة إن التعديل تم
+          Navigator.pop(context, true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
@@ -241,7 +241,8 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
               child: const CircleAvatar(
                 radius: 30,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.face_3_rounded, size: 40, color: primaryColor),
+                // التعديل هنا: الأيقونة الموحدة للجميع
+                child: Icon(Icons.person_rounded, size: 40, color: primaryColor),
               ),
             ),
             const SizedBox(width: 15),
