@@ -140,122 +140,119 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: primaryColor))
-        : Column(
-            children: [
-              _buildFixedHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle("Personal Information"),
-                        _buildEditCard([
-                          _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
-                          _buildDivider(),
-                          Row(
-                            children: [
-                              Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
-                            ],
-                          ),
-                          _buildDivider(),
-                          _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
-                          _buildDivider(),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildDropdownField(
-                                  label: "Gender",
-                                  icon: Icons.wc_rounded,
-                                  value: selectedGender,
-                                  items: ['Male', 'Female'],
-                                  onChanged: (val) => setState(() => selectedGender = val),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _buildEditRow(
-                                  label: "Birth Date",
-                                  controller: dobController,
-                                  icon: Icons.calendar_month_rounded,
-                                  isReadOnly: true,
-                                  onTap: () async {
-                                    DateTime? picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
-                                      firstDate: DateTime(1900),
-                                      lastDate: DateTime.now(),
-                                    );
-                                    if (picked != null) {
-                                      setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-                                    }
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          _buildDivider(),
-                          _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
-                        ]),
-
-                        const SizedBox(height: 20),
-                        _buildSectionTitle("Medical Background"),
-                        _buildEditCard([
-                          Row(
-                            children: [
-                              Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
-                              const SizedBox(width: 8),
-                              Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
-                            ],
-                          ),
-                          _buildDivider(),
-                          _buildDropdownField(
-                            label: "Blood Type",
-                            icon: Icons.bloodtype_outlined,
-                            value: selectedBloodType,
-                            items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
-                            onChanged: (val) => setState(() => selectedBloodType = val),
-                          ),
-                          _buildDivider(),
-                          _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
-                        ]),
-
-                        const SizedBox(height: 30),
-
-                        SizedBox(
-                          width: double.infinity,
-                          height: 55,
-                          child: ElevatedButton.icon(
-                            onPressed: _updateProfile,
-                            icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
-                            label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          : Column(
+        children: [
+          _buildFixedHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(15.0),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle("Personal Information"),
+                    _buildEditCard([
+                      _buildEditRow(label: "Email (Read Only)", controller: emailController, icon: Icons.email_outlined, isReadOnly: true),
+                      _buildDivider(),
+                      Row(
+                        children: [
+                          Expanded(child: _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline)),
+                          Expanded(child: _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline)),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
+                      _buildDivider(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: "Gender",
+                              icon: Icons.wc_rounded,
+                              value: selectedGender,
+                              items: ['Male', 'Female'],
+                              onChanged: (val) => setState(() => selectedGender = val),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 15),
-                        Center(
-                          child: TextButton(
-                            onPressed: () => _showChangePasswordDialog(context),
-                            child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                          Expanded(
+                            child: _buildEditRow(
+                              label: "Birth Date",
+                              controller: dobController,
+                              icon: Icons.calendar_month_rounded,
+                              isReadOnly: true,
+                              onTap: () async {
+                                DateTime? picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.tryParse(dobController.text) ?? DateTime.now(),
+                                  firstDate: DateTime(1900),
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setState(() => dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                                }
+                              },
+                            ),
                           ),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Address", controller: addressController, icon: Icons.location_on_outlined),
+                    ]),
+
+                    const SizedBox(height: 20),
+                    _buildSectionTitle("Medical Background"),
+                    _buildEditCard([
+                      Row(
+                        children: [
+                          Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
+                          Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
+                        ],
+                      ),
+                      _buildDivider(),
+                      _buildDropdownField(
+                        label: "Blood Type",
+                        icon: Icons.bloodtype_outlined,
+                        value: selectedBloodType,
+                        items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+                        onChanged: (val) => setState(() => selectedBloodType = val),
+                      ),
+                      _buildDivider(),
+                      _buildEditRow(label: "Emergency Contact", controller: emergencyController, icon: Icons.contact_emergency_rounded),
+                    ]),
+
+                    const SizedBox(height: 30),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton.icon(
+                        onPressed: _updateProfile,
+                        icon: const Icon(Icons.check_circle_rounded, size: 20, color: Colors.white),
+                        label: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 15),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => _showChangePasswordDialog(context),
+                        child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
+        ],
+      ),
     );
   }
 
@@ -293,9 +290,9 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                 radius: 30,
                 backgroundColor: Colors.white,
                 child: Icon(
-                  selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-                  size: 40, 
-                  color: primaryColor
+                    selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded,
+                    size: 40,
+                    color: primaryColor
                 ),
               ),
             ),
@@ -339,17 +336,18 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
   Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      // التعديل هنا: قللنا الـ Padding الأفقي شوية عشان ندي مساحة للنص
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
       child: TextFormField(
         controller: controller,
         readOnly: isReadOnly,
         onTap: onTap,
         keyboardType: keyboardType,
-        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13), // صغرنا الفونت بيكسل واحد
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
-          prefixIcon: Icon(icon, color: primaryColor, size: 20),
+          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11), // صغرنا الليبل بيكسل واحد
+          prefixIcon: Icon(icon, color: primaryColor, size: 18), // صغرنا الأيقونة شوية
           border: InputBorder.none,
           isDense: true,
         ),
@@ -360,23 +358,26 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
   Widget _buildDropdownField({required String label, required IconData icon, required String? value, required List<String> items, required Function(String?) onChanged}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      // التعديل هنا: قللنا الـ Padding الأفقي شوية
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       child: DropdownButtonFormField<String>(
         value: value,
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
+        isExpanded: true, // التعديل الأهم: ده اللي بيمنع الـ Overflow جوه الـ Dropdown!
+        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(), // صغرنا الفونت بيكسل واحد
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 12),
-          prefixIcon: Icon(icon, color: primaryColor, size: 20),
+          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11), // صغرنا الليبل بيكسل واحد
+          prefixIcon: Icon(icon, color: primaryColor, size: 18), // صغرنا الأيقونة شوية
           border: InputBorder.none,
+          isDense: true, // عشان يضغط المساحة
         ),
       ),
     );
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
+    return Divider(height: 1, indent: 35, endIndent: 15, color: Colors.grey.shade100);
   }
 
   void _showChangePasswordDialog(BuildContext context) {
@@ -399,9 +400,9 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                 _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
                 const SizedBox(height: 10),
                 _buildPopupField(
-                  controller: newPass, 
-                  label: "New Password", 
-                  icon: Icons.lock_reset_rounded, 
+                  controller: newPass,
+                  label: "New Password",
+                  icon: Icons.lock_reset_rounded,
                   isObscured: isObscured,
                   suffix: IconButton(
                     icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
@@ -414,7 +415,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
             ElevatedButton(
-              onPressed: () { 
+              onPressed: () {
                 if (passKey.currentState!.validate()) {
                   _changePassword(oldPass.text, newPass.text);
                   Navigator.pop(context);
