@@ -70,13 +70,14 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     final String targetId = widget.userId ?? "1";
 
     final PatientProfileModel updatedProfile = PatientProfileModel(
+      id: targetId,
       firstName: fNameController.text,
       lastName: lNameController.text,
       email: emailController.text,
       dateOfBirth: dobController.text,
-      gender: selectedGender ?? '',
+      gender: selectedGender ?? 'Male',
       address: addressController.text,
-      bloodType: selectedBloodType ?? '',
+      bloodType: selectedBloodType ?? 'N/A',
       height: double.tryParse(heightController.text) ?? 0,
       weight: double.tryParse(weightController.text) ?? 0,
       emergencyContact: emergencyController.text,
@@ -328,7 +329,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(children: children),
     );

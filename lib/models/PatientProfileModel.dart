@@ -1,4 +1,5 @@
 class PatientProfileModel {
+  final String id;
   final String firstName;
   final String lastName;
   final String email;
@@ -12,6 +13,7 @@ class PatientProfileModel {
   final String phoneNumber;
 
   PatientProfileModel({
+    required this.id,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -26,12 +28,10 @@ class PatientProfileModel {
   });
 
   factory PatientProfileModel.fromJson(Map<String, dynamic> json) {
-    // 1. استخراج الاسم (يدعم patientName القادم من الإدمن أو الحقول المنفصلة)
     String fName = (json['firstName'] ?? json['FirstName'] ?? '').toString().trim();
     String lName = (json['lastName'] ?? json['LastName'] ?? '').toString().trim();
     String pName = (json['patientName'] ?? json['PatientName'] ?? json['name'] ?? json['Name'] ?? '').toString().trim();
 
-    // إذا كان السيرفر يرسل الاسم كاملاً في حقل واحد (مثل نتيجة الـ Curl)
     if (fName.isEmpty && pName.isNotEmpty) {
       if (pName.contains(' ')) {
         int spaceIndex = pName.indexOf(' ');
@@ -42,10 +42,10 @@ class PatientProfileModel {
       }
     }
 
-    // تأكيد وجود قيمة افتراضية حتى لا يظهر الكارت فارغاً
     if (fName.isEmpty && lName.isEmpty) fName = "Patient";
 
     return PatientProfileModel(
+      id: (json['id'] ?? json['_id'] ?? json['patientId'] ?? '').toString(),
       firstName: fName,
       lastName: lName,
       email: (json['email'] ?? json['Email'] ?? '').toString(),
@@ -69,6 +69,7 @@ class PatientProfileModel {
 
   Map<String, dynamic> toJson() {
     return {
+      "id": id,
       "firstName": firstName,
       "lastName": lastName,
       "email": email,
