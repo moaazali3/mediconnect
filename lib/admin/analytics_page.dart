@@ -14,7 +14,8 @@ import 'package:mediconnect/admin/total_revenue_page.dart';
 import 'package:mediconnect/admin/total_patients_page.dart';
 
 class AnalyticsPage extends StatefulWidget {
-  const AnalyticsPage({super.key});
+  final String adminName;
+  const AnalyticsPage({super.key, required this.adminName});
 
   @override
   State<AnalyticsPage> createState() => _AnalyticsPageState();
@@ -83,6 +84,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         specCounts[spec] = (specCounts[spec] ?? 0) + 1;
       }
 
+      int todayPending = todayAppts.where((a) => a.status.toLowerCase() == "pending").length;
+      int todayCompleted = todayAppts.where((a) => a.status.toLowerCase() == "completed").length;
+      int todayCancelled = todayAppts.where((a) => a.status.toLowerCase() == "cancelled").length;
+
       String? topName;
       String? topSpec;
       int topBookings = 0;
@@ -103,6 +108,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           _stats = stats.copyWith(
             totalDoctorsToday: activeDoctors.length,
             totalAppointmentsToday: todayAppts.length,
+            totalPendingAppointmentsToday: todayPending,
+            totalCompletedAppointmentsToday: todayCompleted,
+            totalCancelledAppointmentsToday: todayCancelled,
           );
           _isLoading = false;
         });
@@ -122,24 +130,225 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       color: primaryColor,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader("Overview Today"),
-            const SizedBox(height: 15),
-            _buildStatsGrid(_stats!),
-            const SizedBox(height: 30),
-            _buildSectionHeader("System Summary"),
-            const SizedBox(height: 15),
-            _buildTopDoctorPerformanceCard(),
-            const SizedBox(height: 20),
-            _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
-            const SizedBox(height: 20),
-            _buildQuickStats(),
-            const SizedBox(height: 30),
+            _buildHeader(),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader("Overview Today"),
+                  const SizedBox(height: 15),
+                  _buildStatsGrid(_stats!),
+                  const SizedBox(height: 15),
+                  _buildTodayStatusesRow(_stats!),
+                  const SizedBox(height: 30),
+                  _buildSectionHeader("System Summary"),
+                  const SizedBox(height: 15),
+                  _buildOverallStatusCard(_stats!),
+                  const SizedBox(height: 20),
+                  _buildTopDoctorPerformanceCard(),
+                  const SizedBox(height: 20),
+                  _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
+                  const SizedBox(height: 20),
+                  _buildQuickStats(),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(25, 20, 25, 45),
+      decoration: const BoxDecoration(
+        color: primaryColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Welcome, ${widget.adminName}",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Manage your clinic operations efficiently.",
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTodayStatusesRow(AdminDashboardModel stats) {
+    return Row(
+      children: [
+        Expanded(child: _buildStatusMiniCard("Completed", stats.totalCompletedAppointmentsToday.toString(), Colors.green)),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatusMiniCard("Pending", stats.totalPendingAppointmentsToday.toString(), Colors.orange)),
+        const SizedBox(width: 12),
+        Expanded(child: _buildStatusMiniCard("Cancelled", stats.totalCancelledAppointmentsToday.toString(), Colors.red)),
+      ],
+    );
+  }
+
+  Widget _buildStatusMiniCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverallStatusCard(AdminDashboardModel stats) {
+    final int total = stats.totalAppointments;
+    final double successRate = total > 0 ? (stats.totalCompletedAppointments / total) * 100 : 0;
+    final double failureRate = total > 0 ? (stats.totalCancelledAppointments / total) * 100 : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.pie_chart_rounded, color: primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Overall Appointments Status",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildStatusVertical("Completed", stats.totalCompletedAppointments.toString(), Colors.green),
+              _buildDivider(),
+              _buildStatusVertical("Pending", stats.totalPendingAppointments.toString(), Colors.orange),
+              _buildDivider(),
+              _buildStatusVertical("Cancelled", stats.totalCancelledAppointments.toString(), Colors.red),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Success Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text("${successRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Failure Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text("${failureRate.toStringAsFixed(1)}%", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(height: 30, width: 1, color: Colors.grey.shade200, margin: const EdgeInsets.symmetric(horizontal: 5));
+  }
+
+  Widget _buildStatusVertical(String label, String value, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+          ),
+        ],
       ),
     );
   }
@@ -341,7 +550,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
       _buildStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
     ];
-    // Changed aspect ratio to 1.0 (square) to give more vertical space
     return _buildDynamicGrid(items, spacing: 15, aspectRatio: 1.0);
   }
 
@@ -452,7 +660,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ),
         );
       } else {
-        // Full width for the last item if odd count
         rows.add(AspectRatio(aspectRatio: aspectRatio * 2.0, child: items[i]));
       }
       rows.add(SizedBox(height: spacing));

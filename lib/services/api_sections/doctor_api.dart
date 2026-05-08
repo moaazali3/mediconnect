@@ -292,17 +292,4 @@ mixin DoctorApi {
       throw e.toString();
     }
   }
-
-  Future<bool> deleteDoctor(String id) async {
-    final ApiService parent = this as ApiService;
-    try {
-      final response = await http.delete(
-        Uri.parse('${parent.baseUrl}/Doctor/$id'),
-        headers: parent._headers,
-      );
-      return response.statusCode == 200 || response.statusCode == 204;
-    } catch (e) {
-      return false;
-    }
-  }
 }

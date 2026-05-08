@@ -6,7 +6,16 @@ mixin AdminApi {
     try {
       final response = await http.get(Uri.parse('${parent.baseUrl}/Admin/dashboard'), headers: parent._headers);
       if (response.statusCode == 200) {
-        return AdminDashboardModel.fromJson(jsonDecode(response.body));
+        final dynamic decoded = jsonDecode(response.body);
+        Map<String, dynamic> data = {};
+        if (decoded is Map) {
+          if (decoded.containsKey('data') && decoded['data'] is Map) {
+            data = Map<String, dynamic>.from(decoded['data']);
+          } else {
+            data = Map<String, dynamic>.from(decoded);
+          }
+        }
+        return AdminDashboardModel.fromJson(data);
       } else {
         throw "Failed to load dashboard: ${response.statusCode}";
       }
@@ -139,52 +148,82 @@ mixin AdminApi {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.delete(
-        Uri.parse('${parent.baseUrl}/Admin/receptionist/$id'),
+        Uri.parse('${parent.baseUrl}/Receptionist/$id'),
         headers: parent._headers,
       );
-      return response.statusCode == 200 || response.statusCode == 204;
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to delete receptionist";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
+          }
+        } catch (_) {
+          errorMessage = response.body.isNotEmpty ? response.body : "Error ${response.statusCode}";
+        }
+
+        if (errorMessage.contains("entity changes") || errorMessage.contains("inner exception")) {
+          errorMessage = "Cannot delete receptionist because there are related records. Please delete the dependencies first.";
+        }
+        
+        throw errorMessage;
+      }
     } catch (e) {
-      return false;
+      throw parent.handleError(e);
     }
   }
 
   Future<double> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map) {
-        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
-      } else if (decoded is num) {
-        return decoded.toDouble();
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0;
+          if (val is Map && val.containsKey('revenue')) val = val['revenue'];
+          return (val ?? 0).toDouble();
+        } else if (decoded is num) {
+          return decoded.toDouble();
+        } else {
+          return double.tryParse(decoded.toString()) ?? 0.0;
+        }
       } else {
-        return double.tryParse(decoded.toString()) ?? 0.0;
+        throw "Failed to load doctor revenue: ${response.statusCode}";
       }
-    } else {
-      throw "Failed to load doctor revenue: ${response.statusCode}";
+    } catch (e) {
+      throw parent.handleError(e);
     }
   }
 
   Future<double> getSpecializationRevenue(String specializationName) async {
     final ApiService parent = this as ApiService;
-    final response = await http.get(
-      Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
-      headers: parent._headers,
-    );
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map) {
-        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
-      } else if (decoded is num) {
-        return decoded.toDouble();
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0;
+          if (val is Map && val.containsKey('revenue')) val = val['revenue'];
+          return (val ?? 0).toDouble();
+        } else if (decoded is num) {
+          return decoded.toDouble();
+        } else {
+          return double.tryParse(decoded.toString()) ?? 0.0;
+        }
       } else {
-        return double.tryParse(decoded.toString()) ?? 0.0;
+        throw "Failed to load specialization revenue: ${response.statusCode}";
       }
-    } else {
-      throw "Failed to load specialization revenue: ${response.statusCode}";
+    } catch (e) {
+      throw parent.handleError(e);
     }
   }
 
@@ -192,12 +231,36 @@ mixin AdminApi {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.delete(
-        Uri.parse('${parent.baseUrl}/Admin/doctor/$doctorId'),
+        Uri.parse('${parent.baseUrl}/Doctor/$doctorId'),
         headers: parent._headers,
       );
-      return response.statusCode == 200 || response.statusCode == 204;
+      
+      debugPrint("DELETE DOCTOR STATUS: ${response.statusCode}");
+      debugPrint("DELETE DOCTOR BODY: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to delete doctor";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
+          }
+        } catch (_) {
+          errorMessage = response.body.isNotEmpty ? response.body : "Error ${response.statusCode}";
+        }
+
+        // Handle related records error in English
+        if (errorMessage.contains("entity changes") || errorMessage.contains("inner exception")) {
+          errorMessage = "Cannot delete doctor because there are related records (appointments or schedules). Please delete related data first.";
+        }
+
+        throw errorMessage;
+      }
     } catch (e) {
-      return false;
+      debugPrint("DELETE DOCTOR API EXCEPTION: $e");
+      throw parent.handleError(e);
     }
   }
 
