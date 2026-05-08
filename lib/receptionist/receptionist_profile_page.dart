@@ -76,12 +76,12 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFF),
-      body: Column( // شيلنا الـ SafeArea والـ ScrollView من هنا وبدأنا بـ Column
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCurvedHeader(), // الهيدر الأزرق بقى ثابت فوق بره السكرول
+          _buildCurvedHeader(),
 
-          Expanded( // باقي الصفحة جوه Expanded عشان تاخد المساحة اللي فاضلة وتسكرول براحتها
+          Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
@@ -146,7 +146,8 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
               child: const CircleAvatar(
                 radius: 40,
                 backgroundColor: Colors.white,
-                child: Icon(Icons.face_3_rounded, size: 50, color: primaryColor),
+                // التعديل هنا: أيقونة موحدة للرجال والنساء
+                child: Icon(Icons.person_rounded, size: 50, color: primaryColor),
               ),
             ),
             const SizedBox(width: 20),
@@ -228,7 +229,6 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
           height: 55,
           child: ElevatedButton.icon(
             onPressed: () async {
-              // نفتح صفحة التعديل الجديدة، ولما نرجع نعمل Refresh
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => EditReceptionistProfile(userId: widget.userId)),
