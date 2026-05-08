@@ -84,16 +84,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(
-                Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.05,
+                Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.05,
               ),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-              color: Colors.black.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -105,11 +102,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             selectedItemColor: primaryColor,
-            unselectedItemColor:  Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             showSelectedLabels: true,
             showUnselectedLabels: false,
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).cardColor,
             elevation: 0,
             items: const [
               BottomNavigationBarItem(
@@ -124,24 +121,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ],
           ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          selectedItemColor: primaryColor,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Theme.of(context).cardColor,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.analytics_rounded),
-              label: 'Analytics',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_customize_rounded),
-              label: 'Console',
-            ),
-          ],
         ),
       ),
     );
