@@ -62,7 +62,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
   Widget build(BuildContext context) {
     String? displayUserName = widget.userName ?? _loadedUserName;
     String displaySubtitle = "";
-    
+
     if (widget.subtitle != null) {
       displaySubtitle = widget.subtitle!;
     } else if (widget.pageName != null && displayUserName != null) {
@@ -117,7 +117,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
                       "assets/images/img.png",
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.local_hospital, color: primaryColor),
+                      const Icon(Icons.local_hospital, color: primaryColor),
                     ),
                   ),
                 ),
@@ -142,8 +142,10 @@ class _CommonAppBarState extends State<CommonAppBar> {
                     if (displaySubtitle.isNotEmpty)
                       Text(
                         displaySubtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        // التعديل هنا: خليناه ياخد لحد سطرين ويلف الكلام براحته
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 11,
