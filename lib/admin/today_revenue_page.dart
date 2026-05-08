@@ -287,9 +287,9 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface)
                 ),
-                Text("$count Appointments", style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+                Text("$count Appointments", style: TextStyle(color: context.subText, fontSize: 11)),
               ],
             ),
           ),
@@ -301,7 +301,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
                 "${amount.toStringAsFixed(0)} EGP",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF059669)),
               ),
-              const Text("Collected", style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500)),
+              Text("Collected", style: TextStyle(fontSize: 10, color: context.subText, fontWeight: FontWeight.w500)),
             ],
           ),
         ],

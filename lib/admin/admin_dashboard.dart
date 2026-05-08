@@ -74,12 +74,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
         onLogout: _signOut,
         onRefresh: _handleRefresh,
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          AnalyticsPage(key: _analyticsKey, adminName: _adminName),
-          _buildConsoleContent(),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.0, 0.02),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: _currentIndex == 0
+            ? AnalyticsPage(key: _analyticsKey, adminName: _adminName)
+            : _buildConsoleContent(key: const ValueKey("console")),
       ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
@@ -126,8 +139,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  Widget _buildConsoleContent() {
+  Widget _buildConsoleContent({Key? key}) {
     return SingleChildScrollView(
+      key: key,
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,10 +166,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Color(0xFF2D3142),
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }

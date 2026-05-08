@@ -170,10 +170,10 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF334155),
+              color: context.onSurface,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -318,10 +318,10 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
               Expanded(
                 child: Text(
                   spec.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold, 
                     fontSize: 14, 
-                    color: Color(0xFF1E293B)
+                    color: context.onSurface
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

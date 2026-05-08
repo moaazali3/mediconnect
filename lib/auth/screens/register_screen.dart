@@ -393,63 +393,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         style: TextStyle(fontSize: 14, color: context.subText)),
                                     SizedBox(height: isSmallScreen ? 20 : 35),
 
-                                    if (currentStep == 0) ...[
-                                      _buildTextField(controller: emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: _validateEmail),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: passController, label: "Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: registerPasswordObscured, onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured), validator: _validatePassword),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: confirmPassController, label: "Confirm Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: confirmPasswordObscured, onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured), validator: (v) => v != passController.text ? "Passwords do not match" : null),
-                                    ],
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 350),
+                                      switchInCurve: Curves.easeInOut,
+                                      switchOutCurve: Curves.easeInOut,
+                                      transitionBuilder: (Widget child, Animation<double> animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0.08, 0.0),
+                                              end: Offset.zero,
+                                            ).animate(animation),
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: Column(
+                                        key: ValueKey<int>(currentStep),
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (currentStep == 0) ...[
+                                            _buildTextField(controller: emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: _validateEmail),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: passController, label: "Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: registerPasswordObscured, onTogglePassword: () => setState(() => registerPasswordObscured = !registerPasswordObscured), validator: _validatePassword),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: confirmPassController, label: "Confirm Password", icon: Icons.lock_outline, isPassword: true, isPasswordHidden: confirmPasswordObscured, onTogglePassword: () => setState(() => confirmPasswordObscured = !confirmPasswordObscured), validator: (v) => v != passController.text ? "Passwords do not match" : null),
+                                          ],
 
-                                    if (currentStep == 1) ...[
-                                      _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      // التعديل هنا: ضفنا العداد والـ InputFormatters للتليفون
-                                      _buildTextField(
-                                          controller: phoneController,
-                                          label: "Phone",
-                                          icon: Icons.phone_android,
-                                          keyboardType: TextInputType.phone,
-                                          maxLength: 11,
-                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                          validator: (v) => _validatePhone(v, "Phone")
-                                      ),
-                                      SizedBox(height: isSmallScreen ? 5 : 10), // صغرنا المسافة عشان العداد
-                                      isVeryNarrow
-                                          ? Column(children: [
-                                        _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
-                                        SizedBox(height: isSmallScreen ? 15 : 20),
-                                        _buildDatePickerField(),
-                                      ])
-                                          : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                        Expanded(child: _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v))),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: _buildDatePickerField()),
-                                      ]),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: addressController, label: "Address", icon: Icons.location_on_outlined, validator: _validateAddress),
-                                    ],
+                                          if (currentStep == 1) ...[
+                                            _buildTextField(controller: fNameController, label: "First Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: lNameController, label: "Last Name", icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(
+                                                controller: phoneController,
+                                                label: "Phone",
+                                                icon: Icons.phone_android,
+                                                keyboardType: TextInputType.phone,
+                                                maxLength: 11,
+                                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                validator: (v) => _validatePhone(v, "Phone")
+                                            ),
+                                            SizedBox(height: isSmallScreen ? 5 : 10),
+                                            isVeryNarrow
+                                                ? Column(children: [
+                                              _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v)),
+                                              SizedBox(height: isSmallScreen ? 15 : 20),
+                                              _buildDatePickerField(),
+                                            ])
+                                                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                              Expanded(child: _buildDropdownField(label: "Gender", icon: Icons.wc, value: selectedGender, items: ['Male', 'Female'], onChanged: (v) => setState(() => selectedGender = v))),
+                                              const SizedBox(width: 10),
+                                              Expanded(child: _buildDatePickerField()),
+                                            ]),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: addressController, label: "Address", icon: Icons.location_on_outlined, validator: _validateAddress),
+                                          ],
 
-                                    if (currentStep == 2) ...[
-                                      _buildDropdownField(label: "Blood Type", icon: Icons.bloodtype, value: selectedBloodType, items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], onChanged: (v) => setState(() => selectedBloodType = v)),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number, validator: _validateWeight),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number, validator: _validateHeight),
-                                      SizedBox(height: isSmallScreen ? 15 : 20),
-                                      // التعديل هنا: ضفنا العداد والـ InputFormatters لرقم الطوارئ
-                                      _buildTextField(
-                                          controller: emergencyController,
-                                          label: "Emergency Phone",
-                                          icon: Icons.contact_emergency,
-                                          keyboardType: TextInputType.phone,
-                                          maxLength: 11,
-                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                          validator: (v) => _validatePhone(v, "Emergency Phone")
+                                          if (currentStep == 2) ...[
+                                            _buildDropdownField(label: "Blood Type", icon: Icons.bloodtype, value: selectedBloodType, items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'], onChanged: (v) => setState(() => selectedBloodType = v)),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: weightController, label: "Weight (kg)", icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number, validator: _validateWeight),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(controller: heightController, label: "Height (cm)", icon: Icons.height, keyboardType: TextInputType.number, validator: _validateHeight),
+                                            SizedBox(height: isSmallScreen ? 15 : 20),
+                                            _buildTextField(
+                                                controller: emergencyController,
+                                                label: "Emergency Phone",
+                                                icon: Icons.contact_emergency,
+                                                keyboardType: TextInputType.phone,
+                                                maxLength: 11,
+                                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                validator: (v) => _validatePhone(v, "Emergency Phone")
+                                            ),
+                                          ],
+                                        ],
                                       ),
-                                    ],
+                                    ),
 
                                     SizedBox(height: isSmallScreen ? 20 : 35),
                                     Row(

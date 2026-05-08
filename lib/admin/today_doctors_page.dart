@@ -309,10 +309,10 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                     "Dr. ${doctor.firstName} ${doctor.lastName}",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Color(0xFF2D3142),
+                      color: context.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -329,7 +329,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.access_time_rounded, color: Colors.grey.shade500, size: 14),
+                      Icon(Icons.access_time_rounded, color: context.subText, size: 14),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(

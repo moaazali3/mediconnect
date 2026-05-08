@@ -197,7 +197,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
                 ),
                 const SizedBox(height: 4),
                 Text(

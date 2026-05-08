@@ -169,7 +169,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
               const SizedBox(height: 15),
               Text(
                 _searchQuery.isEmpty ? "No patients found" : "No results for '$_searchQuery'", 
-                style: TextStyle(color: Colors.grey[600], fontSize: 16)
+                style: TextStyle(color: context.subText, fontSize: 16)
               ),
             ],
           ),
@@ -233,10 +233,10 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
                       "${patient.firstName} ${patient.lastName}",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Color(0xFF1E293B),
+                        color: context.onSurface,
                       ),
                     ),
                   ],
