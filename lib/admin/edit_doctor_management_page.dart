@@ -8,6 +8,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditDoctorManagementPage extends StatefulWidget {
   final String doctorId;
@@ -32,6 +33,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final _expController = TextEditingController();
   final _dobController = TextEditingController();
   final _specializationController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _passwordObscured = true;
 
   String _gender = 'Male';
   DoctorProfileModel? _currentProfile;
@@ -56,6 +60,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     _expController.dispose();
     _dobController.dispose();
     _specializationController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -238,6 +243,21 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
+      final pass = _passwordController.text;
+      if (pass.isNotEmpty) {
+        final ok = pass.length >= 8 &&
+            RegExp(r'[A-Z]').hasMatch(pass) &&
+            RegExp(r'[a-z]').hasMatch(pass) &&
+            RegExp(r'[0-9]').hasMatch(pass) &&
+            RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(pass);
+        if (!ok) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Please meet all password requirements"),
+            backgroundColor: Colors.red,
+          ));
+          return;
+        }
+      }
       setState(() => _currentStep = 2);
     }
   }
@@ -371,42 +391,59 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   }
 
   Widget _buildStep1() {
-    return Column(
+    return StatefulBuilder(
       key: const ValueKey(1),
-      children: [
-        _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
-        const SizedBox(height: 15),
-        _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-        const SizedBox(height: 15),
-
-        _buildDropdownField<String>(
-          label: "Gender",
-          icon: Icons.wc_rounded,
-          initialValue: _gender,
-          items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
-          onChanged: (val) => setState(() => _gender = val!),
-        ),
-        const SizedBox(height: 15),
-        _buildLoginField(
-          controller: _dobController,
-          label: "Birth Date",
-          icon: Icons.calendar_month_rounded,
-          readOnly: true,
-          onTap: () async {
-            DateTime? picked = await showDatePicker(
-              context: context,
-              initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
-              firstDate: DateTime(1950),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) {
-              setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
-            }
-          },
-        ),
-      ],
+      builder: (context, setLocalState) {
+        return Column(
+          children: [
+            _buildLoginField(controller: _fNameController, label: "First Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
+            const SizedBox(height: 15),
+            _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+            const SizedBox(height: 15),
+            _buildDropdownField<String>(
+              label: "Gender",
+              icon: Icons.wc_rounded,
+              initialValue: _gender,
+              items: ['Male', 'Female'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+              onChanged: (val) => setState(() => _gender = val!),
+            ),
+            const SizedBox(height: 15),
+            _buildLoginField(
+              controller: _dobController,
+              label: "Birth Date",
+              icon: Icons.calendar_month_rounded,
+              readOnly: true,
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.tryParse(_dobController.text) ?? DateTime(1990),
+                  firstDate: DateTime(1950),
+                  lastDate: DateTime.now(),
+                );
+                if (picked != null) {
+                  setState(() => _dobController.text = DateFormat('yyyy-MM-dd').format(picked));
+                }
+              },
+            ),
+            const SizedBox(height: 15),
+            _buildLoginField(
+              controller: _passwordController,
+              label: "New Password (optional)",
+              icon: Icons.lock_reset_rounded,
+              isPassword: true,
+              isObscured: _passwordObscured,
+              onToggle: () => setState(() => _passwordObscured = !_passwordObscured),
+              onChanged: (v) => setLocalState(() {}),
+            ),
+            if (_passwordController.text.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              PasswordStrengthChecker(password: _passwordController.text),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -543,6 +580,10 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     VoidCallback? onTap,
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
+    bool isPassword = false,
+    bool isObscured = false,
+    VoidCallback? onToggle,
+    Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
@@ -550,6 +591,8 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
+      obscureText: isPassword && isObscured,
+      onChanged: onChanged,
       style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
@@ -560,9 +603,14 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           decoration: BoxDecoration(color: primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: primaryColor, size: 20),
         ),
-        suffixIcon: (onTap != null)
-            ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
-            : null,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(isObscured ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: primaryColor, size: 20),
+                onPressed: onToggle,
+              )
+            : (onTap != null)
+                ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
+                : null,
         filled: true,
         fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
@@ -575,7 +623,10 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
             borderSide: const BorderSide(color: primaryColor, width: 1.5)
         ),
       ),
-      validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+      validator: (v) {
+        if (isPassword) return null;
+        return (v == null || v.isEmpty) ? "Required" : null;
+      },
     );
   }
 

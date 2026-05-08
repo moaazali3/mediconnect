@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
+import 'package:mediconnect/widgets/password_strength_checker.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:intl/intl.dart';
@@ -323,52 +324,70 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          backgroundColor: context.cardBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
-          content: Form(
-            key: passKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
-                const SizedBox(height: 10),
-                _buildPopupField(
-                  controller: newPass,
-                  label: "New Password",
-                  icon: Icons.lock_reset_rounded,
-                  isObscured: isObscured,
-                  suffix: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: context.subText, size: 20),
-                    onPressed: () => setModalState(() => isObscured = !isObscured),
-                  ),
+        builder: (context, setModalState) {
+          return AlertDialog(
+            backgroundColor: context.cardBg,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+            content: Form(
+              key: passKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
+                    const SizedBox(height: 10),
+                    _buildPopupField(
+                      controller: newPass,
+                      label: "New Password",
+                      icon: Icons.lock_reset_rounded,
+                      isObscured: isObscured,
+                      onChanged: (val) => setModalState(() {}),
+                      suffix: IconButton(
+                        icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: context.subText, size: 20),
+                        onPressed: () => setModalState(() => isObscured = !isObscured),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    PasswordStrengthChecker(password: newPass.text),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-            ElevatedButton(
-              onPressed: () {
-                if (passKey.currentState!.validate()) {
-                  _changePassword(oldPass.text, newPass.text);
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-              child: const Text("Update", style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              ElevatedButton(
+                onPressed: () {
+                  final password = newPass.text;
+                  final hasMinLength = password.length >= 8;
+                  final hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+                  final hasLowercase = RegExp(r'[a-z]').hasMatch(password);
+                  final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+                  final hasSpecialChar = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
+                  if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please meet all password requirements"), backgroundColor: Colors.red));
+                    return;
+                  }
+                  if (passKey.currentState!.validate()) {
+                    _changePassword(oldPass.text, newPass.text);
+                    Navigator.pop(context);
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                child: const Text("Update", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix}) {
+  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix, Function(String)? onChanged}) {
     return TextFormField(
       controller: controller,
       obscureText: isObscured,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: primaryColor, size: 20),
