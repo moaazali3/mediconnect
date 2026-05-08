@@ -36,7 +36,7 @@ mixin AuthApi {
           "weight": weight
         }),
       );
-      
+
       dynamic body;
       try {
         if (response.body.isNotEmpty) {
@@ -110,7 +110,7 @@ mixin AuthApi {
           'password': password,
         }),
       );
-      
+
       dynamic body;
       try {
         if (response.body.isNotEmpty) {
@@ -182,7 +182,7 @@ mixin AuthApi {
   Future<bool> changePassword(String id, String oldPassword, String newPassword) async {
     final ApiService parent = this as ApiService;
     try {
-      final response = await http.put(
+      final response = await parent.client.put(
         Uri.parse('${parent.baseUrl}/Profile/change-password/$id'),
         headers: parent._headers,
         body: jsonEncode({

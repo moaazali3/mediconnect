@@ -36,10 +36,16 @@ class ApiResponse {
 
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   final String baseUrl = ApiConstants.baseUrl;
-  
+
+  late final http.Client client;
+
+  ApiService() {
+    client = AuthenticatedClient(this);
+  }
+
   // Static cache for doctor images
   static final Map<String, String?> _doctorImagesCache = {};
-  
+
   // Static token to be used in headers
   static String? _token;
 
@@ -69,5 +75,58 @@ class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, 
       return "No internet connection. Please check your network and try again.";
     }
     return "Connection error: $e";
+  }
+}
+
+class AuthenticatedClient extends http.BaseClient {
+  final http.Client _inner = http.Client();
+  final ApiService _apiService;
+  bool _isRefreshing = false;
+
+  AuthenticatedClient(this._apiService);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    var response = await _inner.send(request);
+
+    if (response.statusCode == 401 && !_isRefreshing) {
+      _isRefreshing = true;
+      try {
+        final refreshResponse = await _apiService.refreshToken();
+        if (refreshResponse.success) {
+          // Clone the request with the new token
+          var newRequest = _cloneRequest(request);
+          if (ApiService._token != null) {
+            newRequest.headers['Authorization'] = 'Bearer ${ApiService._token}';
+          }
+          response = await _inner.send(newRequest);
+        }
+      } finally {
+        _isRefreshing = false;
+      }
+    }
+
+    return response;
+  }
+
+  http.BaseRequest _cloneRequest(http.BaseRequest request) {
+    if (request is http.Request) {
+      var newRequest = http.Request(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..bodyBytes = request.bodyBytes
+        ..encoding = request.encoding
+        ..followRedirects = request.followRedirects
+        ..maxRedirects = request.maxRedirects
+        ..persistentConnection = request.persistentConnection;
+      return newRequest;
+    } else if (request is http.MultipartRequest) {
+      var newRequest = http.MultipartRequest(request.method, request.url)
+        ..headers.addAll(request.headers)
+        ..fields.addAll(request.fields)
+        ..files.addAll(request.files);
+      return newRequest;
+    }
+    // Fallback for custom or streamed requests
+    return request;
   }
 }
