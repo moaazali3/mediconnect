@@ -45,9 +45,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     setState(() { _isLoading = true; _error = null; });
 
     try {
-      // التعديل هنا: زودنا <dynamic> وغيرنا اسم الدالة
-      final results = await Future.wait<dynamic>([
-        _apiService.getAdminDashboard(),
+      final results = await Future.wait([
+        _apiService.getAdminDashboardStats(),
         _apiService.getTodayAppointments(),
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
@@ -299,9 +298,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  title, 
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))
                 ),
               ),
             ],
@@ -314,15 +313,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               children: [
                 Expanded(
                   child: Text(
-                    entry.key, 
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)
+                      entry.key,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "${entry.value} Bookings", 
-                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)
+                    "${entry.value} Bookings",
+                    style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)
                 ),
               ],
             ),

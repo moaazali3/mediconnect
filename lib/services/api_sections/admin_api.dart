@@ -1,8 +1,7 @@
 part of '../api_service.dart';
 
 mixin AdminApi {
-  // 1. جلب بيانات الداشبورد (تم تعديل الاسم لـ getAdminDashboard)
-  Future<AdminDashboardModel> getAdminDashboard() async {
+  Future<AdminDashboardModel> getAdminDashboardStats() async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.get(Uri.parse('${parent.baseUrl}/Admin/dashboard'), headers: parent._headers);
@@ -149,39 +148,43 @@ mixin AdminApi {
     }
   }
 
-  // 2. جلب أرباح دكتور معين (معدلة لترجع رقم double)
   Future<double> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
-    try {
-      final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
-        headers: parent._headers,
-      );
-      if (response.statusCode == 200) {
-        return double.tryParse(response.body.toString()) ?? 0.0;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
+      } else if (decoded is num) {
+        return decoded.toDouble();
       } else {
-        return 0.0;
+        return double.tryParse(decoded.toString()) ?? 0.0;
       }
-    } catch (e) {
-      return 0.0;
+    } else {
+      throw "Failed to load doctor revenue: ${response.statusCode}";
     }
   }
 
-  // 3. جلب أرباح تخصص معين (معدلة لترجع رقم double)
   Future<double> getSpecializationRevenue(String specializationName) async {
     final ApiService parent = this as ApiService;
-    try {
-      final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
-        headers: parent._headers,
-      );
-      if (response.statusCode == 200) {
-        return double.tryParse(response.body.toString()) ?? 0.0;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
+      } else if (decoded is num) {
+        return decoded.toDouble();
       } else {
-        return 0.0;
+        return double.tryParse(decoded.toString()) ?? 0.0;
       }
-    } catch (e) {
-      return 0.0;
+    } else {
+      throw "Failed to load specialization revenue: ${response.statusCode}";
     }
   }
 

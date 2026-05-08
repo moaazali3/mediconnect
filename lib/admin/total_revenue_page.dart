@@ -46,7 +46,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
 
     try {
       // 1. جلب إجمالي الأرباح والحجوزات من الداشبورد
-      final dashboard = await _apiService.getAdminDashboard();
+      final dashboard = await _apiService.getAdminDashboardStats();
 
       // 2. جلب كل التخصصات والدكاترة
       final specializations = await _apiService.getAllSpecializations();
