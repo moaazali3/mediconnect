@@ -36,9 +36,8 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final patients = await _apiService.getAllPatients();
+      final List<PatientProfileModel> patients = await _apiService.getAllPatients();
       
-      // حذف التكرار بناءً على الاسم الكامل
       final Set<String> seenNames = {};
       final List<PatientProfileModel> uniquePatients = [];
       
@@ -81,10 +80,10 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: const Color(0xFFF1F5F9),
       appBar: CommonAppBar(
         title: "System Patients",
-        subtitle: "View Directory",
+        subtitle: "${_filteredPatients.length} Total Patients",
         showBackButton: true,
         onRefresh: _loadData,
       ),
@@ -94,7 +93,11 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: primaryColor))
-                : _buildPatientList(),
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: primaryColor,
+                    child: _buildPatientList(),
+                  ),
           ),
         ],
       ),
@@ -103,7 +106,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
 
   Widget _buildSearchHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 25),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
       decoration: const BoxDecoration(
         color: primaryColor,
         borderRadius: BorderRadius.only(
@@ -114,19 +117,24 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
       child: TextField(
         controller: _searchController,
         onChanged: (value) {
-          _searchQuery = value;
-          _applySearch();
+          setState(() {
+            _searchQuery = value;
+            _applySearch();
+          });
         },
         decoration: InputDecoration(
           hintText: "Search patients by name...",
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
               ? IconButton(
-                  icon: const Icon(Icons.clear), 
+                  icon: const Icon(Icons.clear, size: 20), 
                   onPressed: () {
                     _searchController.clear();
-                    _searchQuery = "";
-                    _applySearch();
+                    setState(() {
+                      _searchQuery = "";
+                      _applySearch();
+                    });
                   }) 
               : null,
           filled: true,
@@ -135,7 +143,7 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
         ),
       ),
     );
@@ -144,13 +152,19 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
   Widget _buildPatientList() {
     if (_filteredPatients.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search_rounded, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 15),
-            Text("No patients found", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          ],
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.person_search_rounded, size: 80, color: Colors.grey[300]),
+              const SizedBox(height: 15),
+              Text(
+                _searchQuery.isEmpty ? "No patients found" : "No results for '$_searchQuery'", 
+                style: TextStyle(color: Colors.grey[600], fontSize: 16)
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -161,32 +175,75 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
       itemBuilder: (context, index) {
         final patient = _filteredPatients[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            leading: CircleAvatar(
-              backgroundColor: primaryColor.withOpacity(0.1),
-              child: const Icon(Icons.person, color: primaryColor),
-            ),
-            title: Text(
-              "${patient.firstName} ${patient.lastName}",
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Color(0xFF2D3142),
+          child: Row(
+            children: [
+              // Patient Profile Picture with Double Thin Border
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.withOpacity(0.15), width: 0.8),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.withOpacity(0.1), width: 0.8),
+                  ),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    child: Icon(
+                      patient.gender.toLowerCase() == "female" ? Icons.female : Icons.male, 
+                      color: primaryColor, 
+                      size: 30
+                    ),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 15),
+              // Patient Info with Overflow protection
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "${patient.firstName} ${patient.lastName}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Patient ID: ${patient.id.length > 8 ? patient.id.substring(0, 8).toUpperCase() : patient.id.toUpperCase()}",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         );
       },

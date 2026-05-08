@@ -3,6 +3,7 @@ import 'package:mediconnect/admin/add_doctor_page.dart';
 import 'package:mediconnect/admin/add_receptionist_page.dart';
 import 'package:mediconnect/admin/manage_specializations_page.dart';
 import 'package:mediconnect/admin/manage_doctors_page.dart';
+import 'package:mediconnect/admin/manage_receptionists_page.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/admin/analytics_page.dart';
@@ -20,7 +21,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   String _adminName = "Administrator";
 
-  // المفتاح ده السحر اللي هيعمل ريستارت لصفحة الـ Analytics لما ندوس ريفريش
   Key _analyticsKey = UniqueKey();
 
   @override
@@ -47,15 +47,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // --- دالة الريفريش ---
   void _handleRefresh() {
-    _loadAdminInfo(); // بيجيب اسم الأدمن من تاني
+    _loadAdminInfo();
     setState(() {
-      // تغيير المفتاح بيجبر فلاتر إنه يعيد بناء صفحة الإحصائيات ويسحب داتا جديدة
       _analyticsKey = UniqueKey();
     });
 
-    // رسالة تأكيد بسيطة
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Dashboard Refreshed"),
@@ -75,13 +72,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
         pageName: pageTitle,
         userName: _adminName,
         onLogout: _signOut,
-        onRefresh: _handleRefresh, // زرار الريفريش ضفناه هنا أهو
+        onRefresh: _handleRefresh,
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
           _buildConsoleContent(),
-          // ربطنا الصفحة بالمفتاح اللي بيتغير مع الريفريش
           AnalyticsPage(key: _analyticsKey),
         ],
       ),
@@ -89,7 +85,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05), // شيلت withValues عشان التوافق مع كل الإصدارات
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -186,51 +182,74 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildManagementGrid(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final childRatio = screenWidth < 360 ? 0.75 : (screenWidth < 400 ? 0.85 : 1.0);
+    final List<Widget> items = [
+      _buildActionCard(
+        context,
+        "Add Doctor",
+        "Register staff",
+        Icons.person_add_alt_1_rounded,
+        Colors.blue.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Add Receptionist",
+        "Support staff",
+        Icons.person_add_alt_rounded,
+        Colors.indigo.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Doctors List",
+        "Schedules & Fees",
+        Icons.medical_services_rounded,
+        Colors.teal.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Receptionists",
+        "Manage staff",
+        Icons.badge_rounded,
+        Colors.orange.shade600,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageReceptionistsPage())),
+      ),
+      _buildActionCard(
+        context,
+        "Specialties",
+        "Manage list",
+        Icons.category_rounded,
+        Colors.amber.shade700,
+            () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
+      ),
+    ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 15,
-      crossAxisSpacing: 15,
-      childAspectRatio: childRatio,
-      children: [
-        _buildActionCard(
-          context,
-          "Add Doctor",
-          "Register staff",
-          Icons.person_add_alt_1_rounded,
-          Colors.blue.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddDoctorPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Add Receptionist",
-          "Support staff",
-          Icons.person_add_alt_rounded,
-          Colors.indigo.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddReceptionistPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Doctors List",
-          "Schedules & Fees",
-          Icons.medical_services_rounded,
-          Colors.teal.shade600,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageDoctorsPage())),
-        ),
-        _buildActionCard(
-          context,
-          "Specialties",
-          "Manage list",
-          Icons.category_rounded,
-          Colors.amber.shade700,
-              () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
-        ),
-      ],
-    );
+    List<Widget> rows = [];
+    for (int i = 0; i < items.length; i += 2) {
+      if (i + 1 < items.length) {
+        rows.add(
+          Row(
+            children: [
+              Expanded(child: items[i]),
+              const SizedBox(width: 15),
+              Expanded(child: items[i + 1]),
+            ],
+          ),
+        );
+      } else {
+        // إذا كان العنصر وحيداً، نجعله يأخذ العرض الكامل
+        rows.add(
+          SizedBox(
+            width: double.infinity,
+            child: items[i],
+          ),
+        );
+      }
+      rows.add(const SizedBox(height: 15));
+    }
+
+    return Column(children: rows);
   }
 
   Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
@@ -238,7 +257,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        constraints: const BoxConstraints(minHeight: 110),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -258,27 +278,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                ],
+            const SizedBox(height: 12),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
             ),
           ],
         ),

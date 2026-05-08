@@ -259,6 +259,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
             borderRadius: BorderRadius.circular(30),
             borderSide: BorderSide.none,
           ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
         ),
       ),
     );
@@ -316,7 +317,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -329,59 +330,65 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: primaryColor.withOpacity(0.1), width: 2),
+              border: Border.all(color: primaryColor.withOpacity(0.1), width: 1),
             ),
             child: CircleAvatar(
-              radius: 30,
-              backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
+              radius: 28,
+              backgroundColor: primaryColor.withOpacity(0.1),
               backgroundImage: fullImageUrl != null ? NetworkImage(fullImageUrl) : null,
               child: fullImageUrl == null
-                  ? Icon(
-                      doctor.gender == "Male" ? Icons.male : Icons.female, 
-                      size: 35, 
-                      color: doctor.gender == "Male" ? Colors.blue : Colors.pink
-                    )
+                  ? const Icon(Icons.person, size: 32, color: primaryColor)
                   : null,
             ),
           ),
-          const SizedBox(width: 15),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Color(0xFF263238),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   doctor.specializationName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.grey.shade600,
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.history_edu, color: primaryColor, size: 18),
+                    const Icon(Icons.history_edu, color: primaryColor, size: 16),
                     const SizedBox(width: 4),
-                    Text(
-                      "${doctor.experienceYears} Years Exp.",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade800,
-                        fontSize: 13,
+                    Expanded(
+                      child: Text(
+                        "${doctor.experienceYears} Years Exp.",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -389,9 +396,12 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
+                visualDensity: VisualDensity.compact,
                 onPressed: () async {
                   final result = await Navigator.push(
                     context,
@@ -401,19 +411,24 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   );
                   if (result == true) _fetchDoctors();
                 },
-                icon: const Icon(Icons.edit, color: primaryColor),
+                icon: const Icon(Icons.edit, color: primaryColor, size: 20),
                 style: IconButton.styleFrom(
                   backgroundColor: primaryColor.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
                 ),
               ),
               const SizedBox(height: 8),
               IconButton(
+                visualDensity: VisualDensity.compact,
                 onPressed: () => _confirmDelete(doctor),
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.red.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  minimumSize: const Size(36, 36),
+                  padding: EdgeInsets.zero,
                 ),
               ),
             ],

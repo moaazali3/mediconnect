@@ -27,7 +27,6 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   AdminDashboardModel? _stats;
   int _uniquePatientsCount = 0;
 
-  // Top Doctor Info
   String? _topDoctorName;
   String? _topDoctorSpec;
   int _topDoctorBookings = 0;
@@ -63,14 +62,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final allDoctors = results[5] as List<DoctorModel>;
       final allSpecs = results[6] as List<SpecializationModel>;
 
-      // 1. Unique Patients
       final Set<String> uniqueNames = {for (var p in allPatients) "${p.firstName} ${p.lastName}".toLowerCase().trim()};
-
-      // 2. Lookup Maps
       Map<String, String> docIdToSpec = {for (var d in allDoctors) d.id.trim().toLowerCase(): d.specializationName.trim()};
       Map<String, String> docNameToSpec = {for (var d in allDoctors) "${d.firstName} ${d.lastName}".trim().toLowerCase(): d.specializationName.trim()};
 
-      // 3. Initialize Spec Counts
       Map<String, int> specCounts = {for (var s in allSpecs) s.name.trim(): 0};
       Map<String, int> doctorCounts = {};
 
@@ -79,18 +74,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         if (docName.isEmpty) docName = "Unknown Doctor";
         doctorCounts[docName] = (doctorCounts[docName] ?? 0) + 1;
 
-        // Determine Spec
         String? spec = (appt.specializationName?.trim() ?? "").isNotEmpty ? appt.specializationName!.trim() : null;
         if (spec == null) {
           String docId = appt.doctorId.trim().toLowerCase();
           spec = docIdToSpec[docId] ?? docNameToSpec[docName.toLowerCase()] ?? "General";
         }
-
         spec = spec.trim();
         specCounts[spec] = (specCounts[spec] ?? 0) + 1;
       }
 
-      // Find Top Doctor
       String? topName;
       String? topSpec;
       int topBookings = 0;
@@ -129,6 +121,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onRefresh: _loadData,
       color: primaryColor,
       child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +341,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
       _buildStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
     ];
-    return _buildDynamicGrid(items, spacing: 15, aspectRatio: 1.2);
+    // Changed aspect ratio to 1.0 (square) to give more vertical space
+    return _buildDynamicGrid(items, spacing: 15, aspectRatio: 1.0);
   }
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
@@ -356,16 +350,35 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 10),
-            FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ],
         ),
       ),
@@ -378,7 +391,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
       _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
     ];
-    return _buildDynamicGrid(items, spacing: 12, aspectRatio: 1.2);
+    return _buildDynamicGrid(items, spacing: 12, aspectRatio: 1.0);
   }
 
   Widget _buildSmallStat(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
@@ -386,17 +399,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,18 +411,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           children: [
             Container(
               padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
               child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            const SizedBox(height: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -445,8 +452,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ),
         );
       } else {
-        // Last one full width
-        rows.add(AspectRatio(aspectRatio: aspectRatio * 2.2, child: items[i]));
+        // Full width for the last item if odd count
+        rows.add(AspectRatio(aspectRatio: aspectRatio * 2.0, child: items[i]));
       }
       rows.add(SizedBox(height: spacing));
     }
