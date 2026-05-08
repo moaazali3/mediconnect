@@ -1,7 +1,7 @@
 part of '../api_service.dart';
 
 mixin AdminApi {
-  // 1. جلب بيانات الداشبورد (تم تعديل الاسم لـ getAdminDashboard)
+  // 1. جلب بيانات الداشبورد
   Future<AdminDashboardModel> getAdminDashboard() async {
     final ApiService parent = this as ApiService;
     try {
@@ -149,7 +149,7 @@ mixin AdminApi {
     }
   }
 
-  // 2. جلب أرباح دكتور معين (معدلة لترجع رقم double)
+  // 2. جلب أرباح دكتور معين
   Future<double> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {
@@ -158,28 +158,43 @@ mixin AdminApi {
         headers: parent._headers,
       );
       if (response.statusCode == 200) {
-        return double.tryParse(response.body.toString()) ?? 0.0;
-      } else {
-        return 0.0;
+        try {
+          final data = jsonDecode(response.body);
+          if (data is num) return data.toDouble();
+          if (data is Map) {
+            return (data['totalRevenue'] ?? data['TotalRevenue'] ?? data['revenue'] ?? data['Revenue'] ?? 0.0).toDouble();
+          }
+        } catch (_) {}
+        final val = response.body.toString().trim();
+        return double.tryParse(val) ?? 0.0;
       }
+      return 0.0;
     } catch (e) {
       return 0.0;
     }
   }
 
-  // 3. جلب أرباح تخصص معين (معدلة لترجع رقم double)
+  // 3. جلب أرباح تخصص معين
   Future<double> getSpecializationRevenue(String specializationName) async {
     final ApiService parent = this as ApiService;
     try {
+      final encodedName = Uri.encodeComponent(specializationName.trim());
       final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$encodedName'),
         headers: parent._headers,
       );
       if (response.statusCode == 200) {
-        return double.tryParse(response.body.toString()) ?? 0.0;
-      } else {
-        return 0.0;
+        try {
+          final data = jsonDecode(response.body);
+          if (data is num) return data.toDouble();
+          if (data is Map) {
+            return (data['totalRevenue'] ?? data['TotalRevenue'] ?? data['revenue'] ?? data['Revenue'] ?? 0.0).toDouble();
+          }
+        } catch (_) {}
+        final val = response.body.toString().trim();
+        return double.tryParse(val) ?? 0.0;
       }
+      return 0.0;
     } catch (e) {
       return 0.0;
     }

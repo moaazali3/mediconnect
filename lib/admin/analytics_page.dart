@@ -36,8 +36,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   String? _topDoctorName;
   String? _topDoctorSpec;
   int _topDoctorBookings = 0;
+  double _topDoctorRevenue = 0.0;
   
   List<MapEntry<String, int>> _topSpecializations = [];
+  double _topSpecRevenue = 0.0;
 
   @override
   void initState() {
@@ -54,7 +56,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
     try {
       final results = await Future.wait([
-        _apiService.getAdminDashboard(), // Fixed method name
+        _apiService.getAdminDashboard(),
         _apiService.getTodayAppointments(),
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
@@ -117,11 +119,26 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       String? topName;
       String? topSpec;
       int topBookings = 0;
+      double topDocRev = 0.0;
       if (doctorCounts.isNotEmpty) {
         var sortedDocs = doctorCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
         topName = sortedDocs.first.key;
         topBookings = sortedDocs.first.value;
         topSpec = docNameToSpec[topName.toLowerCase()] ?? "General";
+        
+        try {
+          final topAppt = allAppts.firstWhere((a) => a.doctorName.trim() == topName);
+          topDocRev = await _apiService.getDoctorRevenue(topAppt.doctorId);
+        } catch (_) {}
+      }
+
+      // Specialization Revenue
+      var sortedSpecs = specCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      double topSRevenue = 0.0;
+      if (sortedSpecs.isNotEmpty) {
+        try {
+          topSRevenue = await _apiService.getSpecializationRevenue(sortedSpecs.first.key);
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -133,7 +150,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           _topDoctorName = topName;
           _topDoctorSpec = topSpec;
           _topDoctorBookings = topBookings;
-          _topSpecializations = specCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+          _topDoctorRevenue = topDocRev;
+          _topSpecializations = sortedSpecs;
+          _topSpecRevenue = topSRevenue;
           _stats = stats.copyWith(
             totalDoctorsToday: activeDoctors.length,
             totalAppointmentsToday: todayAppts.length,
@@ -333,7 +352,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               const SizedBox(height: 25),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Column(
@@ -370,6 +389,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -377,7 +397,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                         "$_topDoctorBookings",
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -385,7 +405,24 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                         "Bookings",
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: 12,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "${_topDoctorRevenue.toStringAsFixed(0)} EGP",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        "Revenue",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -422,6 +459,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))
                 ),
               ),
+              if (_topSpecRevenue > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    "${_topSpecRevenue.toStringAsFixed(0)} EGP Top Spec",
+                    style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 15),

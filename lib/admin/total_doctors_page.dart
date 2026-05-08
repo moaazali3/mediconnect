@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
-import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 
@@ -16,15 +15,15 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   
+  List<DoctorModel> _allDoctors = [];
+  List<DoctorModel> _filteredDoctors = [];
   bool _isLoading = true;
-  List<SpecializationModel> _specializations = [];
-  Map<String, List<DoctorModel>> _doctorsBySpec = {};
   String _searchQuery = "";
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _fetchAllDoctors();
   }
 
   @override
@@ -33,64 +32,79 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _fetchAllDoctors() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
+
     try {
-      final results = await Future.wait([
-        _apiService.getAllSpecializations(),
-        _apiService.getAllDoctors(pageSize: 500),
-      ]);
-
-      final specs = results[0] as List<SpecializationModel>;
-      final doctors = results[1] as List<DoctorModel>;
-
-      Map<String, List<DoctorModel>> grouped = {};
-      for (var spec in specs) {
-        grouped[spec.name] = doctors.where((d) => d.specializationName == spec.name).toList();
-      }
-
+      final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 1000);
       if (mounted) {
         setState(() {
-          _specializations = specs;
-          _doctorsBySpec = grouped;
+          _allDoctors = doctors;
+          _applySearch();
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error fetching doctors: $e"), backgroundColor: Colors.redAccent),
+        );
       }
     }
+  }
+
+  void _applySearch() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _filteredDoctors = _allDoctors;
+      } else {
+        _filteredDoctors = _allDoctors.where((doctor) {
+          final fullName = "${doctor.firstName} ${doctor.lastName}".toLowerCase();
+          final spec = doctor.specializationName.toLowerCase();
+          return fullName.contains(_searchQuery.toLowerCase()) || spec.contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: const Color(0xFFF1F5F9),
       appBar: CommonAppBar(
-        title: "System Doctors",
-        subtitle: "View Directory",
+        title: "All Doctors",
+        subtitle: "${_allDoctors.length} Total Registered",
         showBackButton: true,
-        onRefresh: _loadData,
+        onRefresh: _fetchAllDoctors,
       ),
       body: Column(
         children: [
-          _buildSearchHeader(),
+          _buildSearchBox(),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: primaryColor))
-                : _buildSpecializationList(),
+                : RefreshIndicator(
+                    onRefresh: _fetchAllDoctors,
+                    color: primaryColor,
+                    child: _filteredDoctors.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredDoctors.length,
+                            itemBuilder: (context, index) => _buildDoctorCard(_filteredDoctors[index]),
+                          ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSearchHeader() {
+  Widget _buildSearchBox() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 25),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
       decoration: const BoxDecoration(
         color: primaryColor,
         borderRadius: BorderRadius.only(
@@ -100,121 +114,90 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
       ),
       child: TextField(
         controller: _searchController,
-        onChanged: (value) => setState(() => _searchQuery = value),
+        onChanged: (val) {
+          setState(() {
+            _searchQuery = val;
+            _applySearch();
+          });
+        },
         decoration: InputDecoration(
-          hintText: "Find a doctor in the system...",
+          hintText: "Search by name or specialization...",
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
-              ? IconButton(
-                  icon: const Icon(Icons.clear), 
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = "");
-                  }) 
+              ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
+                  _searchController.clear();
+                  setState(() { _searchQuery = ""; _applySearch(); });
+                }) 
               : null,
           filled: true,
           fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide.none,
-          ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+          contentPadding: EdgeInsets.zero,
         ),
       ),
     );
   }
 
-  Widget _buildSpecializationList() {
-    final filteredSpecs = _specializations.where((spec) {
-      final doctors = _doctorsBySpec[spec.name] ?? [];
-      if (_searchQuery.isEmpty) return doctors.isNotEmpty;
-      return doctors.any((d) => "${d.firstName} ${d.lastName}".toLowerCase().contains(_searchQuery.toLowerCase()));
-    }).toList();
-
-    if (filteredSpecs.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search_rounded, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 15),
-            Text("No doctors match your search", style: TextStyle(color: Colors.grey[600], fontSize: 16)),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filteredSpecs.length,
-      itemBuilder: (context, index) {
-        final spec = filteredSpecs[index];
-        var doctors = _doctorsBySpec[spec.name] ?? [];
-        
-        if (_searchQuery.isNotEmpty) {
-          doctors = doctors.where((d) => 
-            "${d.firstName} ${d.lastName}".toLowerCase().contains(_searchQuery.toLowerCase())
-          ).toList();
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
-            ],
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.medical_services_rounded, color: primaryColor, size: 24),
-              ),
-              title: Text(spec.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2D3142))),
-              subtitle: Text("${doctors.length} Registered Doctors", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-              childrenPadding: const EdgeInsets.only(bottom: 10, left: 8, right: 8),
-              children: doctors.map((doctor) => _buildDoctorItem(doctor)).toList(),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDoctorItem(DoctorModel doctor) {
+  Widget _buildDoctorCard(DoctorModel doctor) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.withOpacity(0.05)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
+        ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: primaryColor.withOpacity(0.1), width: 1)),
-          child: CircleAvatar(
-            radius: 22,
-            backgroundColor: (doctor.gender == "Male" ? Colors.blue : Colors.pink).withOpacity(0.1),
-            backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
-                ? NetworkImage(doctor.profilePictureUrl!)
-                : null,
-            child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
-                ? Icon(doctor.gender == "Male" ? Icons.male : Icons.female, 
-                    size: 22, color: doctor.gender == "Male" ? Colors.blue : Colors.pink)
-                : null,
-          ),
+        contentPadding: const EdgeInsets.all(12),
+        leading: CircleAvatar(
+          radius: 30,
+          backgroundColor: primaryColor.withOpacity(0.1),
+          backgroundImage: doctor.profilePictureUrl != null ? NetworkImage(doctor.profilePictureUrl!) : null,
+          child: doctor.profilePictureUrl == null 
+              ? Icon(doctor.gender == "Male" ? Icons.male : Icons.female, color: primaryColor, size: 30) 
+              : null,
         ),
-        title: Text("Dr. ${doctor.firstName} ${doctor.lastName}", 
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF2D3142))),
-        subtitle: Text("${doctor.experienceYears.toStringAsFixed(0)} years experience", 
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        // تم حذف trailing و onTap لجعل القائمة للعرض فقط
+        title: Text(
+          "Dr. ${doctor.firstName} ${doctor.lastName}",
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(doctor.specializationName, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.work_history_outlined, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text("${doctor.experienceYears.toInt()} Years Exp.", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                const SizedBox(width: 12),
+                Icon(Icons.payments_outlined, size: 14, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text("${doctor.consultationFee.toInt()} EGP", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person_search_outlined, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isEmpty ? "No doctors registered yet" : "No results for '$_searchQuery'",
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+          ),
+        ],
       ),
     );
   }
