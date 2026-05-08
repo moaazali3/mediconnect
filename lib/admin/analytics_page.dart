@@ -47,11 +47,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() { _isLoading = true; _error = null; });
+    setState(() { 
+      _isLoading = true; 
+      _error = null; 
+    });
 
     try {
       final results = await Future.wait([
-        _apiService.getAdminDashboardStats(),
+        _apiService.getAdminDashboard(), // Fixed method name
         _apiService.getTodayAppointments(),
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
@@ -74,9 +77,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       int cancelled = 0;
       for (var appt in todayAppts) {
         final s = appt.status.toLowerCase();
-        if (s == 'pending' || s == 'waiting') pending++;
-        else if (s == 'confirmed' || s == 'accepted' || s == 'completed') confirmed++;
-        else if (s == 'cancelled' || s == 'rejected') cancelled++;
+        if (s == 'pending' || s == 'waiting') {
+          pending++;
+        } else if (s == 'confirmed' || s == 'accepted' || s == 'completed') {
+          confirmed++;
+        } else if (s == 'cancelled' || s == 'rejected') {
+          cancelled++;
+        }
       }
 
       // 1. Unique Patients
@@ -135,7 +142,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      if (mounted) {
+        setState(() { 
+          _error = e.toString(); 
+          _isLoading = false; 
+        });
+      }
     }
   }
 
@@ -457,123 +469,24 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   Widget _buildStatsGrid(AdminDashboardModel stats) {
     return Column(
       children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage())))),
-              const SizedBox(width: 15),
-              Expanded(child: _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage())))),
-            ],
-          ),
-        ),
-        const SizedBox(height: 15),
+        _buildWideStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
+        const SizedBox(height: 12),
         _buildWideStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
       ],
-    );
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))
-              ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildQuickStats() {
     return Column(
       children: [
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage())))),
-              const SizedBox(width: 12),
-              Expanded(child: _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage())))),
-            ],
-          ),
-        ),
+        _buildWideStatCard("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
         const SizedBox(height: 12),
         _buildWideStatCard("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
       ],
-    );
-  }
-
-  Widget _buildSmallStat(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(height: 6),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  value,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
