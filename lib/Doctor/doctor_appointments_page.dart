@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
@@ -153,8 +154,8 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: context.cardBg,
+        surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: EdgeInsets.zero,
@@ -330,7 +331,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     final apps = _filteredAppointments;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: Stack(
           children: [
@@ -408,7 +409,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           hintText: "Search by patient name...",
           prefixIcon: const Icon(Icons.search, size: 20),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.inputFill,
           contentPadding: const EdgeInsets.symmetric(vertical: 0),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
         ),
@@ -452,17 +453,19 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
+          color: isSelected ? primaryColor : context.filterChipBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
+          border: Border.all(
+            color: isSelected ? primaryColor : context.filterChipBorder,
+          ),
         ),
         child: Text(
-            label,
-            style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 13
-            )
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : context.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -472,9 +475,9 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2))]
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.02), blurRadius: 8, offset: const Offset(0, 2))]
       ),
       child: Column(
         children: [
@@ -519,7 +522,7 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
                     icon: const Icon(Icons.history_edu_rounded, size: 16),
                     label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
+                      backgroundColor: context.cardBg,
                       foregroundColor: primaryColor,
                       side: const BorderSide(color: primaryColor, width: 1),
                       elevation: 0,

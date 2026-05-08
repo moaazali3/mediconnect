@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
@@ -261,7 +262,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),

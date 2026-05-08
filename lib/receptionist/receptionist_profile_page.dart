@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
-import 'package:mediconnect/models/DoctorScheduleModel.dart'; // ضفنا الموديل بتاع الجدول
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// ماتنساش تتأكد إن مسار ملف التعديل ده صح عندك
 import 'package:mediconnect/receptionist/edit_receptionist_profile.dart';
 
 class ReceptionistProfilePage extends StatefulWidget {
@@ -94,11 +94,11 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _profile == null) {
-      return const Scaffold(backgroundColor: Color(0xFFF8FAFF), body: Center(child: CircularProgressIndicator(color: primaryColor)));
+      return Scaffold(backgroundColor: context.scaffoldBg, body: const Center(child: CircularProgressIndicator(color: primaryColor)));
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: context.scaffoldBg,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -212,9 +212,9 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   Widget _buildProfileCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(children: children),
     );
@@ -235,9 +235,9 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                Text(label, style: TextStyle(color: context.subText, fontSize: 13)),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
+                Text(value, style: TextStyle(color: context.onSurface, fontSize: 15, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -247,7 +247,7 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
+    return Divider(height: 1, indent: 70, endIndent: 20, color: context.dividerCol);
   }
 
   // الدالة الجديدة اللي بتبني الجدول بتاع الدكتور

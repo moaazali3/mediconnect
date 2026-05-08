@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
@@ -214,11 +215,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -229,26 +230,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: color,
-              ),
-            ),
+            child: Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
           ),
           const SizedBox(height: 6),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(label, style: TextStyle(fontSize: 13, color: context.subText, fontWeight: FontWeight.w500)),
           ),
         ],
       ),
@@ -263,9 +250,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,11 +261,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             children: [
               const Icon(Icons.pie_chart_rounded, color: primaryColor, size: 20),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   "Overall Appointments Status",
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
                 ),
               ),
             ],
@@ -294,7 +281,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ],
           ),
           const SizedBox(height: 20),
-          const Divider(),
+          Divider(color: context.dividerCol),
           const SizedBox(height: 15),
           Row(
             children: [
@@ -302,7 +289,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Success Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                    Text("Success Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subText)),
                     const SizedBox(height: 4),
                     FittedBox(
                       fit: BoxFit.scaleDown,
@@ -315,7 +302,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Failure Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                    Text("Failure Rate", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.subText)),
                     const SizedBox(height: 4),
                     FittedBox(
                       fit: BoxFit.scaleDown,
@@ -332,22 +319,16 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildDivider() {
-    return Container(height: 30, width: 1, color: Colors.grey.shade200, margin: const EdgeInsets.symmetric(horizontal: 5));
+    return Container(height: 30, width: 1, color: context.dividerCol, margin: const EdgeInsets.symmetric(horizontal: 5));
   }
 
   Widget _buildStatusVertical(String label, String value, Color color) {
     return Expanded(
       child: Column(
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-          ),
+          FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color))),
           const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-          ),
+          FittedBox(fit: BoxFit.scaleDown, child: Text(label, style: TextStyle(fontSize: 12, color: context.subText, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -487,9 +468,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,11 +480,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               Icon(icon, color: primaryColor, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                    title,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D3142))
-                ),
+                child: Text(title, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.onSurface)),
               ),
             ],
           ),
@@ -514,21 +492,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                      entry.key,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w500)
-                  ),
+                  child: Text(entry.key, overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: context.onSurface, fontWeight: FontWeight.w500)),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                    "${entry.value} Bookings",
-                    style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)
-                ),
+                Text("${entry.value} Bookings", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           )),
-          const Divider(),
+          Divider(color: context.dividerCol),
           Center(
             child: TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalAppointmentsPage())),
@@ -541,7 +513,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)));
+    return Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.onSurface));
   }
 
   Widget _buildStatsGrid(AdminDashboardModel stats) {
@@ -560,9 +532,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.05), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,19 +546,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                ),
+                child: Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.onSurface)),
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            Text(label, style: TextStyle(color: context.subText, fontSize: 11, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, maxLines: 1),
           ],
         ),
       ),
@@ -609,9 +573,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,19 +591,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                ),
+                child: Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: context.onSurface)),
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            Text(label, style: TextStyle(color: context.subText, fontSize: 10, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis, maxLines: 1),
           ],
         ),
       ),

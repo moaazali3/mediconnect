@@ -146,9 +146,16 @@ class _HomeContentState extends State<HomeContent> {
 
           const SizedBox(height: 25),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text("Specializations", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Specializations",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
           ),
           const SizedBox(height: 15),
 
@@ -160,7 +167,10 @@ class _HomeContentState extends State<HomeContent> {
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Text("Top Doctors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            child: Text(
+              "Top Doctors",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 15),
 
@@ -207,14 +217,16 @@ class _HomeContentState extends State<HomeContent> {
 
           const SizedBox(height: 30),
 
-          // الـ Search Bar
+          // Search bar
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF1E2235)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(0.08),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 )
@@ -222,10 +234,20 @@ class _HomeContentState extends State<HomeContent> {
             ),
             child: TextField(
               onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black87,
+              ),
               decoration: InputDecoration(
                 hintText: "Search doctor by name...",
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                hintStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF6B7280)
+                      : Colors.grey.shade400,
+                  fontSize: 14,
+                ),
                 prefixIcon: const Icon(Icons.search_rounded, color: primaryColor, size: 22),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -317,6 +339,7 @@ class _HomeContentState extends State<HomeContent> {
 
   Widget _buildSpecItem(String title) {
     bool isSelected = selectedSpecialization == title;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         if (selectedSpecialization != title) {
@@ -328,18 +351,29 @@ class _HomeContentState extends State<HomeContent> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
+          color: isSelected
+              ? primaryColor
+              : (isDark ? const Color(0xFF1E2235) : Colors.white),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200, width: 1.5),
-          boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))] : null,
+          border: Border.all(
+            color: isSelected
+                ? primaryColor
+                : (isDark ? const Color(0xFF374151) : Colors.grey.shade200),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: primaryColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 4))]
+              : null,
         ),
         child: Text(
-            title,
-            style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade700,
-                fontWeight: FontWeight.bold,
-                fontSize: 14
-            )
+          title,
+          style: TextStyle(
+            color: isSelected
+                ? Colors.white
+                : (isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
         ),
       ),
     );

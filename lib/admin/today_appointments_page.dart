@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
@@ -63,7 +64,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
     String selectedDateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Today's Bookings",
         subtitle: DateFormat('EEEE, d MMMM').format(_selectedDate),
@@ -206,7 +207,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                           title: Text(specName, style: TextStyle(
                             fontWeight: FontWeight.bold, 
                             fontSize: 16,
-                            color: totalSpec > 0 ? Colors.black : Colors.grey[600]
+                            color: totalSpec > 0 ? context.onSurface : context.subText
                           )),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -221,7 +222,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                             : doctors.entries.map<Widget>((doc) {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                                  decoration: BoxDecoration(color: context.isDark ? const Color(0xFF374151) : Colors.grey[50], borderRadius: BorderRadius.circular(12)),
                                   child: ListTile(
                                     title: Text(doc.key, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                     subtitle: Text("${doc.value.length} Bookings", style: const TextStyle(fontSize: 12)),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 
@@ -107,7 +108,7 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(

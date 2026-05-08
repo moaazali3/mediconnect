@@ -67,7 +67,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     String pageTitle = _currentIndex == 1 ? "Admin Console" : "Advanced Analytics";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CommonAppBar(
         pageName: pageTitle,
         userName: _adminName,
@@ -85,7 +85,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(
+                Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.05,
+              ),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -95,10 +97,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
           selectedItemColor: primaryColor,
-          unselectedItemColor: Colors.grey,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
           showUnselectedLabels: true,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).cardColor,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.analytics_rounded),
@@ -220,6 +222,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -227,10 +230,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         constraints: const BoxConstraints(minHeight: 110),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
           ],
         ),
         child: Column(
@@ -251,7 +258,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
               alignment: Alignment.centerLeft,
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -259,7 +270,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
               subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              ),
             ),
           ],
         ),

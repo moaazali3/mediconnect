@@ -79,7 +79,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: currentIndex == 2 ? null : CommonAppBar(
         pageName: currentIndex == 0 ? "Completed" : (currentIndex == 1 ? "Pending" : "Profile"),
         userName: doctorName ?? "Loading...",
@@ -97,11 +97,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(
+                Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.1,
+              ),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -112,11 +114,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           child: BottomNavigationBar(
             currentIndex: currentIndex,
             selectedItemColor: primaryColor,
-            unselectedItemColor: Colors.grey.shade400,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             showSelectedLabels: true,
             showUnselectedLabels: false,
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).cardColor,
             elevation: 0,
             onTap: (index) {
               setState(() {

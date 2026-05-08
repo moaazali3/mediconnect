@@ -1,10 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:jwt_decoder/jwt_decoder.dart'; 
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/auth/screens/register_screen.dart';
-import 'package:mediconnect/home_screen.dart'; 
-import 'package:mediconnect/Doctor/doctor_home_screen.dart'; 
+import 'package:mediconnect/home_screen.dart';
+import 'package:mediconnect/Doctor/doctor_home_screen.dart';
 import 'package:mediconnect/admin/admin_dashboard.dart';
 import 'package:mediconnect/receptionist/receptionist_dashboard.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -74,11 +75,13 @@ class _LoginScreenState extends State<LoginScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [primaryColor.withOpacity(0.8), Colors.white],
+                colors: context.isDark
+                    ? [const Color(0xFF0D1B2A), const Color(0xFF1A237E).withOpacity(0.8)]
+                    : [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.05)),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -92,9 +95,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Container(
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 25 : 40),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+                          color: context.isDark
+                              ? Colors.grey.shade900.withOpacity(0.92)
+                              : Colors.white.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border: Border.all(
+                            color: context.isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.white.withOpacity(0.3),
+                          ),
                         ),
                         child: Form(
                           key: formKey,
@@ -119,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(fontSize: isSmallScreen ? 22 : 26, fontWeight: FontWeight.bold, color: primaryColor)),
                               const Text("Login to your account",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16, color: Colors.black54)),
+                                  style: TextStyle(fontSize: 16, color: Colors.grey)),
                               SizedBox(height: isSmallScreen ? 25 : 35),
 
                               _buildLoginField(
@@ -158,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text("Remember Me", style: TextStyle(fontSize: 14, color: Colors.black87)),
+                                  Text("Remember Me", style: TextStyle(fontSize: 14, color: context.onSurface)),
                                 ],
                               ),
                               SizedBox(height: isSmallScreen ? 15 : 25),
@@ -288,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
@@ -302,11 +311,17 @@ class _LoginScreenState extends State<LoginScreen> {
               )
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: context.isDark
+            ? Colors.white.withOpacity(0.08)
+            : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+          borderSide: BorderSide(
+            color: context.isDark
+                ? Colors.white.withOpacity(0.15)
+                : Colors.white.withOpacity(0.5),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

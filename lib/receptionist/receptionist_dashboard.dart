@@ -85,7 +85,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
     if (_currentIndex == 2) pageTitle = "My Profile";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       // الـ AppBar الأساسي بتاع الشاشة كلها
       appBar: _currentIndex == 2
           ? null // بنخفيه في صفحة البروفايل بس
@@ -102,11 +102,13 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(
+                Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.1,
+              ),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -117,11 +119,11 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             selectedItemColor: primaryColor,
-            unselectedItemColor: Colors.grey.shade400,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
             showSelectedLabels: true,
             showUnselectedLabels: false,
             type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(context).cardColor,
             elevation: 0,
             onTap: (index) {
               if (index == 1) {

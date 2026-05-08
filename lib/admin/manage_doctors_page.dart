@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -252,7 +253,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   }) 
               : null,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.inputFill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
             borderSide: BorderSide.none,
@@ -317,7 +318,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -141,7 +142,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
     final apps = _filteredAppointments;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: context.scaffoldBg,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _fetchData,
@@ -232,7 +233,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
           hintText: "Search patient name...",
           prefixIcon: const Icon(Icons.search),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.inputFill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30),
             borderSide: BorderSide.none,
@@ -278,17 +279,17 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
+          color: isSelected ? primaryColor : context.filterChipBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
+          border: Border.all(color: isSelected ? primaryColor : context.filterChipBorder),
         ),
         child: Text(
-            label,
-            style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 13
-            )
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : context.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
         ),
       ),
     );
@@ -298,9 +299,9 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -332,7 +333,11 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                                 Expanded(
                                   child: Text(
                                     app.patientName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17,
+                                      color: context.onSurface,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -343,7 +348,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                             const SizedBox(height: 2),
                             Text(
                                 "${app.dayOfWeek}, ${app.appointmentDate}",
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
+                                style: TextStyle(color: context.subText, fontSize: 14)
                             ),
                             const SizedBox(height: 2),
                             Text(

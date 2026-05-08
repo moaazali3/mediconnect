@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
@@ -56,7 +57,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FA),
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "All Bookings",
         subtitle: _selectedDate == null ? "Grouped by Specialization" : "Records for ${DateFormat('dd MMM yyyy').format(_selectedDate!)}",
@@ -183,7 +184,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.cardBg,
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
@@ -197,7 +198,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                           title: Text(specName, style: TextStyle(
                             fontWeight: FontWeight.bold, 
                             fontSize: 16,
-                            color: totalSpec > 0 ? Colors.black : Colors.grey[600]
+                            color: totalSpec > 0 ? context.onSurface : context.subText
                           )),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -212,7 +213,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                             : doctors.entries.map<Widget>((doc) {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                                  decoration: BoxDecoration(color: context.isDark ? const Color(0xFF374151) : Colors.grey[50], borderRadius: BorderRadius.circular(12)),
                                   child: ListTile(
                                     title: Text(doc.key, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                     subtitle: Text("${doc.value.length} Bookings", style: const TextStyle(fontSize: 12)),
@@ -241,7 +242,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+        decoration: BoxDecoration(color: context.cardBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -131,7 +132,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
                 }) 
               : null,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.inputFill,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
         ),
@@ -144,7 +145,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),

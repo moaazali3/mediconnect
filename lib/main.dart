@@ -6,16 +6,19 @@ import 'package:mediconnect/Doctor/doctor_home_screen.dart';
 import 'package:mediconnect/receptionist/receptionist_dashboard.dart';
 import 'package:mediconnect/services/secure_storage.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/theme_service.dart';
+import 'package:mediconnect/constants/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SecureStorage.init();
-  
+  await ThemeService().init();
+
   // تحميل التوكن المحفوظ في الذاكرة للطلبات القادمة
   String? token = await SecureStorage.readData(key: 'auth_token');
   ApiService.setToken(token);
-  
+
   final prefs = await SharedPreferences.getInstance();
   String? role = prefs.getString('user_role');
   String? userId = prefs.getString('user_id');
@@ -44,13 +47,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color(0xFF0D47A1),
-      ),
-      home: homeWidget,
+    // AnimatedBuilder rebuilds the whole tree when ThemeService notifies.
+    return AnimatedBuilder(
+      animation: ThemeService(),
+      builder: (context, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'MediConnect',
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeService().themeMode,
+          home: homeWidget,
+        );
+      },
     );
   }
 }

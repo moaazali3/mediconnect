@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/services/theme_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -30,7 +31,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   State<CommonAppBar> createState() => _CommonAppBarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(80); // Increased height slightly
+  Size get preferredSize => const Size.fromHeight(80);
 }
 
 class _CommonAppBarState extends State<CommonAppBar> {
@@ -60,6 +61,11 @@ class _CommonAppBarState extends State<CommonAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final barColor = theme.appBarTheme.backgroundColor ?? theme.cardColor;
+    final subtitleColor = theme.colorScheme.onSurface.withOpacity(0.55);
+
     String? displayUserName = widget.userName ?? _loadedUserName;
     String displaySubtitle = "";
 
@@ -75,17 +81,17 @@ class _CommonAppBarState extends State<CommonAppBar> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: barColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: barColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
@@ -104,11 +110,15 @@ class _CommonAppBarState extends State<CommonAppBar> {
                 Container(
                   height: 45,
                   width: 45,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: barColor,
                     shape: BoxShape.circle,
                     boxShadow: [
-                      BoxShadow(color: Colors.black12, blurRadius: 4, spreadRadius: 1),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
                     ],
                   ),
                   child: Padding(
@@ -117,7 +127,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
                       "assets/images/img.png",
                       fit: BoxFit.contain,
                       errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.local_hospital, color: primaryColor),
+                          const Icon(Icons.local_hospital, color: primaryColor),
                     ),
                   ),
                 ),
@@ -142,12 +152,11 @@ class _CommonAppBarState extends State<CommonAppBar> {
                     if (displaySubtitle.isNotEmpty)
                       Text(
                         displaySubtitle,
-                        // التعديل هنا: خليناه ياخد لحد سطرين ويلف الكلام براحته
                         maxLines: 2,
                         softWrap: true,
                         overflow: TextOverflow.visible,
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: subtitleColor,
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
@@ -155,6 +164,8 @@ class _CommonAppBarState extends State<CommonAppBar> {
                   ],
                 ),
               ),
+              // ── Dark / Light mode toggle ──
+              _ThemeToggleButton(),
               if (widget.actions != null) ...widget.actions!,
               if (widget.onRefresh != null)
                 IconButton(
@@ -170,6 +181,40 @@ class _CommonAppBarState extends State<CommonAppBar> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Animated sun/moon toggle button that listens directly to [ThemeService].
+class _ThemeToggleButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ThemeService(),
+      builder: (context, _) {
+        final isDark = ThemeService().isDarkMode;
+        return Tooltip(
+          message: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+          child: IconButton(
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (child, anim) => RotationTransition(
+                turns: anim,
+                child: ScaleTransition(scale: anim, child: child),
+              ),
+              child: Icon(
+                isDark ? Icons.wb_sunny_rounded : Icons.nightlight_round,
+                key: ValueKey(isDark),
+                color: isDark
+                    ? const Color(0xFFFBBF24) // amber sun
+                    : const Color(0xFF64748B), // slate moon
+                size: 20,
+              ),
+            ),
+            onPressed: ThemeService().toggleTheme,
+          ),
+        );
+      },
     );
   }
 }

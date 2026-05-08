@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -45,7 +46,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: context.scaffoldBg,
       body: FutureBuilder<Map<String, dynamic>>(
         future: _fetchFullProfile(),
         builder: (context, snapshot) {
@@ -240,31 +241,50 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Widget _buildScheduleCard(List<DoctorScheduleModel> schedules) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.03), blurRadius: 10)],
+      ),
       child: schedules.isEmpty
-        ? const Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text("No work hours set", style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+        ? Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text("No work hours set", style: TextStyle(color: context.subText), textAlign: TextAlign.center),
           )
         : Column(children: schedules.map((s) => Column(
             children: [
               ListTile(
                 leading: const Icon(Icons.calendar_today_outlined, size: 18, color: primaryColor),
-                title: Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                trailing: Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                title: Text(s.getDayName(), style: TextStyle(fontWeight: FontWeight.w600, color: context.onSurface)),
+                trailing: Text("${s.startTime} - ${s.endTime}", style: TextStyle(color: context.subText, fontWeight: FontWeight.bold)),
                 subtitle: Text(s.isAvailable ? "Available" : "Unavailable", style: TextStyle(color: s.isAvailable ? Colors.green : Colors.red, fontSize: 11)),
               ),
-              if (schedules.last != s) _buildDivider(),
+              if (schedules.last != s) Divider(height: 1, indent: 16, endIndent: 16, color: context.dividerCol),
             ],
           )).toList()),
     );
   }
 
-  Widget _buildSectionTitle(String title) => Padding(padding: const EdgeInsets.only(left: 5, bottom: 10), child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
+  Widget _buildSectionTitle(String title) => Padding(
+    padding: const EdgeInsets.only(left: 5, bottom: 10),
+    child: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.onSurface)),
+  );
 
-  Widget _buildInfoCard(List<Widget> children) => Container(padding: const EdgeInsets.all(5), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)]), child: Column(children: children));
+  Widget _buildInfoCard(List<Widget> children) => Container(
+    padding: const EdgeInsets.all(5),
+    decoration: BoxDecoration(
+      color: context.cardBg,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.03), blurRadius: 10)],
+    ),
+    child: Column(children: children),
+  );
 
-  Widget _buildInfoRow(IconData icon, String label, String value) => ListTile(leading: Icon(icon, color: primaryColor, size: 20), title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)), subtitle: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)));
+  Widget _buildInfoRow(IconData icon, String label, String value) => ListTile(
+    leading: Icon(icon, color: primaryColor, size: 20),
+    title: Text(label, style: TextStyle(fontSize: 12, color: context.subText)),
+    subtitle: Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: context.onSurface)),
+  );
 
-  Widget _buildDivider() => Divider(height: 1, indent: 50, endIndent: 20, color: Colors.grey.shade100);
+  Widget _buildDivider() => Divider(height: 1, indent: 50, endIndent: 20, color: context.dividerCol);
 }

@@ -15,7 +15,10 @@ class DoctorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // لوجيك الصورة المظبوط
+    final theme = Theme.of(context);
+    final cardColor = theme.cardColor;
+    final isDark = theme.brightness == Brightness.dark;
+
     String? fullImageUrl;
     if (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty) {
       fullImageUrl = doctor.profilePictureUrl!.startsWith('http')
@@ -29,11 +32,11 @@ class DoctorCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 15),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withOpacity(isDark ? 0.25 : 0.04),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
@@ -47,7 +50,10 @@ class DoctorCard extends StatelessWidget {
               height: 75,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade100, width: 2),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF374151) : Colors.grey.shade100,
+                  width: 2,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: primaryColor.withOpacity(0.1),
@@ -75,10 +81,10 @@ class DoctorCard extends StatelessWidget {
                 children: [
                   Text(
                     "Dr. ${doctor.firstName} ${doctor.lastName}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
+                      color: theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -97,7 +103,7 @@ class DoctorCard extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   // الخبرة بس هي اللي هتظهر بره
-                  _buildStat(Icons.workspace_premium_outlined, "${doctor.experienceYears.toStringAsFixed(0)} Years Exp."),
+                  _buildStat(Icons.workspace_premium_outlined, "${doctor.experienceYears.toStringAsFixed(0)} Years Exp.", isDark: isDark),
                 ],
               ),
             ),
@@ -134,17 +140,17 @@ class DoctorCard extends StatelessWidget {
   }
 
   // ويدجت أيقونة الخبرة
-  Widget _buildStat(IconData icon, String text) {
+  Widget _buildStat(IconData icon, String text, {required bool isDark}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade500),
+        Icon(icon, size: 14, color: isDark ? const Color(0xFF6B7280) : Colors.grey.shade500),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             text,
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? const Color(0xFF9CA3AF) : Colors.grey.shade600,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),

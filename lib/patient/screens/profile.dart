@@ -97,7 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: widget.readOnly ? AppBar(
         title: const Text("Patient Profile", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: primaryColor,
@@ -231,25 +231,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildReadOnlySimpleHeader(PatientProfileModel profile) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 25),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(
+              theme.brightness == Brightness.dark ? 0.2 : 0.02,
+            ),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 35,
             backgroundColor: primaryColor.withOpacity(0.1),
-            // التعديل هنا: أيقونة موحدة للرجال والنساء
-            child: const Icon(
-                Icons.person_rounded,
-                size: 45,
-                color: primaryColor
-            ),
+            child: const Icon(Icons.person_rounded, size: 45, color: primaryColor),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -258,11 +261,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   "${profile.firstName} ${profile.lastName}",
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 Text(
                   profile.gender,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface.withOpacity(0.55),
+                  ),
                 ),
               ],
             ),
@@ -433,13 +443,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileCard(List<Widget> children) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(
+              theme.brightness == Brightness.dark ? 0.2 : 0.04,
+            ),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -450,6 +463,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value, {Widget? trailing}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(15),
       child: Row(
@@ -467,9 +481,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w600)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -480,6 +507,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
+    return Divider(
+      height: 1,
+      indent: 70,
+      endIndent: 20,
+      color: Theme.of(context).dividerColor,
+    );
   }
 }

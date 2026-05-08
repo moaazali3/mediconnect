@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 
@@ -206,7 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     // التعديل هنا: زودنا رسالة مجلد الـ Spam
                     Text("We have sent a 6-digit verification code to\n$email\n\n(Please check your inbox and spam folder)",
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5)),
+                        style: TextStyle(fontSize: 13, color: context.subText, height: 1.5)),
                     const SizedBox(height: 30),
 
                     SizedBox(
@@ -223,10 +224,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   margin: const EdgeInsets.symmetric(horizontal: 3),
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: context.isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: isFocused ? primaryColor : (isFilled ? primaryColor.withOpacity(0.5) : Colors.grey.shade300),
+                                      color: isFocused ? primaryColor : (isFilled ? primaryColor.withOpacity(0.5) : (context.isDark ? Colors.grey.shade700 : Colors.grey.shade300)),
                                       width: isFocused ? 2 : 1,
                                     ),
                                   ),
@@ -314,7 +315,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 15),
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
-                      child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600)),
+                      child: Text("Cancel", style: TextStyle(color: context.subText)),
                     ),
                   ],
                 ),
@@ -340,11 +341,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [primaryColor.withOpacity(0.8), Colors.white],
+                colors: context.isDark ? [const Color(0xFF0D1B2A), const Color(0xFF1A237E).withOpacity(0.8)] : [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.05)),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -362,9 +363,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: Container(
                               padding: EdgeInsets.symmetric(horizontal: 20, vertical: isSmallScreen ? 20 : 35),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.85),
+                                color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
                                 borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
                               ),
                               child: Form(
                                 key: _formKeys[currentStep],
@@ -389,7 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         style: TextStyle(fontSize: isSmallScreen ? 20 : 26, fontWeight: FontWeight.bold, color: primaryColor)),
                                     Text("Step ${currentStep + 1} of 3",
                                         textAlign: TextAlign.center,
-                                        style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                                        style: TextStyle(fontSize: 14, color: context.subText)),
                                     SizedBox(height: isSmallScreen ? 20 : 35),
 
                                     if (currentStep == 0) ...[
@@ -569,10 +570,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       onTap: onTap,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
-      style: const TextStyle(fontSize: 14),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         counterText: maxLength == null ? "" : null, // لو مفيش طول محدد متظهرش العداد
         errorStyle: const TextStyle(fontSize: 11, height: 1.2),
         errorMaxLines: 5,
@@ -589,11 +590,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         )
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -615,11 +616,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildDropdownField({required String label, required IconData icon, required String? value, required List<String> items, required Function(String?) onChanged}) {
     return DropdownButtonFormField<String>(
       value: value,
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))).toList(),
+      dropdownColor: context.cardBg,
+      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: TextStyle(color: context.onSurface, fontSize: 14)))).toList(),
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         errorStyle: const TextStyle(fontSize: 11, height: 1.2),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
@@ -628,11 +630,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

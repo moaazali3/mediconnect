@@ -22,7 +22,7 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
     String idToFetch = widget.userId ?? "1";
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: FutureBuilder<List<PatientAppointmentModel>>(
           future: _apiService.getPatientAppointments(idToFetch),
@@ -185,11 +185,13 @@ class AppointmentCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(
+              Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -216,17 +218,20 @@ class AppointmentCard extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Color(0xFF263238),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       spec,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -248,9 +253,9 @@ class AppointmentCard extends StatelessWidget {
               spacing: 10, // المسافة الأفقية بين العناصر
               runSpacing: 10, // المسافة الرأسية لو نزلوا سطر جديد
               children: [
-                _buildInfoItem(Icons.calendar_today_rounded, date),
-                _buildInfoItem(Icons.access_time_rounded, _formatTimeRange(time)),
-                _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #$queue"),
+                _buildInfoItem(context, Icons.calendar_today_rounded, date),
+                _buildInfoItem(context, Icons.access_time_rounded, _formatTimeRange(time)),
+                _buildInfoItem(context, Icons.format_list_numbered_rounded, "Queue #$queue"),
               ],
             ),
           ),
@@ -260,7 +265,7 @@ class AppointmentCard extends StatelessWidget {
   }
 
   // التعديل التالت: شيلنا الـ Expanded من هنا عشان الـ Wrap يشتغل صح والعناصر تاخد مساحتها الطبيعية
-  Widget _buildInfoItem(IconData icon, String text) {
+  Widget _buildInfoItem(BuildContext context, IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -268,7 +273,11 @@ class AppointmentCard extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
             text,
-            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
         ),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
@@ -190,7 +191,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                       return Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.cardBg,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
