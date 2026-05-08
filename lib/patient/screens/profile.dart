@@ -10,12 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
-  final bool readOnly; 
+  final bool readOnly;
   final bool showMedicalHistory;
 
   const ProfileScreen({
-    super.key, 
-    this.userId, 
+    super.key,
+    this.userId,
     this.readOnly = false,
     this.showMedicalHistory = true,
   });
@@ -58,16 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    // Remove non-digit characters
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
-    
-    // Add Egypt country code (2) if it starts with 01 and doesn't have 20 already
+
     if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
       cleanNumber = '2$cleanNumber';
     } else if (cleanNumber.startsWith('1') && cleanNumber.length == 10) {
       cleanNumber = '20$cleanNumber';
     }
-    
+
     final Uri url = Uri.parse('https://wa.me/$cleanNumber');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -84,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     const String phoneNumber = "201000000000";
     const String message = "Hello MediConnect, I need help with my account.";
     final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
-    
+
     if (await canLaunchUrl(whatsappUri)) {
       await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
     } else {
@@ -142,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           final profile = snapshot.data!;
-          final String targetId = widget.userId ?? "1"; 
+          final String targetId = widget.userId ?? "1";
           final bool isMyProfile = (widget.userId == null || widget.userId == _currentUserId);
 
           return Column(
@@ -156,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (widget.readOnly) _buildReadOnlySimpleHeader(profile),
-                      
+
                       if (widget.showMedicalHistory)
                         SizedBox(
                           width: double.infinity,
@@ -183,8 +181,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildInfoRow(Icons.email_outlined, "Email", profile.email),
                         _buildDivider(),
                         _buildInfoRow(
-                          Icons.phone_android_rounded, 
-                          "Phone", 
+                          Icons.phone_android_rounded,
+                          "Phone",
                           profile.phoneNumber,
                           trailing: (!isMyProfile && _userRole?.toLowerCase() == "receptionist") ? Row(
                             mainAxisSize: MainAxisSize.min,
@@ -203,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildDivider(),
                         _buildInfoRow(Icons.location_on_outlined, "Address", profile.address ?? "No Address"),
                       ]),
-                      
+
                       const SizedBox(height: 25),
                       _buildSectionTitle("Medical Background"),
                       _buildProfileCard([
@@ -217,7 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildDivider(),
                         _buildInfoRow(Icons.contact_emergency_rounded, "Emergency Contact", profile.emergencyContact),
                       ]),
-                      
+
                       const SizedBox(height: 40),
                       if (!widget.readOnly) _buildActionButtons(context, targetId),
                       const SizedBox(height: 30),
@@ -246,10 +244,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CircleAvatar(
             radius: 35,
             backgroundColor: primaryColor.withOpacity(0.1),
-            child: Icon(
-              profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-              size: 45, 
-              color: primaryColor
+            // التعديل هنا: أيقونة موحدة للرجال والنساء
+            child: const Icon(
+                Icons.person_rounded,
+                size: 45,
+                color: primaryColor
             ),
           ),
           const SizedBox(width: 20),
@@ -299,13 +298,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: CircleAvatar(
+              child: const CircleAvatar(
                 radius: 40,
                 backgroundColor: Colors.white,
+                // التعديل هنا: أيقونة موحدة للرجال والنساء
                 child: Icon(
-                  profile.gender == "Male" ? Icons.face_rounded : Icons.face_3_rounded, 
-                  size: 50, 
-                  color: primaryColor
+                    Icons.person_rounded,
+                    size: 50,
+                    color: primaryColor
                 ),
               ),
             ),
@@ -317,17 +317,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     "${profile.firstName} ${profile.lastName}",
                     style: const TextStyle(
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold, 
-                      color: Colors.white
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white
                     ),
                   ),
                   const Text(
                     "Patient Account",
                     style: TextStyle(
-                      fontSize: 14, 
-                      color: Colors.white70, 
-                      fontWeight: FontWeight.w500
+                        fontSize: 14,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500
                     ),
                   ),
                 ],
@@ -389,7 +389,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+                    (route) => false,
               );
             },
             icon: const Icon(Icons.power_settings_new_rounded),
