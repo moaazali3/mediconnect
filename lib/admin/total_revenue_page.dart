@@ -166,12 +166,15 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF334155),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF334155),
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -202,7 +205,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
   Widget _buildTotalCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [primaryColor, Color(0xFF1E3A8A)],
@@ -223,6 +226,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           const Text(
             "Total Accumulated Revenue",
             style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.5),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           FittedBox(
@@ -237,11 +241,12 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
             ),
           ),
           const SizedBox(height: 25),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 10,
             children: [
               _buildSmallStat(Icons.calendar_month, "All Time"),
-              const SizedBox(width: 20),
               _buildSmallStat(Icons.check_circle_outline, "$_totalAppointments Completed"),
             ],
           ),
@@ -258,12 +263,16 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: Colors.white, size: 14),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -287,27 +296,46 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: primaryColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.category_rounded, color: primaryColor, size: 24),
+            child: Text(
+              spec.name.isNotEmpty ? spec.name[0].toUpperCase() : "",
+              style: const TextStyle(
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
           ),
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
                   spec.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 14, 
+                    color: Color(0xFF1E293B)
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                "${spec.totalRevenue.toStringAsFixed(0)} EGP",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF059669)),
+              const SizedBox(width: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "${spec.totalRevenue.toStringAsFixed(0)} EGP",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 14, 
+                    color: Color(0xFF059669)
+                  ),
+                ),
               ),
             ],
           ),
@@ -315,21 +343,26 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           children: spec.doctors.isEmpty
               ? [const Padding(padding: EdgeInsets.all(8.0), child: Text("No doctors with revenue", style: TextStyle(color: Colors.grey)))]
               : spec.doctors.map((doc) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
-                const SizedBox(width: 35),
+                const SizedBox(width: 10),
                 const Icon(Icons.subdirectory_arrow_right_rounded, color: Colors.grey, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     doc.name,
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500, fontSize: 14),
+                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500, fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  "${doc.revenue.toStringAsFixed(0)} EGP",
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 14),
+                const SizedBox(width: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "${doc.revenue.toStringAsFixed(0)} EGP",
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13),
+                  ),
                 ),
               ],
             ),

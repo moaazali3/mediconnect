@@ -122,9 +122,10 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
         },
         decoration: InputDecoration(
           hintText: "Search by name or specialization...",
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: primaryColor),
           suffixIcon: _searchQuery.isNotEmpty 
-              ? IconButton(icon: const Icon(Icons.clear), onPressed: () {
+              ? IconButton(icon: const Icon(Icons.clear, size: 20), onPressed: () {
                   _searchController.clear();
                   setState(() { _searchQuery = ""; _applySearch(); });
                 }) 
@@ -132,7 +133,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-          contentPadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 15),
         ),
       ),
     );
@@ -141,6 +142,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
   Widget _buildDoctorCard(DoctorModel doctor) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -148,40 +150,67 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: primaryColor.withOpacity(0.1),
-          backgroundImage: doctor.profilePictureUrl != null ? NetworkImage(doctor.profilePictureUrl!) : null,
-          child: doctor.profilePictureUrl == null 
-              ? Icon(doctor.gender == "Male" ? Icons.male : Icons.female, color: primaryColor, size: 30) 
-              : null,
-        ),
-        title: Text(
-          "Dr. ${doctor.firstName} ${doctor.lastName}",
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(doctor.specializationName, style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
-            const SizedBox(height: 4),
-            Row(
+      child: Row(
+        children: [
+          // Profile Picture with Double Thin Border to match image
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.withOpacity(0.15), width: 0.8),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.withOpacity(0.1), width: 0.8),
+              ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFFF1F5F9),
+                backgroundImage: (doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty)
+                    ? NetworkImage(doctor.profilePictureUrl!)
+                    : null,
+                child: (doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty)
+                    ? const Icon(
+                        Icons.person,
+                        color: primaryColor,
+                        size: 30,
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 15),
+          // Doctor Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Fix for overflow
               children: [
-                Icon(Icons.work_history_outlined, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 4),
-                Text("${doctor.experienceYears.toInt()} Years Exp.", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                const SizedBox(width: 12),
-                Icon(Icons.payments_outlined, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 4),
-                Text("${doctor.consultationFee.toInt()} EGP", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                Text(
+                  "Dr. ${doctor.firstName} ${doctor.lastName}",
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  doctor.specializationName,
+                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.work_history_outlined, size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text("${doctor.experienceYears.toInt()} Years Exp.", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
