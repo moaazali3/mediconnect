@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // ضرورية عشان نمنع الحروف في التليفون
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -25,6 +25,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
 
   bool isLoading = true;
   bool isUploadingImage = false;
+  bool _isModified = false;
 
   final fNameController = TextEditingController();
   final lNameController = TextEditingController();
@@ -143,6 +144,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     try {
       final success = await _apiService.uploadProfilePicture(targetId, image.path);
       if (success) {
+        _isModified = true;
         final doctor = await _apiService.getDoctorProfile(targetId);
         setState(() {
           currentImageUrl = doctor.profilePictureUrl;
@@ -205,13 +207,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-
         String errorMessage = e.toString();
-        // معالجة ذكية لو التليفون مكرر
         if (errorMessage.toLowerCase().contains("already") || errorMessage.toLowerCase().contains("taken")) {
           errorMessage = "Phone number is already in use. Please check.";
         }
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
@@ -219,122 +218,238 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
-      appBar: AppBar(
-        title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
-          : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(15.0),
-          child: Form(
-            key: formKey,
+  // ==========================================
+  // --- دوال تغيير الباسورد (إضافة جديدة) ---
+  // ==========================================
+  Future<void> _changePassword(String oldP, String newP) async {
+    setState(() => isLoading = true);
+    final String targetId = widget.doctorId ?? "1";
+    try {
+      final success = await _apiService.changePassword(targetId, oldP, newP);
+      setState(() => isLoading = false);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Password changed successfully!"), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Failed to change password. Check old password."), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final oldPass = TextEditingController();
+    final newPass = TextEditingController();
+    final passKey = GlobalKey<FormState>();
+    bool isObscured = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+          content: Form(
+            key: passKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: primaryColor.withOpacity(0.1),
-                      backgroundImage: currentImageUrl != null && currentImageUrl!.isNotEmpty
-                          ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "${ApiConstants.serverUrl}$currentImageUrl")
-                          : null,
-                      child: currentImageUrl == null || currentImageUrl!.isEmpty
-                          ? const Icon(Icons.person, size: 60, color: primaryColor)
-                          : null,
-                    ),
-                    if (isUploadingImage)
-                      const Positioned.fill(
-                        child: CircularProgressIndicator(color: primaryColor),
-                      ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: isUploadingImage ? null : _pickAndUploadImage,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: primaryColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildSectionTitle("Personal Information"),
-                ),
-                _buildEditCard([
-                  _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
-                  _buildDivider(),
-                  _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
-                  _buildDivider(),
-                  _buildEditRow(
-                    label: "Phone",
-                    controller: phoneController,
-                    icon: Icons.phone_android_rounded,
-                    keyboardType: TextInputType.phone,
-                    maxLength: 11,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: _validatePhone,
-                  ),
-                  _buildDivider(),
-                  _buildDropdownField(
-                    label: "Gender",
-                    icon: Icons.wc_rounded,
-                    value: selectedGender,
-                    items: ['Male', 'Female'],
-                    onChanged: (val) => setState(() => selectedGender = val),
-                  ),
-                ]),
-
-                const SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildSectionTitle("Professional Biography"),
-                ),
-                _buildEditCard([
-                  _buildEditRow(
-                      label: "Biography",
-                      controller: bioController,
-                      icon: Icons.description_rounded,
-                      maxLines: 5
-                  ),
-                ]),
-
-                const SizedBox(height: 30),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: _updateProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                _buildPopupField(controller: oldPass, label: "Old Password", icon: Icons.lock_outline, isObscured: isObscured),
+                const SizedBox(height: 10),
+                _buildPopupField(
+                  controller: newPass,
+                  label: "New Password",
+                  icon: Icons.lock_reset_rounded,
+                  isObscured: isObscured,
+                  suffix: IconButton(
+                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
+                    onPressed: () => setModalState(() => isObscured = !isObscured),
                   ),
                 ),
               ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+            ElevatedButton(
+              onPressed: () {
+                if (passKey.currentState!.validate()) {
+                  _changePassword(oldPass.text, newPass.text);
+                  Navigator.pop(context);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: primaryColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+              child: const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopupField({required TextEditingController controller, required String label, required IconData icon, bool isObscured = false, Widget? suffix}) {
+    return TextFormField(
+      controller: controller,
+      obscureText: isObscured,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: primaryColor, size: 20),
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      ),
+      validator: (val) => (val == null || val.isEmpty) ? "Required" : null,
+    );
+  }
+  // ==========================================
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _isModified);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFF),
+        appBar: AppBar(
+          title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: Colors.white,
+          elevation: 0.5,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
+            onPressed: () => Navigator.pop(context, _isModified),
+          ),
+        ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            : SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(15.0),
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundColor: primaryColor.withOpacity(0.1),
+                        backgroundImage: currentImageUrl != null && currentImageUrl!.isNotEmpty
+                            ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "${ApiConstants.serverUrl}$currentImageUrl")
+                            : null,
+                        child: currentImageUrl == null || currentImageUrl!.isEmpty
+                            ? const Icon(Icons.person, size: 60, color: primaryColor)
+                            : null,
+                      ),
+                      if (isUploadingImage)
+                        const Positioned.fill(
+                          child: CircularProgressIndicator(color: primaryColor),
+                        ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: isUploadingImage ? null : _pickAndUploadImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildSectionTitle("Personal Information"),
+                  ),
+                  _buildEditCard([
+                    _buildEditRow(label: "First Name", controller: fNameController, icon: Icons.person_outline, validator: (v) => _validateName(v, "First Name")),
+                    _buildDivider(),
+                    _buildEditRow(label: "Last Name", controller: lNameController, icon: Icons.person_outline, validator: (v) => _validateName(v, "Last Name")),
+                    _buildDivider(),
+                    _buildEditRow(
+                      label: "Phone",
+                      controller: phoneController,
+                      icon: Icons.phone_android_rounded,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 11,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: _validatePhone,
+                    ),
+                    _buildDivider(),
+                    _buildDropdownField(
+                      label: "Gender",
+                      icon: Icons.wc_rounded,
+                      value: selectedGender,
+                      items: ['Male', 'Female'],
+                      onChanged: (val) => setState(() => selectedGender = val),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 20),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildSectionTitle("Professional Biography"),
+                  ),
+                  _buildEditCard([
+                    _buildEditRow(
+                        label: "Biography",
+                        controller: bioController,
+                        icon: Icons.description_rounded,
+                        maxLines: 5
+                    ),
+                  ]),
+
+                  const SizedBox(height: 30),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _updateProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("SAVE CHANGES", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // ==========================================
+                  // زرار تغيير الباسورد أهو يا درش متنساهوش
+                  // ==========================================
+                  Center(
+                    child: TextButton(
+                      onPressed: () => _showChangePasswordDialog(context),
+                      child: const Text("Change Password", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),
@@ -406,7 +521,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: DropdownButtonFormField<String>(
         value: value,
-        isExpanded: true, // <--- السر كله هنا، دي اللي بتمنع الأوفر فلو
+        isExpanded: true,
         items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(

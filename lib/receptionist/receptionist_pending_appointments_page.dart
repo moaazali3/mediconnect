@@ -145,6 +145,14 @@ class PendingAppointmentCard extends StatelessWidget {
     required this.isProcessing,
   });
 
+  // دالة صغيرة عشان نشيل الثواني من الوقت
+  String _formatTime(String time) {
+    if (time.length >= 5) {
+      return time.substring(0, 5); // بياخد أول 5 حروف بس (مثال: 10:00)
+    }
+    return time;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -174,10 +182,18 @@ class PendingAppointmentCard extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
+                      // التعديل السحري هنا: استبدال الأيقونة بأول حرف من الاسم
                       CircleAvatar(
-                        radius: 25,
+                        radius: 28, // كبرناها سنة عشان تبان أشيك
                         backgroundColor: primaryColor.withOpacity(0.1),
-                        child: const Icon(Icons.person, color: primaryColor, size: 30),
+                        child: Text(
+                          appointment.patientName.isNotEmpty ? appointment.patientName[0].toUpperCase() : "?",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                            fontSize: 22,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
@@ -230,7 +246,8 @@ class PendingAppointmentCard extends StatelessWidget {
                     children: [
                       Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, appointment.appointmentDate)),
                       const SizedBox(width: 4),
-                      Expanded(child: _buildInfoItem(Icons.access_time_rounded, appointment.startTime)),
+                      // استخدمنا الدالة هنا عشان نقص الثواني
+                      Expanded(child: _buildInfoItem(Icons.access_time_rounded, _formatTime(appointment.startTime))),
                       const SizedBox(width: 4),
                       Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #${appointment.queueNumber}")),
                     ],
