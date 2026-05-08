@@ -99,7 +99,7 @@ mixin AuthApi {
     }
   }
 
-  Future<ApiResponse> login(String email, String password) async {
+  Future<ApiResponse> login(String email, String password, {bool rememberMe = false}) async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.post(
@@ -124,7 +124,13 @@ mixin AuthApi {
         // Save tokens in secure storage
         if (body is Map && body.containsKey('token')) {
           await SecureStorage.writeData(key: 'auth_token', value: body['token']);
-          await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+          
+          // Only save refresh token if rememberMe is true
+          if (rememberMe && body.containsKey('refreshToken')) {
+            await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+          } else {
+            await SecureStorage.deleteData(key: 'refresh_token');
+          }
         }
         return ApiResponse(success: true, message: "Login Successful", data: body);
       } else {
@@ -168,7 +174,11 @@ mixin AuthApi {
       if (response.statusCode == 200) {
         if (body is Map && body.containsKey('token')) {
           await SecureStorage.writeData(key: 'auth_token', value: body['token']);
-          await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+          // Update refresh token if a new one is provided
+          if (body.containsKey('refreshToken')) {
+            await SecureStorage.writeData(key: 'refresh_token', value: body['refreshToken']);
+          }
+          ApiService.setToken(body['token']);
         }
         return ApiResponse(success: true, message: "Token refreshed", data: body);
       } else {
@@ -182,7 +192,7 @@ mixin AuthApi {
   Future<bool> changePassword(String id, String oldPassword, String newPassword) async {
     final ApiService parent = this as ApiService;
     try {
-      final response = await parent.client.put(
+      final response = await http.put(
         Uri.parse('${parent.baseUrl}/Profile/change-password/$id'),
         headers: parent._headers,
         body: jsonEncode({
