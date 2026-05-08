@@ -286,11 +286,12 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: CircleAvatar(
+              child: const CircleAvatar(
                 radius: 30,
                 backgroundColor: Colors.white,
+                // التعديل هنا: أيقونة موحدة زي صفحة البروفايل بالظبط
                 child: Icon(
-                    selectedGender == "Male" ? Icons.face_rounded : Icons.face_3_rounded,
+                    Icons.person_rounded,
                     size: 40,
                     color: primaryColor
                 ),
@@ -336,18 +337,17 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
   Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap}) {
     return Padding(
-      // التعديل هنا: قللنا الـ Padding الأفقي شوية عشان ندي مساحة للنص
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
       child: TextFormField(
         controller: controller,
         readOnly: isReadOnly,
         onTap: onTap,
         keyboardType: keyboardType,
-        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13), // صغرنا الفونت بيكسل واحد
+        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11), // صغرنا الليبل بيكسل واحد
-          prefixIcon: Icon(icon, color: primaryColor, size: 18), // صغرنا الأيقونة شوية
+          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
           isDense: true,
         ),
@@ -358,19 +358,18 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
 
   Widget _buildDropdownField({required String label, required IconData icon, required String? value, required List<String> items, required Function(String?) onChanged}) {
     return Padding(
-      // التعديل هنا: قللنا الـ Padding الأفقي شوية
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       child: DropdownButtonFormField<String>(
         value: value,
-        isExpanded: true, // التعديل الأهم: ده اللي بيمنع الـ Overflow جوه الـ Dropdown!
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(), // صغرنا الفونت بيكسل واحد
+        isExpanded: true,
+        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11), // صغرنا الليبل بيكسل واحد
-          prefixIcon: Icon(icon, color: primaryColor, size: 18), // صغرنا الأيقونة شوية
+          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
-          isDense: true, // عشان يضغط المساحة
+          isDense: true,
         ),
       ),
     );

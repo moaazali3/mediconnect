@@ -147,6 +147,21 @@ class AppointmentCard extends StatelessWidget {
     );
   }
 
+  // التعديل الأول: دالة لقص الثواني من الوقت
+  String _formatTimeRange(String timeString) {
+    try {
+      final parts = timeString.split('-');
+      if (parts.length == 2) {
+        final start = parts[0].trim().substring(0, 5); // بياخد الـ HH:MM بس
+        final end = parts[1].trim().substring(0, 5);
+        return "$start - $end";
+      }
+      return timeString;
+    } catch (e) {
+      return timeString;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget profileImage;
@@ -225,34 +240,35 @@ class AppointmentCard extends StatelessWidget {
           ),
           const Divider(height: 30),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, date)),
-              const SizedBox(width: 4),
-              Expanded(child: _buildInfoItem(Icons.access_time_rounded, time)),
-              const SizedBox(width: 4),
-              Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #$queue")),
-            ],
+          // التعديل التاني: استخدمنا Wrap بدل Row عشان لو الشاشة صغيرة ينزل بيهم من غير ما يقص الكلام
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 10, // المسافة الأفقية بين العناصر
+              runSpacing: 10, // المسافة الرأسية لو نزلوا سطر جديد
+              children: [
+                _buildInfoItem(Icons.calendar_today_rounded, date),
+                _buildInfoItem(Icons.access_time_rounded, _formatTimeRange(time)),
+                _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #$queue"),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
+  // التعديل التالت: شيلنا الـ Expanded من هنا عشان الـ Wrap يشتغل صح والعناصر تاخد مساحتها الطبيعية
   Widget _buildInfoItem(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
         const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
-          ),
+        Text(
+            text,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
         ),
       ],
     );
