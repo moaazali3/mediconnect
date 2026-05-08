@@ -59,10 +59,10 @@ mixin DoctorApi {
       final String pId = (patientId == null || patientId.isEmpty) ? "00000000-0000-0000-0000-000000000000" : patientId;
 
       final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Doctor/$doctorId/$pId'), 
-        headers: parent._headers
+          Uri.parse('${parent.baseUrl}/Doctor/$doctorId/$pId'),
+          headers: parent._headers
       );
-      
+
       if (response.statusCode == 200) {
         return DoctorFullModel.fromJson(jsonDecode(response.body));
       }
@@ -83,7 +83,7 @@ mixin DoctorApi {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         String? bodyStr = response.body.trim();
-        
+
         if (bodyStr.isEmpty) {
           final location = response.headers['location'];
           if (location != null) {
@@ -92,21 +92,21 @@ mixin DoctorApi {
           }
           return "SUCCESS_NO_ID";
         }
-        
+
         try {
           final data = jsonDecode(bodyStr);
           if (data is Map) {
-            final id = data['id'] ?? data['Id'] ?? 
-                       data['doctorId'] ?? data['DoctorId'] ?? 
-                       data['userId'] ?? data['UserId'] ??
-                       (data['data'] is Map ? (data['data']['id'] ?? data['data']['Id']) : data['data']);
+            final id = data['id'] ?? data['Id'] ??
+                data['doctorId'] ?? data['DoctorId'] ??
+                data['userId'] ?? data['UserId'] ??
+                (data['data'] is Map ? (data['data']['id'] ?? data['data']['Id']) : data['data']);
             return id?.toString();
           } else if (data is String) {
             return data;
           }
           return "SUCCESS_NO_ID";
         } catch (e) {
-          if (bodyStr.length > 10) return bodyStr; 
+          if (bodyStr.length > 10) return bodyStr;
           return "SUCCESS_NO_ID";
         }
       } else {
@@ -167,7 +167,7 @@ mixin DoctorApi {
         "biography": profile.biography,
       }),
     );
-    
+
     if (response.statusCode == 200 || response.statusCode == 204) {
       return true;
     } else {
@@ -249,7 +249,7 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
@@ -275,7 +275,7 @@ mixin DoctorApi {
         headers: parent._headers,
         body: jsonEncode(specialization.toJson()),
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {

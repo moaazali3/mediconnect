@@ -1,8 +1,7 @@
 part of '../api_service.dart';
 
 mixin AdminApi {
-  // 1. جلب بيانات الداشبورد
-  Future<AdminDashboardModel> getAdminDashboard() async {
+  Future<AdminDashboardModel> getAdminDashboardStats() async {
     final ApiService parent = this as ApiService;
     try {
       final response = await http.get(Uri.parse('${parent.baseUrl}/Admin/dashboard'), headers: parent._headers);
@@ -149,54 +148,43 @@ mixin AdminApi {
     }
   }
 
-  // 2. جلب أرباح دكتور معين
   Future<double> getDoctorRevenue(String doctorId) async {
     final ApiService parent = this as ApiService;
-    try {
-      final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
-        headers: parent._headers,
-      );
-      if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data is num) return data.toDouble();
-          if (data is Map) {
-            return (data['totalRevenue'] ?? data['TotalRevenue'] ?? data['revenue'] ?? data['Revenue'] ?? 0.0).toDouble();
-          }
-        } catch (_) {}
-        final val = response.body.toString().trim();
-        return double.tryParse(val) ?? 0.0;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
+      } else if (decoded is num) {
+        return decoded.toDouble();
+      } else {
+        return double.tryParse(decoded.toString()) ?? 0.0;
       }
-      return 0.0;
-    } catch (e) {
-      return 0.0;
+    } else {
+      throw "Failed to load doctor revenue: ${response.statusCode}";
     }
   }
 
-  // 3. جلب أرباح تخصص معين
   Future<double> getSpecializationRevenue(String specializationName) async {
     final ApiService parent = this as ApiService;
-    try {
-      final encodedName = Uri.encodeComponent(specializationName.trim());
-      final response = await http.get(
-        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$encodedName'),
-        headers: parent._headers,
-      );
-      if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data is num) return data.toDouble();
-          if (data is Map) {
-            return (data['totalRevenue'] ?? data['TotalRevenue'] ?? data['revenue'] ?? data['Revenue'] ?? 0.0).toDouble();
-          }
-        } catch (_) {}
-        final val = response.body.toString().trim();
-        return double.tryParse(val) ?? 0.0;
+    final response = await http.get(
+      Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+      headers: parent._headers,
+    );
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map) {
+        return (decoded['revenue'] ?? decoded['totalRevenue'] ?? decoded['data'] ?? 0).toDouble();
+      } else if (decoded is num) {
+        return decoded.toDouble();
+      } else {
+        return double.tryParse(decoded.toString()) ?? 0.0;
       }
-      return 0.0;
-    } catch (e) {
-      return 0.0;
+    } else {
+      throw "Failed to load specialization revenue: ${response.statusCode}";
     }
   }
 
