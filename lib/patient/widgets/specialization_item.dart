@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 
 class SpecializationItem extends StatelessWidget {
   final String title;
@@ -22,10 +23,10 @@ class SpecializationItem extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? primaryColor : Colors.white,
+          color: isSelected ? primaryColor : context.filterChipBg,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? primaryColor : Colors.grey.shade300,
+            color: isSelected ? primaryColor : context.filterChipBorder,
             width: 1.5,
           ),
           boxShadow: isSelected
@@ -38,7 +39,7 @@ class SpecializationItem extends StatelessWidget {
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.05),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   )
@@ -47,7 +48,7 @@ class SpecializationItem extends StatelessWidget {
         child: Text(
           title,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.blueGrey.shade700,
+            color: isSelected ? Colors.white : context.onSurface,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
             fontSize: 14,
           ),

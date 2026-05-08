@@ -191,11 +191,11 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
       ),
       child: Column(
         children: [
-          Icon(Icons.receipt_long_outlined, size: 60, color: Colors.grey.shade300),
+          Icon(Icons.receipt_long_outlined, size: 60, color: context.subText.withValues(alpha: 0.5)),
           const SizedBox(height: 15),
-          const Text(
+          Text(
             "No revenue data found yet",
-            style: TextStyle(color: Colors.grey, fontSize: 15),
+            style: TextStyle(color: context.subText, fontSize: 15),
             textAlign: TextAlign.center,
           ),
         ],
@@ -288,7 +288,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -342,13 +342,13 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           ),
           childrenPadding: const EdgeInsets.only(bottom: 12),
           children: spec.doctors.isEmpty
-              ? [const Padding(padding: EdgeInsets.all(8.0), child: Text("No doctors with revenue", style: TextStyle(color: Colors.grey)))]
+              ? [Padding(padding: const EdgeInsets.all(8.0), child: Text("No doctors with revenue", style: TextStyle(color: context.subText)))]
               : spec.doctors.map((doc) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             child: Row(
               children: [
                 const SizedBox(width: 10),
-                const Icon(Icons.subdirectory_arrow_right_rounded, color: Colors.grey, size: 18),
+                Icon(Icons.subdirectory_arrow_right_rounded, color: context.subText, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(

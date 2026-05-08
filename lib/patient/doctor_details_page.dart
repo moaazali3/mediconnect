@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/services/api_service.dart';
@@ -184,7 +185,7 @@ class DoctorDetailsPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Booking Appointment", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text("Booking Appointment", style: TextStyle(color: context.onSurface, fontWeight: FontWeight.bold)),
       ),
       body: FutureBuilder<DoctorProfileModel>(
         future: apiService.getDoctorProfile(doctorId),

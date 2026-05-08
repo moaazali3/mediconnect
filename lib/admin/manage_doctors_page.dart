@@ -126,11 +126,11 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    side: BorderSide(color: context.dividerCol),
                   ),
                   child: Text(
                     "CANCEL",
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: context.subText, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -322,7 +322,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -356,10 +356,10 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF263238),
+                    color: context.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),

@@ -41,11 +41,17 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: primaryColor,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
+            colorScheme: context.isDark 
+                ? const ColorScheme.dark(
+                    primary: primaryColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: primaryColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
           ),
           child: child!,
         );
@@ -155,7 +161,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 60),
                   const SizedBox(height: 16),
-                  Text("Error: ${snapshot.error}"),
+                  Text("Error: ${snapshot.error}", style: TextStyle(color: context.onSurface)),
                   const SizedBox(height: 16),
                   ElevatedButton(onPressed: _loadData, child: const Text("Retry")),
                 ],
@@ -212,10 +218,10 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.info_outline, color: Colors.grey[400], size: 50),
+            Icon(Icons.info_outline, color: context.subText.withValues(alpha: 0.5), size: 50),
             const SizedBox(height: 10),
             Text("No revenue records for ${DateFormat('EEEE').format(_selectedDate)}",
-                style: const TextStyle(color: Colors.grey)),
+                style: TextStyle(color: context.subText)),
           ],
         ),
       ),
@@ -265,7 +271,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         color: context.cardBg,
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(

@@ -123,11 +123,11 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    side: BorderSide(color: context.dividerCol),
                   ),
                   child: Text(
                     "CANCEL",
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: context.subText, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -203,9 +203,9 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.people_outline, size: 80, color: Colors.grey[300]),
+                                Icon(Icons.people_outline, size: 80, color: context.subText.withValues(alpha: 0.5)),
                                 const SizedBox(height: 15),
-                                Text("No receptionists found", style: TextStyle(color: Colors.grey[600])),
+                                Text("No receptionists found", style: TextStyle(color: context.subText)),
                               ],
                             ),
                           )
@@ -271,7 +271,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -305,16 +305,16 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
                   "${receptionist.firstName} ${receptionist.lastName}",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF263238),
+                    color: context.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.medical_services_outlined, color: Colors.grey, size: 14),
+                    Icon(Icons.medical_services_outlined, color: context.subText, size: 14),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(

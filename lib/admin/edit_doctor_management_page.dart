@@ -109,7 +109,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Specialization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -290,9 +290,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                       decoration: BoxDecoration(
-                        color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
+                        color: context.cardBg.withOpacity(0.92),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: context.dividerCol),
                       ),
                       child: Form(
                         key: _formKey,
@@ -335,7 +335,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildStepIndicator(1),
-            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : Colors.grey.shade300),
+            Container(width: 50, height: 2, color: _currentStep == 2 ? Colors.green : context.dividerCol),
             _buildStepIndicator(2),
           ],
         ),
@@ -359,7 +359,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : context.dividerCol),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -510,7 +510,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           color: Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Text("No schedule set yet.", style: TextStyle(color: Colors.grey, fontSize: 13), textAlign: TextAlign.center),
+        child: Text("No schedule set yet.", style: TextStyle(color: context.subText, fontSize: 13), textAlign: TextAlign.center),
       );
     }
     return Column(
@@ -520,7 +520,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         decoration: BoxDecoration(
           color: context.cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+          border: Border.all(color: context.dividerCol),
         ),
         child: Row(
           children: [
@@ -561,14 +561,14 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         suffixIcon: (onTap != null)
-            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
+            ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
             : null,
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -603,11 +603,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -670,7 +670,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2))),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 20),
               const Text("Schedule Setting", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor)),
               const SizedBox(height: 20),
@@ -746,7 +746,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            Text(label, style: TextStyle(fontSize: 11, color: context.subText)),
             const SizedBox(height: 4),
             Text(time.format(context), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primaryColor)),
           ],
@@ -779,11 +779,11 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
+            borderSide: BorderSide(color: context.dividerCol)
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

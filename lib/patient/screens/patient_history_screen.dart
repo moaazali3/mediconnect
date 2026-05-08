@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/api_constants.dart';
@@ -20,17 +21,17 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
     String idToFetch = widget.userId ?? "1"; 
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F9),
+      backgroundColor: context.scaffoldBg,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Medical History",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: context.onSurface, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.cardBg,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -57,7 +58,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
             padding: const EdgeInsets.all(20),
             itemCount: records.length,
             itemBuilder: (context, index) {
-              return _buildHistoryCard(records[index]);
+              return _buildHistoryCard(context, records[index]);
             },
           );
         },
@@ -65,7 +66,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
     );
   }
 
-  Widget _buildHistoryCard(MedicalRecordModel record) {
+  Widget _buildHistoryCard(BuildContext context, MedicalRecordModel record) {
     String displaySpec = record.doctorSpecialty.trim();
     if (displaySpec.isEmpty || displaySpec.toLowerCase() == "null") {
       displaySpec = "Medical Specialist";
@@ -80,11 +81,11 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -122,10 +123,10 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17, 
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF263238),
+                        color: context.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -156,35 +157,35 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
               ),
             ],
           ),
-          Divider(color: Colors.grey.shade100, height: 25),
+          Divider(color: context.dividerCol, height: 25),
           
           // Diagnosis Section
           Row(
             children: [
-              Icon(Icons.medical_services_rounded, color: Colors.grey.shade400, size: 16),
+              Icon(Icons.medical_services_rounded, color: context.subText, size: 16),
               const SizedBox(width: 6),
-              const Text("Diagnosis", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Text("Diagnosis", style: TextStyle(color: context.subText, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             record.diagnosis,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.onSurface),
           ),
           const SizedBox(height: 15),
 
           // Prescription Section
           Row(
             children: [
-              Icon(Icons.medication_rounded, color: Colors.grey.shade400, size: 16),
+              Icon(Icons.medication_rounded, color: context.subText, size: 16),
               const SizedBox(width: 6),
-              const Text("Prescription", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Text("Prescription", style: TextStyle(color: context.subText, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             record.prescription,
-            style: const TextStyle(color: Colors.black87, fontSize: 14),
+            style: TextStyle(color: context.onSurface, fontSize: 14),
           ),
         ],
       ),

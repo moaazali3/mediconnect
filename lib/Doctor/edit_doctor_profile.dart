@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -258,6 +259,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
+          backgroundColor: context.cardBg,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
           content: Form(
@@ -273,7 +275,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                   icon: Icons.lock_reset_rounded,
                   isObscured: isObscured,
                   suffix: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
+                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: context.subText, size: 20),
                     onPressed: () => setModalState(() => isObscured = !isObscured),
                   ),
                 ),
@@ -307,7 +309,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         prefixIcon: Icon(icon, color: primaryColor, size: 20),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: context.inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
       validator: (val) => (val == null || val.isEmpty) ? "Required" : null,
@@ -323,14 +325,14 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFF),
+        backgroundColor: context.scaffoldBg,
         appBar: AppBar(
-          title: const Text("Edit Profile", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-          backgroundColor: Colors.white,
+          title: Text("Edit Profile", style: TextStyle(color: context.onSurface, fontWeight: FontWeight.bold, fontSize: 18)),
+          backgroundColor: context.cardBg,
           elevation: 0.5,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87, size: 18),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.onSurface, size: 18),
             onPressed: () => Navigator.pop(context, _isModified),
           ),
         ),
@@ -467,9 +469,9 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   Widget _buildEditCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(children: children),
     );
@@ -498,11 +500,16 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          labelStyle: TextStyle(color: context.subText, fontSize: 11),
           counterText: maxLength == null ? "" : null,
           errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
           isDense: true,
         ),
         validator: validator ?? (value) => (value == null || value.trim().isEmpty) ? "Required" : null,
@@ -526,10 +533,15 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: const TextStyle(color: Colors.black54, fontSize: 11),
+          labelStyle: TextStyle(color: context.subText, fontSize: 11),
           errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           prefixIcon: Icon(icon, color: primaryColor, size: 18),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
           isDense: true,
         ),
         validator: (val) => val == null ? "Required" : null,
@@ -537,5 +549,5 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     );
   }
 
-  Widget _buildDivider() => Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
+  Widget _buildDivider() => Divider(height: 1, indent: 45, endIndent: 15, color: context.dividerCol);
 }

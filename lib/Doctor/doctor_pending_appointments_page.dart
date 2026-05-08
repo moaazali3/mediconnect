@@ -317,10 +317,10 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: const Color(0xFFE3F2FD),
+                        backgroundColor: primaryColor.withValues(alpha: 0.1),
                         child: Text(
                             app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1976D2), fontSize: 20)
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 20)
                         ),
                       ),
                       const SizedBox(width: 15),
@@ -342,7 +342,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                                   ),
                                 ),
                                 const SizedBox(width: 5),
-                                const Icon(Icons.contact_page_outlined, size: 18, color: Colors.grey),
+                                const Icon(Icons.contact_page_outlined, size: 18, color: primaryColor),
                               ],
                             ),
                             const SizedBox(height: 2),
@@ -358,7 +358,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      const Icon(Icons.arrow_forward_ios, size: 16, color: primaryColor),
                     ],
                   ),
                 ),
@@ -388,7 +388,7 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
                   const SizedBox(width: 10),
                   Text(
                       "Q No: ${app.queueNumber}",
-                      style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 15)
+                      style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 15)
                   ),
                 ],
               ),

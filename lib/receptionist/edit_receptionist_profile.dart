@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:intl/intl.dart';
@@ -127,7 +128,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: context.scaffoldBg,
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryColor))
           : Column(
@@ -275,9 +276,9 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
   Widget _buildEditCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.3 : 0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(children: children),
     );
@@ -291,12 +292,17 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
         readOnly: isReadOnly,
         onTap: onTap,
         keyboardType: keyboardType,
-        style: TextStyle(color: isReadOnly && onTap == null ? Colors.grey : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(color: isReadOnly && onTap == null ? context.subText : context.onSurface, fontWeight: FontWeight.w600, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: isReadOnly && onTap == null ? Colors.black54 : Colors.black54, fontSize: 12),
+          labelStyle: TextStyle(color: context.subText, fontSize: 12),
           prefixIcon: Icon(icon, color: primaryColor, size: 20),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
           isDense: true,
         ),
         validator: isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
@@ -305,7 +311,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, indent: 45, endIndent: 15, color: Colors.grey.shade100);
+    return Divider(height: 1, indent: 45, endIndent: 15, color: context.dividerCol);
   }
 
   void _showChangePasswordDialog(BuildContext context) {
@@ -318,6 +324,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => AlertDialog(
+          backgroundColor: context.cardBg,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text("Change Password", style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
           content: Form(
@@ -333,7 +340,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
                   icon: Icons.lock_reset_rounded,
                   isObscured: isObscured,
                   suffix: IconButton(
-                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: Colors.grey, size: 20),
+                    icon: Icon(isObscured ? Icons.visibility_off : Icons.visibility, color: context.subText, size: 20),
                     onPressed: () => setModalState(() => isObscured = !isObscured),
                   ),
                 ),
@@ -367,7 +374,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
         prefixIcon: Icon(icon, color: primaryColor, size: 20),
         suffixIcon: suffix,
         filled: true,
-        fillColor: Colors.grey[100],
+        fillColor: context.inputFill,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
       validator: (val) => (val == null || val.isEmpty) ? "Required" : null,

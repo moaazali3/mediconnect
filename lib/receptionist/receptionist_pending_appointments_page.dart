@@ -407,7 +407,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      Icon(Icons.arrow_forward_ios, size: 16, color: context.subText),
                     ],
                   ),
                 ),
@@ -439,7 +439,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                       const SizedBox(width: 10),
                       Text(
                           "Q No: ${app.queueNumber}",
-                          style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 14)
+                          style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 14)
                       ),
                     ],
                   ),

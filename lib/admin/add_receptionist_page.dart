@@ -98,7 +98,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.dividerCol, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Doctor", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -323,9 +323,9 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                         decoration: BoxDecoration(
-                          color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
+                          color: context.cardBg.withOpacity(0.92),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
+                          border: Border.all(color: context.dividerCol),
                         ),
                         // السر التاني: بنغير الـ key بتاع الفورم بناءً على الخطوة الحالية
                         child: Form(
@@ -411,7 +411,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : context.dividerCol),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -427,7 +427,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
 
   Widget _buildStepLine(int afterStep) {
     bool isPassed = _currentStep > afterStep;
-    return Container(width: 40, height: 2, color: isPassed ? Colors.green : (context.isDark ? Colors.grey.shade700 : Colors.grey.shade300));
+    return Container(width: 40, height: 2, color: isPassed ? Colors.green : context.dividerCol);
   }
 
   Widget _buildCurrentStepFields() {
@@ -636,12 +636,12 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
           onPressed: onTogglePassword,
         )
             : (onTap != null && maxLines == 1)
-            ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
+            ? Icon(Icons.arrow_drop_down_rounded, color: context.subText)
             : null,
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.dividerCol)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
@@ -679,9 +679,9 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
+        fillColor: context.inputFill,
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.dividerCol)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),

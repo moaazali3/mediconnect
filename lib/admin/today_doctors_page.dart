@@ -57,11 +57,17 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: primaryColor,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
+            colorScheme: context.isDark 
+                ? const ColorScheme.dark(
+                    primary: primaryColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: primaryColor,
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black,
+                  ),
           ),
           child: child!,
         );
@@ -239,7 +245,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined, size: 80, color: Colors.grey.shade300),
+            Icon(Icons.person_off_outlined, size: 80, color: context.subText.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty 
@@ -268,7 +274,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(alpha: context.isDark ? 0.3 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

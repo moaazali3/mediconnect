@@ -193,16 +193,16 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.cardBg,
                         borderRadius: BorderRadius.circular(15),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: Theme(
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           leading: Icon(
                             specName == "Uncategorized" ? Icons.help_outline : Icons.medical_services_rounded,
-                            color: totalSpec > 0 ? primaryColor : Colors.grey
+                            color: totalSpec > 0 ? primaryColor : context.subText
                           ),
                           title: Text(specName, style: TextStyle(
                             fontWeight: FontWeight.bold, 
@@ -212,17 +212,17 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: totalSpec > 0 ? primaryColor : Colors.grey[300], 
+                              color: totalSpec > 0 ? primaryColor : context.filterChipBg, 
                               borderRadius: BorderRadius.circular(10)
                             ),
-                            child: Text("$totalSpec", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            child: Text("$totalSpec", style: TextStyle(color: totalSpec > 0 ? Colors.white : context.subText, fontWeight: FontWeight.bold)),
                           ),
                           children: doctors.isEmpty 
-                            ? [const Padding(padding: EdgeInsets.all(15), child: Text("No bookings for this department", style: TextStyle(fontSize: 12, color: Colors.grey)))]
+                            ? [Padding(padding: const EdgeInsets.all(15), child: Text("No bookings for this department", style: TextStyle(fontSize: 12, color: context.subText)))]
                             : doctors.entries.map<Widget>((doc) {
                                 return Container(
                                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(color: context.isDark ? const Color(0xFF374151) : Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                                  decoration: BoxDecoration(color: context.inputFill, borderRadius: BorderRadius.circular(12)),
                                   child: ListTile(
                                     title: Text(doc.key, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                                     subtitle: Text("${doc.value.length} Bookings", style: const TextStyle(fontSize: 12)),
@@ -251,9 +251,9 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.75,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        decoration: BoxDecoration(
+          color: context.scaffoldBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -266,12 +266,12 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      Text("${appts.length} Appointments", style: const TextStyle(color: Colors.grey)),
+                      Text(name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.onSurface)),
+                      Text("${appts.length} Appointments", style: TextStyle(color: context.subText)),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                IconButton(icon: Icon(Icons.close, color: context.onSurface), onPressed: () => Navigator.pop(context)),
               ],
             ),
             const Divider(height: 30),
@@ -284,9 +284,9 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
+                      color: context.inputFill,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[200]!),
+                      border: Border.all(color: context.dividerCol),
                     ),
                     child: Row(
                       children: [
@@ -300,15 +300,15 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(appt.patientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text("${appt.startTime} - ${appt.endTime}", style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                              Text(appt.patientName, style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
+                              Text("${appt.startTime} - ${appt.endTime}", style: TextStyle(color: context.subText, fontSize: 13)),
                             ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(appt.status).withOpacity(0.1),
+                            color: _getStatusColor(appt.status).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

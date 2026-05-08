@@ -122,7 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       "Error: ${snapshot.error}",
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurface),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
