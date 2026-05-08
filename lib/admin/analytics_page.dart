@@ -26,12 +26,17 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   String? _error;
   AdminDashboardModel? _stats;
   int _uniquePatientsCount = 0;
+  
+  // Today's Status Counts
+  int _todayPending = 0;
+  int _todayConfirmed = 0;
+  int _todayCancelled = 0;
 
   // Top Doctor Info
   String? _topDoctorName;
   String? _topDoctorSpec;
   int _topDoctorBookings = 0;
-
+  
   List<MapEntry<String, int>> _topSpecializations = [];
 
   @override
@@ -42,16 +47,18 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() { _isLoading = true; _error = null; });
+    setState(() { 
+      _isLoading = true; 
+      _error = null; 
+    });
 
     try {
-      // التعديل هنا: زودنا <dynamic> وغيرنا اسم الدالة
-      final results = await Future.wait<dynamic>([
-        _apiService.getAdminDashboard(),
+      final results = await Future.wait([
+        _apiService.getAdminDashboard(), // Fixed method name
         _apiService.getTodayAppointments(),
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
-        _apiService.getAllAppointments(pageSize: 5000),
+        _apiService.getAllAppointments(pageSize: 5000), 
         _apiService.getAllDoctors(pageSize: 2000),
         _apiService.getAllSpecializations(),
       ]);
@@ -63,6 +70,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       final allAppts = results[4] as List<AppointmentModel>;
       final allDoctors = results[5] as List<DoctorModel>;
       final allSpecs = results[6] as List<SpecializationModel>;
+
+      // Count today's statuses
+      int pending = 0;
+      int confirmed = 0;
+      int cancelled = 0;
+      for (var appt in todayAppts) {
+        final s = appt.status.toLowerCase();
+        if (s == 'pending' || s == 'waiting') {
+          pending++;
+        } else if (s == 'confirmed' || s == 'accepted' || s == 'completed') {
+          confirmed++;
+        } else if (s == 'cancelled' || s == 'rejected') {
+          cancelled++;
+        }
+      }
 
       // 1. Unique Patients
       final Set<String> uniqueNames = {for (var p in allPatients) "${p.firstName} ${p.lastName}".toLowerCase().trim()};
@@ -86,7 +108,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           String docId = appt.doctorId.trim().toLowerCase();
           spec = docIdToSpec[docId] ?? docNameToSpec[docName.toLowerCase()] ?? "General";
         }
-
+        
         spec = spec.trim();
         specCounts[spec] = (specCounts[spec] ?? 0) + 1;
       }
@@ -104,6 +126,9 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
       if (mounted) {
         setState(() {
+          _todayPending = pending;
+          _todayConfirmed = confirmed;
+          _todayCancelled = cancelled;
           _uniquePatientsCount = uniqueNames.length;
           _topDoctorName = topName;
           _topDoctorSpec = topSpec;
@@ -117,7 +142,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _isLoading = false; });
+      if (mounted) {
+        setState(() { 
+          _error = e.toString(); 
+          _isLoading = false; 
+        });
+      }
     }
   }
 
@@ -137,6 +167,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             _buildSectionHeader("Overview Today"),
             const SizedBox(height: 15),
             _buildStatsGrid(_stats!),
+            const SizedBox(height: 20),
+            _buildTodayStatusCard(),
             const SizedBox(height: 30),
             _buildSectionHeader("System Summary"),
             const SizedBox(height: 15),
@@ -149,6 +181,92 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTodayStatusCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.analytics_outlined, color: primaryColor, size: 20),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "Today's Appointment Status",
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Expanded(child: _buildStatusItem("Pending", _todayPending, Colors.orange, Icons.hourglass_empty_rounded)),
+              Expanded(child: _buildStatusItem("Confirmed", _todayConfirmed, Colors.green, Icons.check_circle_outline_rounded)),
+              Expanded(child: _buildStatusItem("Cancelled", _todayCancelled, Colors.red, Icons.cancel_outlined)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusItem(String label, int count, Color color, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 26),
+        ),
+        const SizedBox(height: 8),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            "$count",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 
@@ -340,119 +458,89 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)));
+    return Text(
+      title, 
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))
+    );
   }
 
   Widget _buildStatsGrid(AdminDashboardModel stats) {
-    final items = [
-      _buildStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()))),
-      _buildStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
-      _buildStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
-    ];
-    return _buildDynamicGrid(items, spacing: 15, aspectRatio: 1.2);
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 10),
-            FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
+    return Column(
+      children: [
+        _buildWideStatCard("Today Appts", stats.totalAppointmentsToday.toString(), Icons.calendar_today_rounded, Colors.pink, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayAppointmentsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Active Doctors", stats.totalDoctorsToday.toString(), Icons.person_search_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayDoctorsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Today Revenue", "${stats.totalRevenueToday.toStringAsFixed(0)} EGP", Icons.payments_rounded, Colors.green, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TodayRevenuePage()))),
+      ],
     );
   }
 
   Widget _buildQuickStats() {
-    final items = [
-      _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
-      _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
-      _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
-    ];
-    return _buildDynamicGrid(items, spacing: 12, aspectRatio: 1.2);
+    return Column(
+      children: [
+        _buildWideStatCard("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
+        const SizedBox(height: 12),
+        _buildWideStatCard("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
+      ],
+    );
   }
 
-  Widget _buildSmallStat(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+  Widget _buildWideStatCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 18),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 14),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildDynamicGrid(List<Widget> items, {required double spacing, required double aspectRatio}) {
-    List<Widget> rows = [];
-    for (int i = 0; i < items.length; i += 2) {
-      if (i + 1 < items.length) {
-        rows.add(
-          Row(
-            children: [
-              Expanded(child: AspectRatio(aspectRatio: aspectRatio, child: items[i])),
-              SizedBox(width: spacing),
-              Expanded(child: AspectRatio(aspectRatio: aspectRatio, child: items[i + 1])),
-            ],
-          ),
-        );
-      } else {
-        // Last one full width
-        rows.add(AspectRatio(aspectRatio: aspectRatio * 2.2, child: items[i]));
-      }
-      rows.add(SizedBox(height: spacing));
-    }
-    if (rows.isNotEmpty) rows.removeLast();
-    return Column(children: rows);
   }
 
   Widget _buildErrorState() {

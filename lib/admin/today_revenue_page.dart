@@ -172,14 +172,20 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 _buildTotalHeader(totalRevenue),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(25, 10, 25, 15),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(25, 10, 25, 15),
                   child: Row(
                     children: [
-                      Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF334155)),
-                      SizedBox(width: 8),
-                      Text("Breakdown by Specialty",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF334155))),
+                      const Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF334155)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Breakdown by Specialty",
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF334155)),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -233,7 +239,11 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
       ),
       child: Column(
         children: [
-          const Text("Revenue for Selected Day", style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+          const Text(
+            "Revenue for Selected Day",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500, letterSpacing: 0.5)
+          ),
           const SizedBox(height: 12),
           FittedBox(
             child: Text(
@@ -272,11 +282,17 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))
+                ),
                 Text("$count Appointments", style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
