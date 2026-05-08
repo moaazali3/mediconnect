@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
+import 'package:mediconnect/models/DoctorScheduleModel.dart'; // ضفنا الموديل بتاع الجدول
 import 'package:mediconnect/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // ماتنساش تتأكد إن مسار ملف التعديل ده صح عندك
@@ -19,6 +20,9 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   final ApiService _apiService = ApiService();
   bool _isLoading = true;
   ReceptionistProfileModel? _profile;
+
+  // لستة عشان نحفظ فيها جدول الدكتور
+  List<DoctorScheduleModel> _doctorSchedule = [];
 
   @override
   void initState() {
@@ -41,6 +45,14 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
     }
   }
 
+  // دالة صغيرة عشان نشيل الثواني من الوقت ويطلع شكله شيك
+  String _formatTime(String time) {
+    if (time.length >= 5) {
+      return time.substring(0, 5);
+    }
+    return time;
+  }
+
   Future<void> _fetchProfile() async {
     setState(() => _isLoading = true);
     try {
@@ -48,8 +60,19 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
       final id = widget.userId ?? prefs.getString('user_id') ?? "1";
       final profile = await _apiService.getReceptionistProfile(id);
 
+      List<DoctorScheduleModel> schedule = [];
+      // لو الريسبشنست مربوطة بدكتور (عندها doctorId) بنروح نجيب الجدول بتاعه
+      if (profile.doctorId != null && profile.doctorId.toString().isNotEmpty && profile.doctorId.toString() != "0") {
+        try {
+          schedule = await _apiService.getDoctorSchedule(profile.doctorId.toString());
+        } catch (e) {
+          debugPrint("Error fetching schedule: $e");
+        }
+      }
+
       setState(() {
         _profile = profile;
+        _doctorSchedule = schedule;
         _isLoading = false;
       });
     } catch (e) {
@@ -110,6 +133,13 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
                       _buildInfoRow(Icons.medical_services_outlined, "Assigned Doctor", _profile?.doctorName != null && _profile!.doctorName!.isNotEmpty ? "Dr. ${_profile!.doctorName}" : "Not Assigned"),
                     ]),
 
+                    // سيكشن الجدول بيظهر بس لو هي متسجلة مع دكتور
+                    if (_profile?.doctorId != null && _profile!.doctorId.toString().isNotEmpty && _profile!.doctorId.toString() != "0") ...[
+                      const SizedBox(height: 25),
+                      _buildSectionTitle("Doctor's Schedule"),
+                      _buildDoctorScheduleSection(),
+                    ],
+
                     const SizedBox(height: 40),
                     _buildActionButtons(),
                     const SizedBox(height: 30),
@@ -146,7 +176,6 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
               child: const CircleAvatar(
                 radius: 40,
                 backgroundColor: Colors.white,
-                // التعديل هنا: أيقونة موحدة للرجال والنساء
                 child: Icon(Icons.person_rounded, size: 50, color: primaryColor),
               ),
             ),
@@ -219,6 +248,35 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
 
   Widget _buildDivider() {
     return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
+  }
+
+  // الدالة الجديدة اللي بتبني الجدول بتاع الدكتور
+  Widget _buildDoctorScheduleSection() {
+    if (_doctorSchedule.isEmpty) {
+      return _buildProfileCard([
+        const Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: Text("No schedule available yet.", style: TextStyle(color: Colors.grey))),
+        )
+      ]);
+    }
+
+    List<Widget> scheduleRows = [];
+    for (int i = 0; i < _doctorSchedule.length; i++) {
+      final item = _doctorSchedule[i];
+      scheduleRows.add(
+        _buildInfoRow(
+          Icons.access_time_filled_rounded,
+          item.dayOfWeek,
+          "${_formatTime(item.startTime)} - ${_formatTime(item.endTime)}",
+        ),
+      );
+      if (i < _doctorSchedule.length - 1) {
+        scheduleRows.add(_buildDivider());
+      }
+    }
+
+    return _buildProfileCard(scheduleRows);
   }
 
   Widget _buildActionButtons() {
