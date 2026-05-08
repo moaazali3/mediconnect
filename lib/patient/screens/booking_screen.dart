@@ -306,7 +306,10 @@ class _BookingScreenState extends State<BookingScreen> {
             radius: 35,
             backgroundColor: primaryColor.withOpacity(0.1),
             backgroundImage: imageUrl != null && imageUrl.isNotEmpty ? NetworkImage(imageUrl) : null,
-            child: (imageUrl == null || imageUrl.isEmpty) ? const Icon(Icons.medical_services_rounded, color: primaryColor, size: 35) : null,
+            // التعديل هنا: استخدام الأيقونة الموحدة وتكبير حجمها ليتناسب مع الـ Avatar
+            child: (imageUrl == null || imageUrl.isEmpty)
+                ? const Icon(Icons.person_rounded, color: primaryColor, size: 40)
+                : null,
           ),
           const SizedBox(width: 15),
           Expanded(
@@ -453,7 +456,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ? const SizedBox(height: 32, width: 32, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
               : (_expectedTurn != null
               ? Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline, // عشان الكلمة والرقم يبقوا على نفس السطر المظبوط
+            crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
               const Text("Queue No. ", style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w500)),
