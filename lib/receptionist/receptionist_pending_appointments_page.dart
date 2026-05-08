@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
+import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -14,7 +16,123 @@ class ReceptionistPendingAppointmentsPage extends StatefulWidget {
 
 class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendingAppointmentsPage> {
   final ApiService _apiService = ApiService();
+  
+  List<AppointmentModel> _allAppointments = [];
+  List<DoctorScheduleModel> _schedule = [];
+  List<DateTime> _availableDates = [];
+  bool _isLoading = true;
   bool _isProcessing = false;
+  String? _errorMessage;
+
+  String _selectedDate = "All";
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      if (userId == null) throw Exception("User not logged in");
+
+      // 1. Fetch Receptionist Profile to get Doctor ID
+      final profile = await _apiService.getReceptionistProfile(userId);
+      
+      // 2. Fetch Appointments and Schedule in parallel
+      final results = await Future.wait([
+        _apiService.getReceptionistAppointments(userId),
+        if (profile.doctorId != null && profile.doctorId != "0")
+          _apiService.getDoctorSchedule(profile.doctorId!)
+        else
+          Future.value(<DoctorScheduleModel>[]),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _allAppointments = (results[0] as List<AppointmentModel>)
+              .where((a) => a.status.toLowerCase() == 'pending')
+              .toList();
+          _schedule = results[1] as List<DoctorScheduleModel>;
+          _generateAvailableDates();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _generateAvailableDates() {
+    _availableDates.clear();
+    Set<DateTime> dateSet = {};
+
+    // 1. Add dates from existing pending appointments
+    for (var app in _allAppointments) {
+      try {
+        DateTime d = DateTime.parse(app.appointmentDate);
+        dateSet.add(DateTime(d.year, d.month, d.day));
+      } catch (e) {
+        debugPrint("Error parsing appt date: $e");
+      }
+    }
+
+    // 2. Add working days from schedule for the next 30 days
+    if (_schedule.isNotEmpty) {
+      DateTime now = DateTime.now();
+      DateTime today = DateTime(now.year, now.month, now.day);
+      for (int i = 0; i < 30; i++) {
+        DateTime d = today.add(Duration(days: i));
+        // Using the same logic as doctor_pending_appointments_page
+        if (_schedule.any((s) => s.isScheduledFor(d.weekday))) {
+          dateSet.add(d);
+        }
+      }
+    }
+
+    if (_schedule.isNotEmpty) {
+      _availableDates = dateSet.where((d) => _schedule.any((s) => s.isScheduledFor(d.weekday))).toList();
+    } else {
+      _availableDates = dateSet.toList();
+    }
+
+    _availableDates.sort();
+  }
+
+  List<AppointmentModel> get _filteredAppointments {
+    return _allAppointments.where((a) {
+      bool matchesDate = _selectedDate == "All" || a.appointmentDate == _selectedDate;
+      bool matchesSearch = a.patientName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                          a.doctorName.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesDate && matchesSearch;
+    }).toList()
+      ..sort((a, b) {
+        int dateCompare = a.appointmentDate.compareTo(b.appointmentDate);
+        if (dateCompare != 0) return dateCompare;
+        return a.startTime.compareTo(b.startTime);
+      });
+  }
 
   Future<void> _updateStatus(String id, bool isAccept) async {
     setState(() => _isProcessing = true);
@@ -33,7 +151,8 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
             backgroundColor: isAccept ? Colors.green : Colors.red,
           ),
         );
-        setState(() {});
+        // Refresh data after update
+        _fetchData();
       }
     } catch (e) {
       if (mounted) {
@@ -61,176 +180,233 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
     }
   }
 
-  Future<List<AppointmentModel>> _fetchPendingAppointments() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id');
-    if (userId == null) return [];
-
-    final appointments = await _apiService.getReceptionistAppointments(userId);
-    return appointments.where((a) => a.status.toLowerCase() == 'pending').toList();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final apps = _filteredAppointments;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Stack(
-        children: [
-          FutureBuilder<List<AppointmentModel>>(
-            future: _fetchPendingAppointments(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: primaryColor));
-              }
-              if (snapshot.hasError) {
-                return Center(child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Text("Error: ${snapshot.error}", textAlign: TextAlign.center),
-                ));
-              }
+      body: SafeArea(
+        child: Stack(
+          children: [
+            RefreshIndicator(
+              onRefresh: _fetchData,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  _buildSearchField(),
+                  const SizedBox(height: 20),
+                  _buildDateFilterSection(),
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text("Pending Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 10),
 
-              final appointments = snapshot.data ?? [];
+                  if (_isLoading)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: CircularProgressIndicator(color: primaryColor),
+                    ))
+                  else if (_errorMessage != null)
+                    Center(child: Column(
+                      children: [
+                        Text("Error: $_errorMessage"),
+                        ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
+                      ],
+                    ))
+                  else if (apps.isEmpty && _selectedDate != "All")
+                      Center(child: Padding(
+                        padding: const EdgeInsets.all(40.0),
+                        child: Text("No pending appointments on ${DateFormat('EEE, d MMM').format(DateTime.parse(_selectedDate))}"),
+                      ))
+                    else if (apps.isEmpty)
+                        const Center(child: Padding(
+                          padding: EdgeInsets.all(40.0),
+                          child: Text("No pending appointments found"),
+                        ))
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: apps.map((app) => _buildAppointmentCard(app)).toList(),
+                          ),
+                        ),
 
-              // Sort appointments by date and time
-              appointments.sort((a, b) {
-                int dateComp = a.appointmentDate.compareTo(b.appointmentDate);
-                if (dateComp != 0) return dateComp;
-                return a.startTime.compareTo(b.startTime);
-              });
-
-              if (appointments.isEmpty) {
-                return const Center(child: Text("No pending appointments found"));
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                itemCount: appointments.length,
-                itemBuilder: (context, index) {
-                  final appointment = appointments[index];
-                  return PendingAppointmentCard(
-                    appointment: appointment,
-                    onAccept: () => _updateStatus(appointment.appointmentId, true),
-                    onCancel: () => _updateStatus(appointment.appointmentId, false),
-                    onTapProfile: () => _navigateToProfile(appointment.patientId),
-                    isProcessing: _isProcessing,
-                  );
-                },
-              );
-            },
-          ),
-          if (_isProcessing)
-            Container(
-              color: Colors.black.withOpacity(0.1),
-              child: const Center(child: CircularProgressIndicator(color: primaryColor)),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
+            if (_isProcessing)
+              Container(
+                color: Colors.black.withOpacity(0.1),
+                child: const Center(child: CircularProgressIndicator(color: primaryColor)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Expanded(
+            child: Text(
+              "Pending Appointments",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              softWrap: true,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            child: Text("${_allAppointments.length} Pending", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
   }
-}
 
-class PendingAppointmentCard extends StatelessWidget {
-  final AppointmentModel appointment;
-  final VoidCallback onAccept;
-  final VoidCallback onCancel;
-  final VoidCallback onTapProfile;
-  final bool isProcessing;
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: InputDecoration(
+          hintText: "Search patient or doctor...",
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        ),
+      ),
+    );
+  }
 
-  const PendingAppointmentCard({
-    super.key,
-    required this.appointment,
-    required this.onAccept,
-    required this.onCancel,
-    required this.onTapProfile,
-    required this.isProcessing,
-  });
+  Widget _buildDateFilterSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Text("Filter by Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildFilterItem("All", "All"),
+              ..._availableDates.map((date) {
+                final String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+                final String displayLabel = DateFormat('EEE, d MMM').format(date);
+                return _buildFilterItem(displayLabel, formattedDate);
+              }).toList(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-  // دالة صغيرة عشان نشيل الثواني من الوقت
+  Widget _buildFilterItem(String label, String value) {
+    bool isSelected = _selectedDate == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedDate = value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
+        ),
+        child: Text(
+            label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontWeight: FontWeight.bold,
+                fontSize: 13
+            )
+        ),
+      ),
+    );
+  }
+
   String _formatTime(String time) {
     if (time.length >= 5) {
-      return time.substring(0, 5); // بياخد أول 5 حروف بس (مثال: 10:00)
+      return time.substring(0, 5);
     }
     return time;
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildAppointmentCard(AppointmentModel app) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: onTapProfile,
+                onTap: () => _navigateToProfile(app.patientId),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      // التعديل السحري هنا: استبدال الأيقونة بأول حرف من الاسم
                       CircleAvatar(
-                        radius: 28, // كبرناها سنة عشان تبان أشيك
+                        radius: 28,
                         backgroundColor: primaryColor.withOpacity(0.1),
                         child: Text(
-                          appointment.patientName.isNotEmpty ? appointment.patientName[0].toUpperCase() : "?",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
-                            fontSize: 22,
-                          ),
+                            app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 22)
                         ),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              appointment.patientName,
-                              maxLines: 1,
+                              app.patientName,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87),
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Color(0xFF263238),
-                              ),
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              "Doctor: ${appointment.doctorName}",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                "Doctor: ${app.doctorName}",
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                                "${app.dayOfWeek}, ${app.appointmentDate}",
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13)
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          "Pending",
-                          style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
-                        ),
-                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                     ],
                   ),
                 ),
@@ -244,12 +420,26 @@ class PendingAppointmentCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: _buildInfoItem(Icons.calendar_today_rounded, appointment.appointmentDate)),
-                      const SizedBox(width: 4),
-                      // استخدمنا الدالة هنا عشان نقص الثواني
-                      Expanded(child: _buildInfoItem(Icons.access_time_rounded, _formatTime(appointment.startTime))),
-                      const SizedBox(width: 4),
-                      Expanded(child: _buildInfoItem(Icons.format_list_numbered_rounded, "Queue #${appointment.queueNumber}")),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 18, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "${_formatTime(app.startTime)} - ${_formatTime(app.endTime)}",
+                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                          "Q No: ${app.queueNumber}",
+                          style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 14)
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -257,7 +447,7 @@ class PendingAppointmentCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: isProcessing ? null : onCancel,
+                          onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, false),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.red,
                             side: const BorderSide(color: Colors.red),
@@ -269,7 +459,7 @@ class PendingAppointmentCard extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: isProcessing ? null : onAccept,
+                          onPressed: _isProcessing ? null : () => _updateStatus(app.appointmentId, true),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
@@ -287,24 +477,6 @@ class PendingAppointmentCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoItem(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: primaryColor.withOpacity(0.7)),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-              text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 11, fontWeight: FontWeight.w500)
-          ),
-        ),
-      ],
     );
   }
 }
