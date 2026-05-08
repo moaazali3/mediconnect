@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // عشان نخلي التليفون أرقام بس
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/CreateReceptionistModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 
@@ -91,16 +92,13 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              ),
+              decoration: BoxDecoration(color: context.cardBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
               child: Column(
                 children: [
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Doctor", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -111,7 +109,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
                       hintText: "Search doctor name...",
                       prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: context.inputFill,
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                     ),
@@ -130,7 +128,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
                         ? const Center(child: Text("No doctors found"))
                         : ListView.separated(
                       itemCount: tempFiltered.length,
-                      separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                      separatorBuilder: (context, index) => Divider(color: context.dividerCol),
                       itemBuilder: (context, index) {
                         final doc = tempFiltered[index];
                         return ListTile(
@@ -307,14 +305,11 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withOpacity(0.8),
-                  Colors.white,
-                ],
+                colors: context.isDark ? [const Color(0xFF0D1B2A), const Color(0xFF1A237E).withOpacity(0.8)] : [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
-          Container(color: Colors.black.withOpacity(0.05)),
+          Container(color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.05)),
           Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -328,9 +323,9 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
+                          color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
                         ),
                         // السر التاني: بنغير الـ key بتاع الفورم بناءً على الخطوة الحالية
                         child: Form(
@@ -416,7 +411,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : Colors.grey.shade300),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -424,7 +419,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
             ? const Icon(Icons.check, color: Colors.white, size: 16)
             : Text(
           "$step",
-          style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold, fontSize: 14),
+          style: TextStyle(color: isActive ? Colors.white : context.subText, fontWeight: FontWeight.bold, fontSize: 14),
         ),
       ),
     );
@@ -432,7 +427,7 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
 
   Widget _buildStepLine(int afterStep) {
     bool isPassed = _currentStep > afterStep;
-    return Container(width: 40, height: 2, color: isPassed ? Colors.green : Colors.grey.shade300);
+    return Container(width: 40, height: 2, color: isPassed ? Colors.green : (context.isDark ? Colors.grey.shade700 : Colors.grey.shade300));
   }
 
   Widget _buildCurrentStepFields() {
@@ -618,10 +613,10 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
       maxLines: maxLines,
       maxLength: maxLength,
       inputFormatters: inputFormatters,
-      style: const TextStyle(fontSize: 14),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         counterText: maxLength == null ? "" : null, // لو مفيش طول محدد متظهرش العداد
         errorStyle: const TextStyle(fontSize: 11, height: 1.2), // ستايل الإيرور زي الريجيستر
         errorMaxLines: 5,
@@ -644,9 +639,9 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
             ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
             : null,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
@@ -668,10 +663,11 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
       value: value,
       items: items,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, color: Colors.black),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
+      dropdownColor: context.cardBg,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         errorStyle: const TextStyle(fontSize: 11, height: 1.2),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
@@ -683,9 +679,9 @@ class _AddReceptionistPageState extends State<AddReceptionistPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.white.withOpacity(0.5))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: primaryColor, width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),

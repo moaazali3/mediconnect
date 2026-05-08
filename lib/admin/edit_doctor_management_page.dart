@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
@@ -102,16 +103,13 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
             return Container(
               height: MediaQuery.of(context).size.height * 0.7,
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              ),
+              decoration: BoxDecoration(color: context.cardBg, borderRadius: const BorderRadius.vertical(top: Radius.circular(25))),
               child: Column(
                 children: [
                   Container(
                     width: 50,
                     height: 5,
-                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(color: context.isDark ? Colors.grey.shade700 : Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
                   ),
                   const SizedBox(height: 15),
                   const Text("Select Specialization", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor)),
@@ -122,7 +120,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                       hintText: "Search specialization...",
                       prefixIcon: const Icon(Icons.search_rounded, color: primaryColor),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: context.inputFill,
                       contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                     ),
@@ -140,7 +138,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                         ? const Center(child: Text("No specializations found"))
                         : ListView.separated(
                       itemCount: tempFiltered.length,
-                      separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                      separatorBuilder: (context, index) => Divider(color: context.dividerCol),
                       itemBuilder: (context, index) {
                         final spec = tempFiltered[index];
                         return ListTile(
@@ -273,14 +271,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  primaryColor.withValues(alpha: 0.8),
-                  Colors.white,
-                ],
+                colors: context.isDark ? [const Color(0xFF0D1B2A), const Color(0xFF1A237E).withOpacity(0.8)] : [primaryColor.withOpacity(0.8), Colors.white],
               ),
             ),
           ),
-          Container(color: Colors.black.withValues(alpha: 0.05)),
+          Container(color: Colors.black.withOpacity(context.isDark ? 0.15 : 0.05)),
 
           _isLoading
               ? const Center(child: CircularProgressIndicator(color: primaryColor))
@@ -295,9 +290,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: context.isDark ? Colors.grey.shade900.withOpacity(0.92) : Colors.white.withOpacity(0.85),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
                       ),
                       child: Form(
                         key: _formKey,
@@ -364,13 +359,13 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       width: 30,
       height: 30,
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green : (isActive ? primaryColor : Colors.grey.shade300),
+        color: isCompleted ? Colors.green : (isActive ? primaryColor : (context.isDark ? Colors.grey.shade800 : Colors.grey.shade300)),
         shape: BoxShape.circle,
       ),
       child: Center(
         child: isCompleted
             ? const Icon(Icons.check, color: Colors.white, size: 16)
-            : Text("$step", style: TextStyle(color: isActive ? Colors.white : Colors.black54, fontWeight: FontWeight.bold, fontSize: 14)),
+            : Text("$step", style: TextStyle(color: isActive ? Colors.white : context.subText, fontWeight: FontWeight.bold, fontSize: 14)),
       ),
     );
   }
@@ -523,9 +518,9 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.5),
+          color: context.cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+          border: Border.all(color: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.3)),
         ),
         child: Row(
           children: [
@@ -555,10 +550,10 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       onTap: onTap,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: const TextStyle(fontSize: 14),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
@@ -569,11 +564,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
             ? Icon(Icons.arrow_drop_down_rounded, color: Colors.grey.shade600)
             : null,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -596,10 +591,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
       value: initialValue,
       items: items,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, color: Colors.black),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
+      dropdownColor: context.cardBg,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
@@ -607,11 +603,11 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -668,7 +664,7 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
         child: Container(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 25),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: context.cardBg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: Column(
@@ -771,10 +767,11 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
       value: initialValue,
       items: items,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, color: Colors.black),
+      style: TextStyle(fontSize: 14, color: context.onSurface),
+      dropdownColor: context.cardBg,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: TextStyle(color: context.subText, fontSize: 13),
         prefixIcon: Container(
           margin: const EdgeInsets.all(4),
           padding: const EdgeInsets.all(6),
@@ -782,11 +779,11 @@ class _ScheduleManagerSheetState extends State<_ScheduleManagerSheet> {
           child: Icon(icon, color: primaryColor, size: 20),
         ),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.6),
+        fillColor: context.isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.6),
         contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5))
+            borderSide: BorderSide(color: context.isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.5))
         ),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

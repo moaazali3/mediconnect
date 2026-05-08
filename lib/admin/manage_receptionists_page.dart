@@ -111,7 +111,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
         content: Text(
           "Are you sure you want to delete ${receptionist.firstName} ${receptionist.lastName}?\nThis action cannot be undone.",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          style: TextStyle(color: context.subText, fontSize: 14),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 25),
         actions: [
@@ -182,7 +182,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Manage Receptionists",
         showBackButton: true,
@@ -320,7 +320,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
                       child: Text(
                         "Assigned to: Dr. ${receptionist.doctorName ?? 'N/A'}",
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: context.subText,
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -338,7 +338,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
                         receptionist.phoneNumber,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
+                          color: context.onSurface,
                           fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,

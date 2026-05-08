@@ -185,7 +185,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                   }) 
               : null,
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: context.inputFill,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,
@@ -220,7 +220,7 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
               selected: isSelected,
               selectedColor: primaryColor,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
+                color: isSelected ? Colors.white : context.onSurface,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               onSelected: (selected) {
@@ -381,8 +381,8 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text("Date: ${app.appointmentDate}", style: TextStyle(color: Colors.grey[700])),
-                                    Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: Colors.grey[700])),
+                                    Text("Date: ${app.appointmentDate}", style: TextStyle(color: context.subText)),
+                                    Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: context.subText)),
                                   ],
                                 ),
                               ),

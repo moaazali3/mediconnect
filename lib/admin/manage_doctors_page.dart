@@ -114,7 +114,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
         content: Text(
           "Are you sure you want to delete Dr. ${doctor.firstName} ${doctor.lastName}?\nThis action cannot be undone.",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          style: TextStyle(color: context.subText, fontSize: 14),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 25),
         actions: [
@@ -192,7 +192,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: context.scaffoldBg,
       appBar: CommonAppBar(
         title: "Manage Doctors",
         showBackButton: true,
@@ -286,15 +286,15 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: isSelected ? primaryColor : Colors.white,
+                color: isSelected ? primaryColor : context.filterChipBg,
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
+                border: Border.all(color: isSelected ? primaryColor : context.filterChipBorder),
               ),
               child: Center(
                 child: Text(
                   name,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    color: isSelected ? Colors.white : context.onSurface,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -368,7 +368,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: context.subText,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -383,7 +383,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                         "${doctor.experienceYears} Years Exp.",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
+                          color: context.onSurface,
                           fontSize: 12,
                         ),
                         maxLines: 1,
