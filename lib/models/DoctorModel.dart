@@ -63,7 +63,7 @@ class DoctorModel {
       consultationFee: _toDouble(json['consultationFee'] ?? json['ConsultationFee']),
       dateOfBirth: (json['dateOfBirth'] ?? json['DateOfBirth'] ?? '').toString(),
       gender: (json['gender'] ?? json['Gender'] ?? '').toString(),
-      isAppleToAppointment: parseBool(json['isAppleToAppointment'] ?? json['IsAppleToAppointment']),
+      isAppleToAppointment: parseBool(json['isAppleToAppointment'] ?? json['IsAppleToAppointment'] ?? json['isActive'] ?? json['IsActive']),
       doctorSchedules: (schedulesJson is List)
           ? schedulesJson.map((i) => DoctorScheduleModel.fromJson(i)).toList()
           : [],
