@@ -213,10 +213,10 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
                   ),
                   child: CircleAvatar(
                     radius: 28,
-                    backgroundColor: context.scaffoldBg,
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
                     child: Icon(
-                      patient.gender.toLowerCase() == "female" ? Icons.female : Icons.male, 
-                      color: primaryColor, 
+                      Icons.person_rounded, 
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor, 
                       size: 30
                     ),
                   ),

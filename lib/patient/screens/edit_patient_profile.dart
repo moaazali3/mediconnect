@@ -289,14 +289,13 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 30,
-                backgroundColor: Colors.white,
-                // التعديل هنا: أيقونة موحدة زي صفحة البروفايل بالظبط
+                backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
                 child: Icon(
                     Icons.person_rounded,
                     size: 40,
-                    color: primaryColor
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor
                 ),
               ),
             ),

@@ -369,12 +369,12 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
                     children: [
                       CircleAvatar(
                         radius: 60,
-                        backgroundColor: primaryColor.withOpacity(0.1),
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
                         backgroundImage: currentImageUrl != null && currentImageUrl!.isNotEmpty
                             ? NetworkImage(currentImageUrl!.startsWith('http') ? currentImageUrl! : "${ApiConstants.serverUrl}$currentImageUrl")
                             : null,
                         child: currentImageUrl == null || currentImageUrl!.isEmpty
-                            ? const Icon(Icons.person, size: 60, color: primaryColor)
+                            ? Icon(Icons.person, size: 60, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor)
                             : null,
                       ),
                       if (isUploadingImage)

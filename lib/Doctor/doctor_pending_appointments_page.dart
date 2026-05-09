@@ -274,22 +274,35 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
   Widget _buildFilterItem(String label, String value) {
     bool isSelected = _selectedDate == value;
     return GestureDetector(
-      onTap: () => setState(() => _selectedDate = value),
-      child: Container(
+      onTap: () {
+        if (_selectedDate != value) {
+          setState(() => _selectedDate = value);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? primaryColor : context.filterChipBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? primaryColor : context.filterChipBorder),
+          border: Border.all(
+            color: isSelected ? primaryColor : context.filterChipBorder,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [BoxShadow(color: primaryColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 4))]
+              : null,
         ),
-        child: Text(
-          label,
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
           style: TextStyle(
             color: isSelected ? Colors.white : context.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 13,
+            fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
           ),
+          child: Text(label),
         ),
       ),
     );

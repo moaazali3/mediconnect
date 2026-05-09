@@ -173,10 +173,10 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
             Container(
               padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 40,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person_rounded, size: 50, color: primaryColor),
+                backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
+                child: Icon(Icons.person_rounded, size: 50, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor),
               ),
             ),
             const SizedBox(width: 20),

@@ -174,10 +174,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     } else {
       imageWidget = CircleAvatar(
         radius: 40,
-        backgroundColor: Colors.white,
-        child: Text(
-          doctor.firstName.isNotEmpty ? doctor.firstName[0].toUpperCase() : "D",
-          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: primaryColor),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
+        child: Icon(
+            Icons.person_rounded,
+            size: 50,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor
         ),
       );
     }

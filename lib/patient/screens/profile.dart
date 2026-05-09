@@ -251,8 +251,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           CircleAvatar(
             radius: 35,
-            backgroundColor: primaryColor.withOpacity(0.1),
-            child: const Icon(Icons.person_rounded, size: 45, color: primaryColor),
+            backgroundColor: theme.brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
+            child: Icon(Icons.person_rounded, size: 45, color: theme.brightness == Brightness.dark ? Colors.white : primaryColor),
           ),
           const SizedBox(width: 20),
           Expanded(
@@ -308,14 +308,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 40,
-                backgroundColor: Colors.white,
-                // التعديل هنا: أيقونة موحدة للرجال والنساء
+                backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
                 child: Icon(
                     Icons.person_rounded,
                     size: 50,
-                    color: primaryColor
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor
                 ),
               ),
             ),

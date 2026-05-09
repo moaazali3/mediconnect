@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
@@ -71,7 +72,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             : "https://via.placeholder.com/150";
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFF),
+          backgroundColor: context.scaffoldBg,
           appBar: AppBar(
             backgroundColor: primaryColor,
             elevation: 0,
@@ -115,9 +116,9 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05), blurRadius: 10)],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -127,7 +128,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
             backgroundImage: doctor.profilePictureUrl != null && doctor.profilePictureUrl!.isNotEmpty
                 ? NetworkImage(imageUrl)
                 : null,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: context.isDark ? const Color(0xFF1E293B) : Colors.grey[200],
             child: doctor.profilePictureUrl == null || doctor.profilePictureUrl!.isEmpty
                 ? const Icon(Icons.person, size: 40, color: primaryColor)
                 : null,
@@ -140,7 +141,7 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
               children: [
                 Text(
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.onSurface),
                   softWrap: true,
                 ),
                 const SizedBox(height: 4),
@@ -172,16 +173,16 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade100)),
+        decoration: BoxDecoration(color: context.cardBg, borderRadius: BorderRadius.circular(15), border: Border.all(color: context.dividerCol)),
         child: Column(
           children: [
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
             FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              child: Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: context.onSurface)),
             ),
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+            Text(label, style: TextStyle(color: context.subText, fontSize: 10)),
           ],
         ),
       ),
@@ -192,9 +193,9 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.cardBg,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03), blurRadius: 10)],
       ),
       child: Column(
         children: [
@@ -204,8 +205,8 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
               backgroundColor: primaryColor.withOpacity(0.1),
               child: const Icon(Icons.support_agent_rounded, color: primaryColor),
             ),
-            title: Text("${receptionist.firstName} ${receptionist.lastName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(receptionist.phoneNumber, style: const TextStyle(fontSize: 13)),
+            title: Text("${receptionist.firstName} ${receptionist.lastName}", style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
+            subtitle: Text(receptionist.phoneNumber, style: TextStyle(fontSize: 13, color: context.subText)),
           ),
           const SizedBox(height: 10),
           Row(
@@ -247,18 +248,19 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-        child: const Text("No schedule available.", style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
+        decoration: BoxDecoration(color: context.cardBg, borderRadius: BorderRadius.circular(15)),
+        child: Text("No schedule available.", style: TextStyle(color: context.subText), textAlign: TextAlign.center),
       );
     }
     return Column(
       children: schedules.map((s) => Card(
+        color: context.cardBg,
         margin: const EdgeInsets.only(bottom: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           leading: const Icon(Icons.access_time, color: primaryColor),
-          title: Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          trailing: Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: Colors.grey)),
+          title: Text(s.getDayName(), style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
+          trailing: Text("${s.startTime} - ${s.endTime}", style: TextStyle(color: context.subText)),
           subtitle: Text(s.isAvailable ? "Available" : "Unavailable", style: TextStyle(color: s.isAvailable ? Colors.green : Colors.red, fontSize: 11)),
         ),
       )).toList(),
@@ -266,15 +268,15 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Padding(padding: const EdgeInsets.only(bottom: 12, left: 4), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)));
+    return Padding(padding: const EdgeInsets.only(bottom: 12, left: 4), child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.onSurface)));
   }
 
   Widget _buildInfoCard(String text) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-      child: Text(text.isNotEmpty ? text : "No biography provided.", style: const TextStyle(color: Colors.grey, height: 1.5)),
+      decoration: BoxDecoration(color: context.cardBg, borderRadius: BorderRadius.circular(15)),
+      child: Text(text.isNotEmpty ? text : "No biography provided.", style: TextStyle(color: context.subText, height: 1.5)),
     );
   }
 }

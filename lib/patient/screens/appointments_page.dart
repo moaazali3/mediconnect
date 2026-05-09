@@ -146,6 +146,7 @@ class AppointmentCard extends StatefulWidget {
 class _AppointmentCardState extends State<AppointmentCard> {
   final ApiService _apiService = ApiService();
   PaymentModel? _payment;
+  bool _isPaymentLoading = true;
 
   @override
   void initState() {
@@ -154,8 +155,22 @@ class _AppointmentCardState extends State<AppointmentCard> {
   }
 
   Future<void> _fetchPayment() async {
-    final payment = await _apiService.getPaymentByAppointment(widget.appointmentId);
-    if (mounted) setState(() => _payment = payment);
+    try {
+      final payment = await _apiService.getPaymentByAppointment(widget.appointmentId);
+      if (mounted) {
+        setState(() {
+          _payment = payment;
+          _isPaymentLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _payment = null;
+          _isPaymentLoading = false;
+        });
+      }
+    }
   }
 
   void _showQRCode(BuildContext context) {
@@ -342,6 +357,68 @@ class _AppointmentCardState extends State<AppointmentCard> {
                 _buildInfoItem(context, Icons.access_time_rounded, _formatTimeRange(widget.time)),
                 _buildInfoItem(context, Icons.format_list_numbered_rounded, "Queue #${widget.queue}"),
               ],
+            ),
+          ),
+          const SizedBox(height: 15),
+          
+          // Payment Status Badge
+          _buildPaymentSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentSection() {
+    if (_isPaymentLoading) {
+      return const SizedBox(
+        height: 24,
+        child: Row(
+          children: [
+            SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)),
+            SizedBox(width: 8),
+            Text("Checking payment...", style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+
+    if (_payment == null) {
+      return _buildPaymentBadge(
+        icon: Icons.money_off_rounded,
+        label: "Not Paid",
+        color: Colors.red.shade600,
+      );
+    }
+
+    final isPaid = _payment!.paymentStatus.toLowerCase() == 'completed';
+    return _buildPaymentBadge(
+      icon: isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
+      label: isPaid
+          ? "Paid · ${_payment!.paymentMethod}"
+          : "Pending · ${_payment!.paymentMethod}",
+      color: isPaid ? Colors.green.shade600 : Colors.orange.shade700,
+    );
+  }
+
+  Widget _buildPaymentBadge({required IconData icon, required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
         ],

@@ -240,11 +240,11 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
             Container(
               padding: const EdgeInsets.all(2),
               decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 30,
-                backgroundColor: Colors.white,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : primaryColor.withOpacity(0.15),
                 // التعديل هنا: الأيقونة الموحدة للجميع
-                child: Icon(Icons.person_rounded, size: 40, color: primaryColor),
+                child: Icon(Icons.person_rounded, size: 40, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : primaryColor),
               ),
             ),
             const SizedBox(width: 15),
