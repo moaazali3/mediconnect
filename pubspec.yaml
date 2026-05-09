@@ -1,5 +1,5 @@
 name: mediconnect
-description: "A new Flutter project."
+description: "MediConnect — A healthcare clinic management app for patients, doctors, receptionists, and admins."
 publish_to: 'none'
 
 version: 1.0.0+1

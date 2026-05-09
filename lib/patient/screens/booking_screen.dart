@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:intl/intl.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
-import 'package:mediconnect/models/PaymentModel.dart';
+
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
@@ -152,19 +153,11 @@ class _BookingScreenState extends State<BookingScreen> {
         debugPrint("Booking successful. Appointment ID: $appointmentId");
 
         final paymentMethods = ["Cash", "Card", "Wallet"];
-        final paymentStatus = (selectedPaymentIndex == 0) ? "Pending" : "Completed";
-        final double currentFee = _fetchedFee ?? double.parse(widget.fee);
 
-        final paymentInfo = PaymentModel(
-          paymentId: "",
+        await _apiService.createPaymentByAppointment(
           appointmentId: appointmentId,
-          createdDate: DateTime.now().toIso8601String(),
           paymentMethod: paymentMethods[selectedPaymentIndex!],
-          paymentStatus: paymentStatus,
-          amount: currentFee + 50,
         );
-
-        await _apiService.createPayment(paymentInfo);
 
         if (mounted) {
           Navigator.pop(context);
@@ -256,7 +249,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     List<DateTime> availableDates = getAvailableDates();
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFF),
+      backgroundColor: context.scaffoldBg,
       appBar: const CommonAppBar(title: "Book Appointment", showBackButton: true),
       body: Column(
         children: [
@@ -299,7 +292,17 @@ class _BookingScreenState extends State<BookingScreen> {
     final String? imageUrl = _doctorImageUrl ?? widget.doctorImageUrl;
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
       child: Row(
         children: [
           CircleAvatar(
@@ -340,7 +343,16 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) => Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.black87));
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.bold,
+        color: context.onSurface,
+      ),
+    );
+  }
 
   Widget _buildDateSelector(List<DateTime> availableDates) {
     return SizedBox(
@@ -363,17 +375,34 @@ class _BookingScreenState extends State<BookingScreen> {
               width: 70,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: isSelected ? primaryColor : Colors.white,
+                color: isSelected ? primaryColor : context.cardBg,
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade200),
-                boxShadow: isSelected ? [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : null,
+                border: Border.all(
+                  color: isSelected ? primaryColor : context.dividerCol,
+                ),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(DateFormat('EEE').format(date), style: TextStyle(color: isSelected ? Colors.white70 : Colors.grey, fontSize: 12)),
+                  Text(
+                    DateFormat('EEE').format(date),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white70 : context.subText,
+                      fontSize: 12,
+                    ),
+                  ),
                   const SizedBox(height: 5),
-                  Text(date.day.toString(), style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    date.day.toString(),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : context.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -475,7 +504,18 @@ class _BookingScreenState extends State<BookingScreen> {
     final double currentFee = _fetchedFee ?? double.tryParse(widget.fee) ?? 0.0;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.dividerCol),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          )
+        ],
+      ),
       child: Column(
         children: [
           _buildSummaryRow("Consultation Fee", "${currentFee.toStringAsFixed(0)} EGP"),
@@ -492,8 +532,22 @@ class _BookingScreenState extends State<BookingScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: isTotal ? Colors.black87 : Colors.grey, fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(color: isTotal ? primaryColor : Colors.black87, fontSize: isTotal ? 18 : 15, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isTotal ? context.onSurface : context.subText,
+            fontSize: isTotal ? 16 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: isTotal ? primaryColor : context.onSurface,
+            fontSize: isTotal ? 18 : 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
@@ -501,7 +555,16 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildBottomAction() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.07),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          )
+        ],
+      ),
       child: SafeArea(
         child: SizedBox(
           width: double.infinity,
@@ -520,6 +583,7 @@ class _BookingScreenState extends State<BookingScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.cardBg,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
@@ -528,7 +592,14 @@ class _BookingScreenState extends State<BookingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Select Payment Method", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                "Select Payment Method",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: context.onSurface,
+                ),
+              ),
               const SizedBox(height: 20),
               _buildPaymentOption(index: 0, icon: Icons.domain_rounded, title: "Pay at Hospital", subtitle: "Pay at the reception", selected: selectedPaymentIndex == 0, onTap: () => setModalState(() => selectedPaymentIndex = 0)),
               const SizedBox(height: 12),
@@ -541,7 +612,11 @@ class _BookingScreenState extends State<BookingScreen> {
                 height: 55,
                 child: ElevatedButton(
                   onPressed: selectedPaymentIndex == null ? null : _performBooking,
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
                   child: const Text("CONFIRM BOOKING", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -559,12 +634,48 @@ class _BookingScreenState extends State<BookingScreen> {
       borderRadius: BorderRadius.circular(15),
       child: Container(
         padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: selected ? primaryColor.withOpacity(0.05) : Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: selected ? primaryColor : Colors.grey.shade200, width: 1.5)),
+        decoration: BoxDecoration(
+          color: selected ? primaryColor.withOpacity(0.08) : context.cardBg,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: selected ? primaryColor : context.dividerCol,
+            width: 1.5,
+          ),
+        ),
         child: Row(
           children: [
-            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: selected ? primaryColor : Colors.grey.shade100, shape: BoxShape.circle), child: Icon(icon, color: selected ? Colors.white : Colors.grey, size: 22)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: selected ? primaryColor : context.onSurface.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: selected ? Colors.white : context.subText,
+                size: 22,
+              ),
+            ),
             const SizedBox(width: 15),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: selected ? primaryColor : Colors.black87)), Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.grey))])),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: selected ? primaryColor : context.onSurface,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: context.subText),
+                  ),
+                ],
+              ),
+            ),
             if (selected) const Icon(Icons.check_circle_rounded, color: primaryColor),
           ],
         ),

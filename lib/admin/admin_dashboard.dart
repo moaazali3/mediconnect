@@ -8,6 +8,8 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/admin/analytics_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/services/secure_storage.dart';
+import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -37,6 +39,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Future<void> _signOut() async {
+    await SecureStorage.deleteAllData();
+    ApiService.setToken(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (!mounted) return;

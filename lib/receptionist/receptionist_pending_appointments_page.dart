@@ -3,6 +3,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/AppointmentModels.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
+import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -443,6 +444,41 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  // Payment Status Badge
+                  FutureBuilder<PaymentModel?>(
+                    future: _apiService.getPaymentByAppointment(app.appointmentId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(
+                          height: 24,
+                          child: Row(
+                            children: [
+                              SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)),
+                              SizedBox(width: 8),
+                              Text("Checking payment...", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+                        );
+                      }
+                      final payment = snapshot.data;
+                      if (payment == null) {
+                        return _buildPaymentBadge(
+                          icon: Icons.money_off_rounded,
+                          label: "Not Paid",
+                          color: Colors.red.shade600,
+                        );
+                      }
+                      final isPaid = payment.paymentStatus.toLowerCase() == 'completed';
+                      return _buildPaymentBadge(
+                        icon: isPaid ? Icons.check_circle_rounded : Icons.pending_rounded,
+                        label: isPaid
+                            ? "Paid · ${payment.paymentMethod}"
+                            : "Pending · ${payment.paymentMethod}",
+                        color: isPaid ? Colors.green.shade600 : Colors.orange.shade700,
+                      );
+                    },
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -477,6 +513,36 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

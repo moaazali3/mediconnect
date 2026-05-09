@@ -49,4 +49,48 @@ mixin PaymentApi {
     } catch (_) {}
     return 0.0;
   }
+
+  // جلب بيانات الدفع لموعد محدد
+  // GET /api/Payment/{appointmentId}
+  Future<PaymentModel?> getPaymentByAppointment(String appointmentId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Payment/$appointmentId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          if (data.isEmpty) return null;
+          return PaymentModel.fromJson(data.first);
+        }
+        return PaymentModel.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // إنشاء دفعة باستخدام appointmentId في الـ path و paymentMethod في الـ body
+  // POST /api/Payment/{appointmentId}
+  Future<bool> createPaymentByAppointment({
+    required String appointmentId,
+    required String paymentMethod,
+  }) async {
+    final ApiService parent = this as ApiService;
+    // الـ Backend يتوقع 'Visa' بدل 'Card' لتفادي خطأ الـ Enum Parse
+    final backendMethod = paymentMethod == 'Card' ? 'Visa' : paymentMethod;
+    try {
+      final response = await http.post(
+        Uri.parse('${parent.baseUrl}/Payment/$appointmentId'),
+        headers: parent._headers,
+        body: jsonEncode({'paymentMethod': backendMethod}),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
 }
