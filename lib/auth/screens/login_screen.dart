@@ -294,6 +294,13 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: controller,
       obscureText: isPassword && isPasswordHidden,
       keyboardType: keyboardType,
+      autocorrect: false,
+      enableSuggestions: false,
+      cursorColor: primaryColor,
+      cursorWidth: 2.0,
+      cursorRadius: const Radius.circular(2.0),
+      textAlignVertical: TextAlignVertical.center,
+      onTapOutside: (event) => FocusScope.of(context).unfocus(),
       style: const TextStyle(fontSize: 14),
       decoration: InputDecoration(
         labelText: label,
@@ -314,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
         fillColor: context.isDark
             ? Colors.white.withOpacity(0.08)
             : Colors.white.withOpacity(0.6),
-        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(

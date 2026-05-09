@@ -24,10 +24,11 @@ This is a comprehensive, standalone documentation file detailing the entire **Me
 ## ✨ Key Architectural Highlights
 
 *   **Role-Based Access Control (RBAC):** Customized dashboards, navigations, and actions dynamically rendered according to the logged-in user's role (`Admin`, `Doctor`, `Receptionist`, `Patient`).
-*   **Automatic JWT Token Refresh Interceptor:** A custom-built `AuthenticatedClient` that intercepts `401 Unauthorized` API responses, requests a new JWT token using a stored refresh token, and seamlessly replays the failed request behind the scenes.
+*   **Automatic JWT Token Refresh Interceptor:** A custom-built `AuthenticatedClient` that intercepts `401 Unauthorized` API responses, requests a new JWT token using a stored refresh token, and seamlessly replays the failed request behind the scenes. If token refresh fails, it context-freely executes a secure global logout and redirects the user to the login page via the global navigation key.
 *   **Persistent Custom Theming:** Dynamically toggles between beautifully curated **Light** and **Dark** mode palettes utilizing a reactive state-driven singleton design.
-*   **QR Scanner Verification:** Real-time appointment and check-in confirmation using embedded high-speed camera scanning.
-*   **Network Status Awareness:** Integrated connection status monitoring to protect state transitions when offline.
+*   **Stabilized QR Scanner Engine:** Real-time appointment and check-in confirmation with device-orientation locking (forces `portraitUp` and reverts on dispose) and `BoxFit.cover` camera sizing to prevent mirrored or stretched sensor feeds on mobile.
+*   **Premium Text Input UX Optimization:** Standardized custom high-contrast cursors, optimized touch target heights, and auto-correct/suggestion disables on login screens to avoid aggressive keyboard-driven word selection bugs on Android & iOS.
+*   **Network Status Awareness & Smart Error Formatting:** Integrated connection status monitoring to protect state transitions when offline, alongside clean API exception formatting that strips raw technical wrappers.
 
 ---
 
@@ -55,7 +56,7 @@ Allows clinical practitioners to run their virtual practices and coordinate care
 Engineered for hospital and clinic front-desk operations to expedite patient flows.
 *   **Unified Front-Desk Operations:** Live dashboard listing incoming walk-ins and patient confirmations.
 *   **QR Code Scanner:** Immediate validation of patient digital bookings at the reception desk via the device camera.
-*   **Pending Verification Queue:** Approve or update appointment records based on verification status and fee payments.
+*   **Interactive Payment Completion Sheet:** The receptionist's "Completed" action automatically checks the patient's payment status in real-time. If unpaid, it slides up an elegant payment sheet allowing manual cash/card/wallet billing registration before changing the appointment status.
 *   **Front-Desk Profile Management:** Easily keep receptionist personal accounts up to date.
 
 ### 4. 🛡️ Admin Suite
