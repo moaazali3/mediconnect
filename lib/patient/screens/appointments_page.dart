@@ -360,7 +360,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
             ),
           ),
           const SizedBox(height: 15),
-          
+
           // Payment Status Badge
           _buildPaymentSection(),
         ],
