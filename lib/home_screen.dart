@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:mediconnect/patient/screens/home_content.dart';
 import 'package:mediconnect/patient/screens/appointments_page.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
@@ -52,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _signOut() async {
+    await SecureStorage.deleteAllData();
+    ApiService.setToken(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (!mounted) return;
