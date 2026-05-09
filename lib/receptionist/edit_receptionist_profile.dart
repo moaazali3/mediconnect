@@ -54,7 +54,9 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading profile: $e")));
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error loading profile: $msg";
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(finalMsg)));
       }
     }
   }
@@ -99,7 +101,9 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error: $msg";
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(finalMsg), backgroundColor: Colors.red));
       }
     }
   }
@@ -121,7 +125,9 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error: $msg";
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(finalMsg), backgroundColor: Colors.red));
       }
     }
   }

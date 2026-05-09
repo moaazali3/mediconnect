@@ -227,6 +227,52 @@ mixin AdminApi {
     }
   }
 
+  Future<double> getDoctorRevenueToday(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['totalRevenueToday'] ?? decoded['revenueToday'] ?? decoded['todayRevenue'] ?? 0;
+          return (val ?? 0).toDouble();
+        } else {
+          return 0.0;
+        }
+      } else {
+        throw "Failed to load doctor today revenue: ${response.statusCode}";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<double> getSpecializationRevenueToday(String specializationName) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['totalRevenueToday'] ?? decoded['revenueToday'] ?? decoded['todayRevenue'] ?? 0;
+          return (val ?? 0).toDouble();
+        } else {
+          return 0.0;
+        }
+      } else {
+        throw "Failed to load specialization today revenue: ${response.statusCode}";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
   Future<bool> deleteDoctor(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {

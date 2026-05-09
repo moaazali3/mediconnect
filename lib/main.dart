@@ -52,6 +52,7 @@ class MyApp extends StatelessWidget {
       animation: ThemeService(),
       builder: (context, _) {
         return MaterialApp(
+          navigatorKey: ApiService.navigatorKey,
           debugShowCheckedModeBanner: false,
           title: 'MediConnect',
           theme: AppTheme.light,

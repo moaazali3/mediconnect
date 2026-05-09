@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // حزمة تثبيت اتجاه الشاشة
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mediconnect/constants/colors.dart';
@@ -15,8 +16,21 @@ class QRScannerPage extends StatefulWidget {
 
 class _QRScannerPageState extends State<QRScannerPage> {
   final ApiService _apiService = ApiService();
-  final MobileScannerController controller = MobileScannerController();
+  final MobileScannerController controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.normal,
+    facing: CameraFacing.back, // استخدام الكاميرا الخلفية بشكل صريح ومثبت
+    torchEnabled: false,
+  );
   bool _isScanning = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // تثبيت اتجاه الشاشة طوليًا لمنع الكاميرا من الانعكاس أو الانقلاب عند تدوير الهاتف
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  }
 
   void _onDetect(BarcodeCapture capture) async {
     if (!_isScanning) return;
@@ -392,6 +406,13 @@ class _QRScannerPageState extends State<QRScannerPage> {
   @override
   void dispose() {
     controller.dispose();
+    // إعادة تفعيل التدوير الطبيعي عند الخروج من صفحة الكاميرا
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     super.dispose();
   }
 
@@ -429,6 +450,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
         children: [
           MobileScanner(
             controller: controller,
+            fit: BoxFit.cover, // ملء الشاشة بنسب أبعاد صحيحة لمنع التمدد والانعكاس
             onDetect: _onDetect,
           ),
           // Scanner Overlay

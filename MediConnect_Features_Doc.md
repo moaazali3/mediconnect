@@ -13,6 +13,7 @@ This is a comprehensive, standalone documentation file detailing the entire **Me
   - [4. 🛡️ Admin Suite](#4--admin-suite)
 - [🏗️ Directory Structure](#️-directory-structure)
 - [🔗 API Integration & Session Persistence](#-api-integration--session-persistence)
+  - [🔑 Testing Protected Endpoints via Swagger UI](#-testing-protected-endpoints-via-swagger-ui)
 - [🎨 Design System & Theming](#-design-system--theming)
 - [🛠️ Tech Stack & Library Ecosystem](#️-tech-stack--library-ecosystem)
 - [🚀 Quick Start & Installation](#-quick-start--installation)
@@ -175,6 +176,63 @@ sequenceDiagram
         Client-->>App: Propagate auth failure
         App->>User: Route back to Login Screen (Session Expired)
     end
+```
+
+### 🔑 Testing Protected Endpoints via Swagger UI
+
+To support seamless developer integration and testing of secure endpoints, the remote backend features an interactive [Swagger UI Playground](https://medicon.runasp.net/swagger/index.html).
+
+#### Authorization Flow
+
+When you access the playground, secure endpoints (under `Admin`, `Doctor`, etc.) display a lock icon 🔒 indicating they require authorization.
+
+1. Click the green **Authorize** button on the top right of the page.
+2. In the **Available authorizations** modal, look for **Bearer (http, Bearer)**:
+   * **Value:** Paste your active JWT token directly into the input box.
+   
+   > [!IMPORTANT]
+   > Because the API is configured with an **HTTP Bearer** scheme, Swagger automatically handles formatting. **Do not** prefix your input with `Bearer `; simply input the raw token (e.g. `eyJhbG...`).
+   
+3. Click **Authorize**, then click **Close**.
+4. The lock icons will now appear unlocked 🔓. Every request you run using the **Try it out** button will automatically include the token in its headers:
+   ```http
+   Authorization: Bearer <your-jwt-token>
+   ```
+
+#### 💻 Backend Swagger Configuration (.NET Core)
+For context on how this authorization scheme is defined on the backend server side in `Program.cs`, the service utilizes the following configuration:
+
+```csharp
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Medi-connect API", Version = "v1" });
+
+    // Define the Bearer security scheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Enter your JWT token below:",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 ```
 
 ---
