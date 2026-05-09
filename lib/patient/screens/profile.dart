@@ -51,30 +51,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri url = Uri.parse('tel:$phoneNumber');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
+    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleanNumber.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No phone number available")),
+      );
+      return;
+    }
+    final Uri url = Uri.parse('tel:$cleanNumber');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Could not open dialer for: $cleanNumber")),
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
 
+    // Normalize Egyptian numbers
     if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
       cleanNumber = '2$cleanNumber';
     } else if (cleanNumber.startsWith('1') && cleanNumber.length == 10) {
       cleanNumber = '20$cleanNumber';
+    } else if (!cleanNumber.startsWith('20') && cleanNumber.length == 11) {
+      cleanNumber = '2$cleanNumber';
     }
 
-    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not launch WhatsApp")),
+    if (cleanNumber.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No phone number available")),
+      );
+      return;
+    }
+
+    // Try WhatsApp app first, fall back to browser
+    final Uri whatsappApp = Uri.parse('whatsapp://send?phone=$cleanNumber');
+    final Uri whatsappWeb = Uri.parse('https://wa.me/$cleanNumber');
+
+    try {
+      if (await canLaunchUrl(whatsappApp)) {
+        await launchUrl(whatsappApp, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(whatsappWeb)) {
+        await launchUrl(whatsappWeb, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("WhatsApp is not installed")),
         );
       }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Could not open WhatsApp")),
+      );
     }
   }
 

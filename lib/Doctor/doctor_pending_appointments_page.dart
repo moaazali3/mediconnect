@@ -229,15 +229,14 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
+        style: const TextStyle(fontSize: 14),
         decoration: InputDecoration(
-          hintText: "Search patient name...",
-          prefixIcon: const Icon(Icons.search),
+          hintText: "Search by patient name...",
+          prefixIcon: const Icon(Icons.search, size: 20),
           filled: true,
           fillColor: context.inputFill,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
         ),
       ),
     );
@@ -310,104 +309,63 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
 
   Widget _buildAppointmentCard(DoctorAppointmentModel app) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-          color: context.cardBg,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.05), blurRadius: 10, offset: const Offset(0, 4))]
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.25 : 0.02), blurRadius: 8, offset: const Offset(0, 2))],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _navigateToProfile(app),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: primaryColor.withValues(alpha: 0.1),
-                        child: Text(
-                            app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 20)
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    app.patientName,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
-                                      color: context.onSurface,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 5),
-                                const Icon(Icons.contact_page_outlined, size: 18, color: primaryColor),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                                "${app.dayOfWeek}, ${app.appointmentDate}",
-                                style: TextStyle(color: context.subText, fontSize: 14)
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                                app.status,
-                                style: const TextStyle(color: Colors.orange, fontSize: 14, fontWeight: FontWeight.bold)
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 16, color: primaryColor),
-                    ],
-                  ),
-                ),
+      child: Column(
+        children: [
+          ListTile(
+            onTap: () => _navigateToProfile(app),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            leading: CircleAvatar(
+              radius: 24,
+              backgroundColor: primaryColor.withValues(alpha: 0.1),
+              child: Text(
+                app.patientName.isNotEmpty ? app.patientName[0].toUpperCase() : "?",
+                style: const TextStyle(fontWeight: FontWeight.bold, color: primaryColor),
               ),
             ),
-            const Divider(height: 1, indent: 16, endIndent: 16, thickness: 0.8),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 18, color: Colors.green),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "${app.startTime} - ${app.endTime}",
-                            style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 15),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+            title: Text(
+              app.patientName,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.onSurface),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              "${app.appointmentDate} • ${app.startTime}",
+              style: TextStyle(fontSize: 11, color: context.subText),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 12, color: primaryColor),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.access_time_rounded, size: 14, color: Colors.green),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${app.startTime} - ${app.endTime}",
+                      style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                      "Q No: ${app.queueNumber}",
-                      style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 15)
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                Text(
+                  "Q No: ${app.queueNumber}",
+                  style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

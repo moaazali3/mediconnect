@@ -365,13 +365,16 @@ class _BookingScreenState extends State<BookingScreen> {
           bool isSelected = selectedDate?.day == date.day && selectedDate?.month == date.month && selectedDate?.year == date.year;
           return GestureDetector(
             onTap: () {
-              setState(() {
-                selectedDate = date;
-                _expectedTurn = null;
-              });
-              _fetchExpectedTurn(date);
+              if (selectedDate?.day != date.day || selectedDate?.month != date.month) {
+                setState(() {
+                  selectedDate = date;
+                  _expectedTurn = null;
+                });
+                _fetchExpectedTurn(date);
+              }
             },
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
               width: 70,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
@@ -379,29 +382,34 @@ class _BookingScreenState extends State<BookingScreen> {
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
                   color: isSelected ? primaryColor : context.dividerCol,
+                  width: 1.5,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    ? [BoxShadow(color: primaryColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 4))]
                     : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    DateFormat('EEE').format(date),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
                       color: isSelected ? Colors.white70 : context.subText,
                       fontSize: 12,
+                      fontFamily: Theme.of(context).textTheme.bodySmall?.fontFamily,
                     ),
+                    child: Text(DateFormat('EEE').format(date)),
                   ),
                   const SizedBox(height: 5),
-                  Text(
-                    date.day.toString(),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
                       color: isSelected ? Colors.white : context.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      fontFamily: Theme.of(context).textTheme.bodyLarge?.fontFamily,
                     ),
+                    child: Text(date.day.toString()),
                   ),
                 ],
               ),

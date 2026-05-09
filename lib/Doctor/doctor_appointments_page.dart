@@ -506,42 +506,21 @@ class DoctorAppointmentsPageState extends State<DoctorAppointmentsPage> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              children: [
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 10,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 14, color: Colors.green),
-                        const SizedBox(width: 4),
-                        Text("${app.startTime} - ${app.endTime}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11)),
-                      ],
-                    ),
-                    Text("Q No: ${app.queueNumber}", style: TextStyle(color: context.subText, fontWeight: FontWeight.bold, fontSize: 11)),
-                  ],
+            child: SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton.icon(
+                onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
+                icon: const Icon(Icons.history_edu_rounded, size: 16),
+                label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.cardBg,
+                  foregroundColor: primaryColor,
+                  side: const BorderSide(color: primaryColor, width: 1),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 38,
-                  child: ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : () => _fetchAndEditRecord(app),
-                    icon: const Icon(Icons.history_edu_rounded, size: 16),
-                    label: const Text("Medical Record", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.cardBg,
-                      foregroundColor: primaryColor,
-                      side: const BorderSide(color: primaryColor, width: 1),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],

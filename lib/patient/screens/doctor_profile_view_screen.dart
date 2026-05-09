@@ -21,18 +21,41 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   final ApiService _apiService = ApiService();
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri url = Uri.parse('tel:$phoneNumber');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    }
+    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleanNumber.isEmpty) return;
+    final Uri url = Uri.parse('tel:$cleanNumber');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Could not open dialer for: $cleanNumber")),
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
-    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
+      cleanNumber = '2$cleanNumber';
+    } else if (!cleanNumber.startsWith('20') && cleanNumber.length == 11) {
+      cleanNumber = '2$cleanNumber';
     }
+    if (cleanNumber.isEmpty) return;
+    final Uri whatsappApp = Uri.parse('whatsapp://send?phone=$cleanNumber');
+    final Uri whatsappWeb = Uri.parse('https://wa.me/$cleanNumber');
+    try {
+      if (await canLaunchUrl(whatsappApp)) {
+        await launchUrl(whatsappApp, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(whatsappWeb)) {
+        await launchUrl(whatsappWeb, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("WhatsApp is not installed")),
+        );
+      }
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>> _fetchDoctorAndReceptionist() async {
