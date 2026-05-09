@@ -60,9 +60,13 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   Future<void> _fetchDoctors() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await _apiService.getAllDoctors(specializationName: _selectedSpec);
+      final doctors = await _apiService.getAllDoctorsForAdmin();
       setState(() {
-        _allDoctors = doctors;
+        if (_selectedSpec == "All") {
+          _allDoctors = doctors;
+        } else {
+          _allDoctors = doctors.where((doc) => doc.specializationName.trim().toLowerCase() == _selectedSpec.trim().toLowerCase()).toList();
+        }
         _applySearch();
         _isLoading = false;
       });
@@ -106,13 +110,13 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
             ),
             const SizedBox(height: 15),
             const Text(
-              "Delete Doctor",
+              "Deactivate Doctor",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF263238)),
             ),
           ],
         ),
         content: Text(
-          "Are you sure you want to delete Dr. ${doctor.firstName} ${doctor.lastName}?\nThis action cannot be undone.",
+          "Are you sure you want to deactivate Dr. ${doctor.firstName} ${doctor.lastName}?\nThey will be set to inactive.",
           textAlign: TextAlign.center,
           style: TextStyle(color: context.subText, fontSize: 14),
         ),
@@ -146,7 +150,7 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: const Text(
-                    "DELETE",
+                    "DEACTIVATE",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -165,22 +169,49 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
   Future<void> _deleteDoctor(String id) async {
     setState(() => _isLoading = true);
     try {
-      final success = await _apiService.deleteDoctor(id);
+      final success = await _apiService.inactivateDoctor(id);
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Doctor deleted successfully")),
+            const SnackBar(content: Text("Doctor deactivated successfully")),
           );
           _fetchDoctors();
         }
       }
     } catch (e) {
-      debugPrint("DELETE DOCTOR ERROR: $e"); // Printing to console
+      debugPrint("DEACTIVATE DOCTOR ERROR: $e"); // Printing to console
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()), 
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _activateDoctor(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final success = await _apiService.activateDoctor(id);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Doctor activated successfully"), backgroundColor: Colors.green),
+          );
+          _fetchDoctors();
+        }
+      }
+    } catch (e) {
+      debugPrint("ACTIVATE DOCTOR ERROR: $e");
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
           ),
@@ -352,15 +383,39 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: context.onSurface,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Dr. ${doctor.firstName} ${doctor.lastName}",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: context.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: doctor.isAppleToAppointment 
+                            ? Colors.green.withOpacity(0.1) 
+                            : Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        doctor.isAppleToAppointment ? "Active" : "Inactive",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: doctor.isAppleToAppointment ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -419,17 +474,29 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                onPressed: () => _confirmDelete(doctor),
-                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  minimumSize: const Size(36, 36),
-                  padding: EdgeInsets.zero,
-                ),
-              ),
+              doctor.isAppleToAppointment
+                  ? IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _confirmDelete(doctor),
+                      icon: const Icon(Icons.block, color: Colors.red, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                    )
+                  : IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _activateDoctor(doctor.id),
+                      icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.green.withOpacity(0.1),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
             ],
           ),
         ],

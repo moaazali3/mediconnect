@@ -227,6 +227,52 @@ mixin AdminApi {
     }
   }
 
+  Future<double> getDoctorRevenueToday(String doctorId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/doctor/$doctorId'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['totalRevenueToday'] ?? decoded['revenueToday'] ?? decoded['todayRevenue'] ?? 0;
+          return (val ?? 0).toDouble();
+        } else {
+          return 0.0;
+        }
+      } else {
+        throw "Failed to load doctor today revenue: ${response.statusCode}";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<double> getSpecializationRevenueToday(String specializationName) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/revenue/specialization/$specializationName'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) {
+          var val = decoded['totalRevenueToday'] ?? decoded['revenueToday'] ?? decoded['todayRevenue'] ?? 0;
+          return (val ?? 0).toDouble();
+        } else {
+          return 0.0;
+        }
+      } else {
+        throw "Failed to load specialization today revenue: ${response.statusCode}";
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
   Future<bool> deleteDoctor(String doctorId) async {
     final ApiService parent = this as ApiService;
     try {
@@ -282,6 +328,80 @@ mixin AdminApi {
           errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
         }
         throw errorMessage;
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<bool> activateDoctor(String id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Doctor/Activate/$id'),
+        headers: parent._headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to activate doctor";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<bool> inactivateDoctor(String id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Doctor/Inactivate/$id'),
+        headers: parent._headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to inactivate doctor";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
+
+  Future<List<DoctorModel>> getAllDoctorsForAdmin() async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.get(
+        Uri.parse('${parent.baseUrl}/Admin/all-doctors'),
+        headers: parent._headers,
+      );
+      if (response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+        List<dynamic> data = [];
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map) {
+          data = decoded['data'] ?? decoded['doctors'] ?? decoded['items'] ?? decoded['values'] ?? [];
+        }
+        return data.map((item) => DoctorModel.fromJson(item)).toList();
+      } else {
+        throw "Failed to load all doctors: ${response.statusCode}";
       }
     } catch (e) {
       throw parent.handleError(e);

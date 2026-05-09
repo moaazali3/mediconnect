@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http_original;
 import 'package:mediconnect/constants/api_constants.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/DoctorFullModel.dart';
@@ -19,6 +20,8 @@ import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/models/AdminDashboardModel.dart';
 import 'package:mediconnect/models/CreateReceptionistModel.dart';
 import 'package:mediconnect/services/secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mediconnect/auth/screens/login_screen.dart';
 
 part 'api_sections/auth_api.dart';
 part 'api_sections/admin_api.dart';
@@ -36,12 +39,45 @@ class ApiResponse {
   ApiResponse({required this.success, required this.message, this.data});
 }
 
+// Shadow class to route all http.get, http.post etc. through the AuthenticatedClient of ApiService
+class http {
+  static final ApiService _apiService = ApiService();
+
+  static Future<http_original.Response> get(Uri url, {Map<String, String>? headers}) {
+    return _apiService.client.get(url, headers: headers);
+  }
+
+  static Future<http_original.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) {
+    return _apiService.client.post(url, headers: headers, body: body, encoding: encoding);
+  }
+
+  static Future<http_original.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) {
+    return _apiService.client.put(url, headers: headers, body: body, encoding: encoding);
+  }
+
+  static Future<http_original.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) {
+    return _apiService.client.delete(url, headers: headers, body: body, encoding: encoding);
+  }
+
+  static http_original.MultipartRequest MultipartRequest(String method, Uri url) {
+    return http_original.MultipartRequest(method, url);
+  }
+}
+
 class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, PaymentApi, DoctorScheduleApi {
   final String baseUrl = ApiConstants.baseUrl;
 
-  late final http.Client client;
+  late final http_original.Client client;
 
-  ApiService() {
+  // Global Navigator Key to support contextless navigation / logouts
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+  // Singleton instance
+  static final ApiService _instance = ApiService._internal();
+
+  factory ApiService() => _instance;
+
+  ApiService._internal() {
     client = AuthenticatedClient(this);
   }
 
@@ -78,42 +114,77 @@ class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, 
     }
     return "Connection error: $e";
   }
+
+  // Global Logout method
+  static Future<void> logout() async {
+    print("[ApiService] Logging out user globally...");
+    await SecureStorage.deleteData(key: 'auth_token');
+    await SecureStorage.deleteData(key: 'refresh_token');
+    setToken(null);
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_role');
+    await prefs.remove('user_id');
+
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 }
 
-class AuthenticatedClient extends http.BaseClient {
-  final http.Client _inner = http.Client();
+class AuthenticatedClient extends http_original.BaseClient {
+  final http_original.Client _inner = http_original.Client();
   final ApiService _apiService;
   bool _isRefreshing = false;
 
   AuthenticatedClient(this._apiService);
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+  Future<http_original.StreamedResponse> send(http_original.BaseRequest request) async {
+    // Inject auth token if available
+    if (ApiService._token != null) {
+      request.headers['Authorization'] = 'Bearer ${ApiService._token}';
+    }
+
     var response = await _inner.send(request);
 
     if (response.statusCode == 401 && !_isRefreshing) {
       _isRefreshing = true;
       try {
+        print("[AuthenticatedClient] 401 Detected. Attempting to refresh token...");
         final refreshResponse = await _apiService.refreshToken();
         if (refreshResponse.success) {
-          // Clone the request with the new token
+          print("[AuthenticatedClient] Token refreshed successfully! Retrying original request...");
           var newRequest = _cloneRequest(request);
           if (ApiService._token != null) {
             newRequest.headers['Authorization'] = 'Bearer ${ApiService._token}';
           }
           response = await _inner.send(newRequest);
+        } else {
+          print("[AuthenticatedClient] Token refresh failed. Triggering global logout...");
+          await ApiService.logout();
         }
+      } catch (e) {
+        print("[AuthenticatedClient] Error during token refresh: $e. Triggering global logout...");
+        await ApiService.logout();
       } finally {
         _isRefreshing = false;
       }
+    } else if (response.statusCode == 401 && _isRefreshing) {
+      print("[AuthenticatedClient] 401 Detected while already refreshing. Session is completely invalid. Logout...");
+      await ApiService.logout();
     }
 
     return response;
   }
 
-  http.BaseRequest _cloneRequest(http.BaseRequest request) {
-    if (request is http.Request) {
-      var newRequest = http.Request(request.method, request.url)
+  http_original.BaseRequest _cloneRequest(http_original.BaseRequest request) {
+    if (request is http_original.Request) {
+      var newRequest = http_original.Request(request.method, request.url)
         ..headers.addAll(request.headers)
         ..bodyBytes = request.bodyBytes
         ..encoding = request.encoding
@@ -121,14 +192,13 @@ class AuthenticatedClient extends http.BaseClient {
         ..maxRedirects = request.maxRedirects
         ..persistentConnection = request.persistentConnection;
       return newRequest;
-    } else if (request is http.MultipartRequest) {
-      var newRequest = http.MultipartRequest(request.method, request.url)
+    } else if (request is http_original.MultipartRequest) {
+      var newRequest = http_original.MultipartRequest(request.method, request.url)
         ..headers.addAll(request.headers)
         ..fields.addAll(request.fields)
         ..files.addAll(request.files);
       return newRequest;
     }
-    // Fallback for custom or streamed requests
     return request;
   }
 }

@@ -67,67 +67,187 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
 
   Future<Map<String, dynamic>> _fetchCombinedData() async {
     try {
-      final results = await Future.wait([
-        _apiService.getAllAppointments(),
-        _apiService.getAllDoctors(pageSize: 500),
-        _apiService.getAllSpecializations(),
-      ]);
+      final DateTime now = DateTime.now();
+      final bool isToday = _selectedDate.year == now.year &&
+                           _selectedDate.month == now.month &&
+                           _selectedDate.day == now.day;
 
-      final allAppointments = results[0] as List<AppointmentModel>;
-      final allDoctors = results[1] as List<DoctorModel>;
-      final allSpecs = results[2] as List<SpecializationModel>;
+      print("=== [TODAY REVENUE PAGE DEBUG] ===");
+      print("Selected Date: $_selectedDate");
+      print("Is Today check: $isToday (Current Time: $now)");
 
-      final String targetYMD = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      final String targetDMY = DateFormat('dd/MM/yyyy').format(_selectedDate);
+      if (isToday) {
+        // إذا كنا بنعرض أرباح اليوم الحالي، نستخدم إندبوينتس السيرفر المباشرة فائقة الدقة والسرعة!
+        print("Using direct Today Revenue endpoints from Server...");
+        final results = await Future.wait([
+          _apiService.getAllSpecializations(),
+          _apiService.getAllDoctors(pageSize: 2000),
+        ]);
 
-      // فلترة مواعيد اليوم المختار
-      final dayAppts = allAppointments.where((app) {
-        String date = app.appointmentDate;
-        return date.contains(targetYMD) || date.contains(targetDMY);
-      }).toList();
+        final allSpecs = results[0] as List<SpecializationModel>;
+        final allDoctors = results[1] as List<DoctorModel>;
 
-      double calculatedTotalRevenue = 0;
-      Map<String, Map<String, dynamic>> specData = {
-        for (var spec in allSpecs) spec.name: {"revenue": 0.0, "count": 0}
-      };
+        print("Today Mode - All Doctors Count from Server: ${allDoctors.length}");
+        print("Today Mode - All Specializations Count from Server: ${allSpecs.length}");
 
-      Map<String, DoctorModel> doctorMap = {for (var d in allDoctors) d.id.trim(): d};
+        double calculatedTotalRevenue = 0.0;
+        final List<Map<String, dynamic>> breakdown = [];
 
-      for (var app in dayAppts) {
-        final doc = doctorMap[app.doctorId.trim()];
-        if (doc != null) {
-          specData[doc.specializationName] ??= {"revenue": 0.0, "count": 0};
+        // خريطة التخصصات لضمان عدم وجود تكرار أو مسافات زائدة
+        Map<String, String> specLookup = {
+          for (var s in allSpecs) s.name.trim().toLowerCase(): s.name.trim()
+        };
 
-          // احتساب الإيرادات فقط للمواعيد المكتملة أو المؤكدة
-          final status = app.status.toLowerCase().trim();
-          if (status == 'completed' || status == 'confirmed' || status == 'paid' || status == 'success') {
-            double fee = doc.consultationFee;
-            calculatedTotalRevenue += fee;
-            specData[doc.specializationName]!["revenue"] = (specData[doc.specializationName]!["revenue"] as double) + fee;
-            specData[doc.specializationName]!["count"] = (specData[doc.specializationName]!["count"] as int) + 1;
+        // جلب أرباح كل تخصص بشكل مباشر من السيرفر
+        for (var spec in allSpecs) {
+          // جلب دكاترة هذا التخصص
+          final specDoctors = allDoctors.where((d) =>
+            (d.specializationName ?? "").trim().toLowerCase() == spec.name.trim().toLowerCase()
+          ).toList();
+
+          double specRevenueToday = 0.0;
+          int activeDoctorsCount = 0;
+
+          // جلب أرباح دكاترة التخصص لليوم من السيرفر بشكل مستقل وآمن
+          final docRevsToday = await Future.wait(
+            specDoctors.map((doc) async {
+              try {
+                final rev = await _apiService.getDoctorRevenueToday(doc.id);
+                print("  Today Revenue for Dr. ${doc.firstName} ${doc.lastName} (ID: ${doc.id}): $rev EGP");
+                return rev;
+              } catch (e) {
+                print("  Error fetching today's revenue for doctor ${doc.id}: $e");
+                return 0.0;
+              }
+            })
+          );
+
+          for (int i = 0; i < specDoctors.length; i++) {
+            if (docRevsToday[i] > 0) {
+              specRevenueToday += docRevsToday[i];
+              activeDoctorsCount++;
+            }
+          }
+
+          // جلب أرباح التخصص اليوم من الإندبوينت المباشر
+          double apiSpecRevToday = 0.0;
+          try {
+            apiSpecRevToday = await _apiService.getSpecializationRevenueToday(spec.name);
+            print("  Today Revenue for Specialization '${spec.name}': $apiSpecRevToday EGP");
+          } catch (e) {
+            print("  Error fetching today's revenue for specialization ${spec.name}: $e");
+          }
+
+          double finalSpecRevToday = apiSpecRevToday > 0 ? apiSpecRevToday : specRevenueToday;
+
+          if (finalSpecRevToday > 0 || activeDoctorsCount > 0) {
+            calculatedTotalRevenue += finalSpecRevToday;
+            breakdown.add({
+              "name": spec.name,
+              "revenue": finalSpecRevToday,
+              "count": activeDoctorsCount,
+            });
           }
         }
-      }
 
-      final List<Map<String, dynamic>> breakdown = [];
-      specData.forEach((name, data) {
-        if (data["count"] > 0 || data["revenue"] > 0) {
-          breakdown.add({
-            "name": name,
-            "revenue": data["revenue"],
-            "count": data["count"],
-          });
+        breakdown.sort((a, b) => b['revenue'].compareTo(a['revenue']));
+
+        print("Today Direct Total Revenue: $calculatedTotalRevenue");
+        print("Today Direct Breakdown: $breakdown");
+        print("=== [END TODAY REVENUE PAGE DEBUG] ===");
+
+        return {
+          "totalRevenue": calculatedTotalRevenue,
+          "breakdown": breakdown,
+        };
+      } else {
+        // إذا كان المستخدم يبحث في تاريخ سابق، نستخدم الفلترة الذكية للمواعيد
+        print("Using memory-based appointment filtering for custom date...");
+        final results = await Future.wait([
+          _apiService.getAllAppointments(pageSize: 5000),
+          _apiService.getAllDoctors(pageSize: 2000),
+          _apiService.getAllSpecializations(),
+        ]);
+
+        final allAppointments = results[0] as List<AppointmentModel>;
+        final allDoctors = results[1] as List<DoctorModel>;
+        final allSpecs = results[2] as List<SpecializationModel>;
+
+        print("All Appointments Count from Server: ${allAppointments.length}");
+
+        final String targetYMD = DateFormat('yyyy-MM-dd').format(_selectedDate);
+        final String targetDMY = DateFormat('dd/MM/yyyy').format(_selectedDate);
+
+        final dayAppts = allAppointments.where((app) {
+          String dateStr = app.appointmentDate.trim();
+          if (dateStr.isEmpty) return false;
+
+          final DateTime? parsedDate = DateTime.tryParse(dateStr);
+          if (parsedDate != null) {
+            return parsedDate.year == _selectedDate.year &&
+                   parsedDate.month == _selectedDate.month &&
+                   parsedDate.day == _selectedDate.day;
+          }
+          return dateStr.contains(targetYMD) || dateStr.contains(targetDMY);
+        }).toList();
+
+        double calculatedTotalRevenue = 0;
+        Map<String, Map<String, dynamic>> specData = {
+          for (var spec in allSpecs) spec.name.trim(): {"revenue": 0.0, "count": 0}
+        };
+
+        Map<String, String> specLookup = {
+          for (var s in allSpecs) s.name.trim().toLowerCase(): s.name.trim()
+        };
+
+        Map<String, DoctorModel> doctorMap = {
+          for (var d in allDoctors) d.id.trim().toLowerCase(): d
+        };
+
+        for (var app in dayAppts) {
+          final String cleanDocId = app.doctorId.trim().toLowerCase();
+          final doc = doctorMap[cleanDocId];
+          if (doc != null) {
+            final String specNameLower = doc.specializationName.trim().toLowerCase();
+            final String finalSpecName = specLookup[specNameLower] ?? doc.specializationName.trim();
+
+            specData[finalSpecName] ??= {"revenue": 0.0, "count": 0};
+
+            final status = app.status.toLowerCase().trim();
+            final bool isSuccessStatus = status == 'completed' || status == 'confirmed' || status == 'paid' || status == 'success' || status == 'finished';
+
+            if (isSuccessStatus) {
+              double fee = doc.consultationFee;
+              calculatedTotalRevenue += fee;
+              specData[finalSpecName]!["revenue"] = (specData[finalSpecName]!["revenue"] as double) + fee;
+              specData[finalSpecName]!["count"] = (specData[finalSpecName]!["count"] as int) + 1;
+            }
+          }
         }
-      });
 
-      breakdown.sort((a, b) => b['revenue'].compareTo(a['revenue']));
+        final List<Map<String, dynamic>> breakdown = [];
+        specData.forEach((name, data) {
+          if (data["count"] > 0 || data["revenue"] > 0) {
+            breakdown.add({
+              "name": name,
+              "revenue": data["revenue"],
+              "count": data["count"],
+            });
+          }
+        });
 
-      return {
-        "totalRevenue": calculatedTotalRevenue,
-        "breakdown": breakdown,
-      };
-    } catch (e) {
-      debugPrint("Error in TodayRevenuePage: $e");
+        breakdown.sort((a, b) => b['revenue'].compareTo(a['revenue']));
+
+        return {
+          "totalRevenue": calculatedTotalRevenue,
+          "breakdown": breakdown,
+        };
+      }
+    } catch (e, stack) {
+      print("=== [ERROR TODAY REVENUE PAGE] ===");
+      print("Exception: $e");
+      print("Stacktrace: $stack");
+      print("==================================");
       rethrow;
     }
   }

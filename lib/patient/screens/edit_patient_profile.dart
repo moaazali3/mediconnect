@@ -58,8 +58,10 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error loading profile: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error loading profile: $e")),
+          SnackBar(content: Text(finalMsg)),
         );
       }
     }
@@ -105,8 +107,10 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(finalMsg), backgroundColor: Colors.red),
         );
       }
     }
@@ -132,8 +136,10 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text(finalMsg), backgroundColor: Colors.red),
         );
       }
     }

@@ -163,8 +163,8 @@ mixin AppointmentApi {
         parent.getDoctorNames(),
       ]);
 
-      final recordRes = results[0] as http.Response;
-      final apptRes = results[1] as http.Response;
+      final recordRes = results[0] as http_original.Response;
+      final apptRes = results[1] as http_original.Response;
       final doctorNamesList = results[2] as List<Map<String, dynamic>>;
 
       if (recordRes.statusCode == 200 && apptRes.statusCode == 200) {

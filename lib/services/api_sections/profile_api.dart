@@ -127,4 +127,29 @@ mixin ProfileApi {
       throw parent.handleError(e);
     }
   }
+
+  Future<bool> changeReceptionistDoctor(String receptionistId, String doctorId) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Receptionist/$receptionistId/change-doctor/$doctorId'),
+        headers: parent._headers,
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to change receptionist doctor";
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map) {
+            errorMessage = body['message'] ?? body['errors']?.toString() ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw parent.handleError(e);
+    }
+  }
 }

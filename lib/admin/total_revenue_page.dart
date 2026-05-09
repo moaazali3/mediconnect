@@ -66,9 +66,16 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         double calculatedSpecRev = 0.0;
         List<DoctorRevenueData> tempDocsList = [];
 
-        // جلب أرباح دكاترة التخصص ده باستخدام Endpoint الدكتور
+        // جلب أرباح دكاترة التخصص ده باستخدام Endpoint الدكتور بشكل آمن يمنع الانهيار
         final docRevs = await Future.wait(
-            specDoctors.map((doc) => _apiService.getDoctorRevenue(doc.id))
+          specDoctors.map((doc) async {
+            try {
+              return await _apiService.getDoctorRevenue(doc.id);
+            } catch (e) {
+              debugPrint("Error fetching revenue for doctor ${doc.id} (Dr. ${doc.firstName}): $e");
+              return 0.0; // نرجع 0 في حال فشل الدكتور ده بدل ما الشاشة كلها تقف
+            }
+          })
         );
 
         // تجميع بيانات الدكاترة اللي حققوا أرباح
@@ -83,8 +90,13 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
           }
         }
 
-        // جلب أرباح التخصص من Endpoint التخصص
-        double apiSpecRev = await _apiService.getSpecializationRevenue(spec.name);
+        // جلب أرباح التخصص من Endpoint التخصص بشكل آمن
+        double apiSpecRev = 0.0;
+        try {
+          apiSpecRev = await _apiService.getSpecializationRevenue(spec.name);
+        } catch (e) {
+          debugPrint("Error fetching revenue for specialization ${spec.name}: $e");
+        }
 
         // لو الباك إند رجع صفر بسبب مشكلة في الاسم، بنعتمد على المجموع اللي إحنا حسبناه من الدكاترة
         double actualSpecRev = apiSpecRev > 0 ? apiSpecRev : calculatedSpecRev;

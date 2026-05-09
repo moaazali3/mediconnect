@@ -97,7 +97,9 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error loading profile: $e")));
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error loading profile: $msg";
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(finalMsg)));
       }
     }
   }
@@ -161,8 +163,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error uploading image: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error uploading image: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(finalMsg), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -209,9 +213,11 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        String errorMessage = e.toString();
+        String errorMessage = e.toString().replaceAll("Exception: ", "").trim();
         if (errorMessage.toLowerCase().contains("already") || errorMessage.toLowerCase().contains("taken")) {
           errorMessage = "Phone number is already in use. Please check.";
+        } else if (!errorMessage.toLowerCase().contains("error")) {
+          errorMessage = "Error: $errorMessage";
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
@@ -243,8 +249,10 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        String msg = e.toString().replaceAll("Exception: ", "").trim();
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text(finalMsg), backgroundColor: Colors.red),
         );
       }
     }

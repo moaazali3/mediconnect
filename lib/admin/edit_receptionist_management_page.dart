@@ -35,6 +35,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
   String _gender = 'Male';
   String? _selectedDoctorId;
+  String? _initialDoctorId;
   List<Map<String, dynamic>> _doctors = [];
   bool _isLoading = true;
   bool _isSaving = false;
@@ -104,6 +105,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
       setState(() {
         _selectedDoctorId = foundId;
+        _initialDoctorId = foundId;
         if (foundId != null) {
           _doctorController.text = doctorNameDisplay;
         }
@@ -216,6 +218,9 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
       if (mounted) {
         if (success) {
+          if (_selectedDoctorId != _initialDoctorId && _selectedDoctorId != null) {
+            await _apiService.changeReceptionistDoctor(widget.receptionistId, _selectedDoctorId!);
+          }
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Receptionist profile updated!"), backgroundColor: Colors.green));
           Navigator.pop(context, true);
         } else {
