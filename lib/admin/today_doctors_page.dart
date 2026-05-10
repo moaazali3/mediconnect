@@ -5,6 +5,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TodayDoctorsPage extends StatefulWidget {
   const TodayDoctorsPage({super.key});
@@ -89,7 +90,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
     final int targetWeekday = _selectedDate.weekday;
 
     try {
-      final List<DoctorModel> allDoctors = await _apiService.getAllDoctors();
+      final List<DoctorModel> allDoctors = await _apiService.getAllDoctorsForAdmin();
       List<DoctorModel> doctorsWithSchedules = [];
 
       await Future.wait(allDoctors.map((doctor) async {
@@ -216,7 +217,63 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
           const SizedBox(height: 10),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      itemCount: 5,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: context.cardBg,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withValues(alpha: context.isDark ? 0.3 : 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1.5)),
+                                  child: CircleAvatar(radius: 26, backgroundColor: Colors.blue.withValues(alpha: 0.1), child: const Icon(Icons.male, size: 26, color: Colors.blue)),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text("Dr. Loading Name", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface)),
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.category_rounded, size: 14, color: primaryColor.withValues(alpha: 0.8)),
+                                          const SizedBox(width: 4),
+                                          Flexible(child: Text("Specialization", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: primaryColor.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w600))),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.access_time_rounded, color: context.subText, size: 14),
+                                          const SizedBox(width: 4),
+                                          Flexible(child: Text("09:00 - 17:00", maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.subText, fontSize: 11, fontWeight: FontWeight.w500))),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchDoctorsForSelectedDate,
                     child: _filteredDoctors.isEmpty
@@ -322,15 +379,23 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    doctor.specializationName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: primaryColor.withValues(alpha: 0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.category_rounded, size: 14, color: primaryColor.withValues(alpha: 0.8)),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          doctor.specializationName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: primaryColor.withValues(alpha: 0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Row(

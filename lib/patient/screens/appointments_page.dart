@@ -6,7 +6,8 @@ import 'package:mediconnect/models/PaymentModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/api_constants.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
+import 'package:url_launcher/url_launcher.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 class AppointmentsPage extends StatefulWidget {
   final String? userId;
   const AppointmentsPage({super.key, this.userId});
@@ -51,7 +52,26 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
             future: _appointmentsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: primaryColor));
+                return Skeletonizer(
+                  enabled: true,
+                  child: ListView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    itemCount: 4,
+                    itemBuilder: (context, index) {
+                      return const AppointmentCard(
+                        appointmentId: "dummy_id",
+                        name: "Dr. Placeholder Name",
+                        spec: "Cardiology",
+                        date: "2024-01-01",
+                        time: "10:00 - 10:30",
+                        status: "pending",
+                        queue: 1,
+                        doctorId: "dummy_doctor",
+                      );
+                    },
+                  ),
+                );
               }
               if (snapshot.hasError) {
                 return SingleChildScrollView(
@@ -69,12 +89,12 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                   .where((a) => a.status.toLowerCase() == 'pending')
                   .toList();
 
-              // Sort appointments by date
+              // Sort appointments by date descending (newest first)
               appointments.sort((a, b) {
                 try {
                   DateTime dateA = DateTime.parse(a.appointmentDate);
                   DateTime dateB = DateTime.parse(b.appointmentDate);
-                  return dateA.compareTo(dateB);
+                  return dateB.compareTo(dateA); // Reverse for descending
                 } catch (e) {
                   return 0;
                 }
@@ -106,6 +126,8 @@ class _AppointmentsPageState extends State<AppointmentsPage> {
                     status: appointment.status,
                     queue: appointment.queueNumber,
                     imageUrl: appointment.doctorImageUrl,
+                    doctorId: appointment.doctorId,
+                    patientId: widget.userId,
                   );
                 },
               );
@@ -126,6 +148,8 @@ class AppointmentCard extends StatefulWidget {
   final String status;
   final int queue;
   final String? imageUrl;
+  final String doctorId;
+  final String? patientId;
 
   const AppointmentCard({
     super.key,
@@ -137,6 +161,8 @@ class AppointmentCard extends StatefulWidget {
     required this.status,
     required this.queue,
     this.imageUrl,
+    required this.doctorId,
+    this.patientId,
   });
 
   @override
@@ -155,6 +181,10 @@ class _AppointmentCardState extends State<AppointmentCard> {
   }
 
   Future<void> _fetchPayment() async {
+    if (widget.appointmentId == "dummy_id") {
+      if (mounted) setState(() => _isPaymentLoading = false);
+      return;
+    }
     try {
       final payment = await _apiService.getPaymentByAppointment(widget.appointmentId);
       if (mounted) {
@@ -246,6 +276,61 @@ class _AppointmentCardState extends State<AppointmentCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _contactReception(bool isWhatsApp) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+    );
+
+    try {
+      String phone = '';
+      try {
+        final receptionist = await _apiService.getReceptionistByDoctorId(widget.doctorId);
+        if (receptionist != null && receptionist.phoneNumber.isNotEmpty) {
+          phone = receptionist.phoneNumber.trim();
+        }
+      } catch (e) {
+        // Fallback to doctor's phone if receptionist fetch fails or not found
+        final doctor = await _apiService.getDoctorDetails(widget.doctorId, widget.patientId);
+        phone = doctor.phoneNumber.trim();
+      }
+
+      if (mounted) Navigator.pop(context); // close loading
+
+      if (phone.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Receptionist phone number not available.")));
+        return;
+      }
+
+      // Add Egypt country code if missing
+      if (phone.startsWith('0020')) {
+        phone = '+${phone.substring(2)}';
+      } else if (phone.startsWith('0')) {
+        phone = '+20${phone.substring(1)}';
+      } else if (phone.startsWith('20') && phone.length >= 12) {
+        phone = '+$phone';
+      } else if (!phone.startsWith('+')) {
+        phone = '+20$phone';
+      }
+
+      final Uri uri = isWhatsApp 
+          ? Uri.parse("https://wa.me/$phone")
+          : Uri.parse("tel:$phone");
+
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Could not launch $uri")));
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error fetching contact info: $e")));
+      }
+    }
   }
 
   // التعديل الأول: دالة لقص الثواني من الوقت
@@ -361,10 +446,70 @@ class _AppointmentCardState extends State<AppointmentCard> {
           ),
           const SizedBox(height: 15),
 
-          // Payment Status Badge
-          _buildPaymentSection(),
+          // Status Badges
+          Row(
+            children: [
+              _buildAppointmentStatusBadge(),
+              if (widget.status.toLowerCase() != 'completed' && widget.status.toLowerCase() != 'cancelled') ...[
+                const SizedBox(width: 10),
+                _buildPaymentSection(),
+              ],
+            ],
+          ),
+          const SizedBox(height: 15),
+          // Contact Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _contactReception(false), // Call
+                  icon: const Icon(Icons.phone_rounded, size: 18),
+                  label: const Text("Call"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primaryColor,
+                    side: const BorderSide(color: primaryColor),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _contactReception(true), // WhatsApp
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                  label: const Text("WhatsApp"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAppointmentStatusBadge() {
+    bool isCompleted = widget.status.toLowerCase() == 'completed';
+    bool isCancelled = widget.status.toLowerCase() == 'cancelled';
+    
+    Color color = isCompleted 
+        ? Colors.green.shade600 
+        : (isCancelled ? Colors.red.shade600 : Colors.blue.shade600);
+        
+    IconData icon = isCompleted 
+        ? Icons.check_circle_rounded 
+        : (isCancelled ? Icons.cancel_rounded : Icons.info_outline_rounded);
+
+    return _buildPaymentBadge(
+      icon: icon,
+      label: widget.status,
+      color: color,
     );
   }
 

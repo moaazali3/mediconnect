@@ -7,6 +7,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/constants/api_constants.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
@@ -51,7 +52,90 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         future: _fetchFullProfile(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            final dummyDoctor = DoctorProfileModel(
+              firstName: "Loading",
+              lastName: "Name",
+              specializationName: "Specialization",
+              experienceYears: 5,
+              biography: "Loading biography text goes here...",
+              consultationFee: 100,
+              dateOfBirth: "2000-01-01",
+              gender: "Male",
+              phoneNumber: "000000000",
+              email: "loading@loading.com",
+            );
+            
+            return Skeletonizer(
+              enabled: true,
+              child: Column(
+                children: [
+                  _buildFixedHeader(dummyDoctor, ""),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle("Professional Details"),
+                          _buildInfoCard([
+                            _buildInfoRow(Icons.badge_rounded, "Specialization", dummyDoctor.specializationName),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.work_history_rounded, "Experience", "${dummyDoctor.experienceYears.toStringAsFixed(0)} Years"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.payments_rounded, "Consultation Fee", "${dummyDoctor.consultationFee.toStringAsFixed(0)} EGP"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.description_rounded, "Biography", dummyDoctor.biography.isNotEmpty ? dummyDoctor.biography : "No biography provided"),
+                          ]),
+
+                          const SizedBox(height: 25),
+                          _buildSectionTitle("Personal Information"),
+                          _buildInfoCard([
+                            _buildInfoRow(Icons.email_outlined, "Email", dummyDoctor.email ?? ""),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.phone_android_rounded, "Phone Number", dummyDoctor.phoneNumber),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.calendar_month_rounded, "Age", "20 Years"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.location_on_outlined, "Clinic Address", dummyDoctor.address ?? "No Address"),
+                          ]),
+
+                          const SizedBox(height: 25),
+                          _buildSectionTitle("Work Schedule"),
+                          _buildScheduleCard([
+                            DoctorScheduleModel(scheduleId: "1", doctorId: "dummy", dayOfWeek: 1, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+                            DoctorScheduleModel(scheduleId: "2", doctorId: "dummy", dayOfWeek: 2, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+                          ]),
+
+                          const SizedBox(height: 40),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.edit_note_rounded),
+                              label: const Text("Update Profile Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: OutlinedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.power_settings_new_rounded),
+                              label: const Text("Sign Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));

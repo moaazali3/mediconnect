@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 // --- كلاسات مساعدة لتنظيم الداتا في الشاشة ---
 class SpecRevenueData {
@@ -51,7 +52,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
 
       // 2. جلب كل التخصصات والدكاترة
       final specializations = await _apiService.getAllSpecializations();
-      final doctors = await _apiService.getAllDoctors(pageSize: 1000);
+      final doctors = await _apiService.getAllDoctorsForAdmin();
 
       List<SpecRevenueData> finalSpecs = [];
 
@@ -145,7 +146,20 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         onRefresh: _loadData,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: primaryColor))
+          ? Skeletonizer(
+              enabled: true,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                children: [
+                  _buildTotalCard(),
+                  const SizedBox(height: 30),
+                  _buildSectionTitle("Revenue by Specialization"),
+                  const SizedBox(height: 15),
+                  ...List.generate(3, (index) => _buildSpecializationItem(SpecRevenueData(name: "Loading Specialization", totalRevenue: 1000))),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            )
           : RefreshIndicator(
         onRefresh: _loadData,
         color: primaryColor,
@@ -311,18 +325,16 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           leading: Container(
-            padding: const EdgeInsets.all(10),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: primaryColor.withOpacity(context.isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(
-              spec.name.isNotEmpty ? spec.name[0].toUpperCase() : "",
-              style: const TextStyle(
-                color: primaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+            child: Icon(
+              Icons.category_rounded,
+              color: primaryColor,
+              size: 26,
             ),
           ),
           title: Row(

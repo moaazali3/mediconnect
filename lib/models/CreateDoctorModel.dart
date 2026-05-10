@@ -29,18 +29,18 @@ class CreateDoctorModel {
 
   Map<String, dynamic> toJson() {
     return {
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "email": email.trim(),
       "password": password,
-      "phoneNumber": phoneNumber,
+      "phoneNumber": phoneNumber.trim(),
       "gender": gender,
       "dateOfBirth": dateOfBirth.toIso8601String().split('T')[0],
-      "address": address,
+      "address": address.trim(),
       "experienceYears": experienceYears,
       "consultationFee": consultationFee,
       "specializationId": specializationId,
-      "biography": biography,
+      "biography": biography.trim(),
     };
   }
 }

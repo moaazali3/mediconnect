@@ -188,7 +188,7 @@ mixin DoctorApi {
         'ngrok-skip-browser-warning': 'true',
       });
       request.files.add(await http_original.MultipartFile.fromPath('File', filePath));
-      var streamedResponse = await request.send();
+      var streamedResponse = await parent.client.send(request);
       var response = await http_original.Response.fromStream(streamedResponse);
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
@@ -211,7 +211,7 @@ mixin DoctorApi {
         'ngrok-skip-browser-warning': 'true',
       });
       request.files.add(await http_original.MultipartFile.fromPath('File', filePath));
-      var streamedResponse = await request.send();
+      var streamedResponse = await parent.client.send(request);
       var response = await http_original.Response.fromStream(streamedResponse);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
@@ -280,6 +280,31 @@ mixin DoctorApi {
         return true;
       } else {
         String errorMessage = "Failed to create specialization";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorBody['title'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  Future<bool> deleteSpecialization(int id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.delete(
+        Uri.parse('${parent.baseUrl}/Specialization/$id'),
+        headers: parent._headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to delete specialization";
         try {
           final errorBody = jsonDecode(response.body);
           if (errorBody is Map) {

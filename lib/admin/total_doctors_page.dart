@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TotalDoctorsPage extends StatefulWidget {
   const TotalDoctorsPage({super.key});
@@ -38,7 +39,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 1000);
+      final List<DoctorModel> doctors = await _apiService.getAllDoctorsForAdmin();
       
       // Sort by experience years (Descending)
       doctors.sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
@@ -89,7 +90,25 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
           _buildSearchBox(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: 8,
+                      itemBuilder: (context, index) => _buildDoctorCard(DoctorModel(
+                        id: "dummy",
+                        firstName: "Loading",
+                        lastName: "Name",
+                        specializationName: "Specialization",
+                        experienceYears: 5,
+                        biography: "",
+                        consultationFee: 100,
+                        dateOfBirth: "2000-01-01",
+                        gender: "Male",
+                        isAppleToAppointment: true,
+                      )),
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchAllDoctors,
                     color: primaryColor,
@@ -193,16 +212,52 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min, // Fix for overflow
               children: [
-                Text(
-                  "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Dr. ${doctor.firstName} ${doctor.lastName}",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: doctor.isAppleToAppointment 
+                            ? Colors.green.withValues(alpha: 0.1) 
+                            : Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: doctor.isAppleToAppointment 
+                              ? Colors.green.withValues(alpha: 0.3) 
+                              : Colors.red.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        doctor.isAppleToAppointment ? "Active" : "Inactive",
+                        style: TextStyle(
+                          color: doctor.isAppleToAppointment ? Colors.green : Colors.red,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                Row(
+                  children: [
+                    const Icon(Icons.category_rounded, size: 14, color: primaryColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      doctor.specializationName,
+                      style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(

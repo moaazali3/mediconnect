@@ -24,14 +24,14 @@ class CreateReceptionistModel {
   Map<String, dynamic> toJson() {
     return {
       "doctorId": doctorId,
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "email": email.trim(),
       "password": password,
-      "phoneNumber": phoneNumber,
+      "phoneNumber": phoneNumber.trim(),
       "gender": gender,
       "dateOfBirth": dateOfBirth,
-      "address": address,
+      "address": address.trim(),
     };
   }
 }

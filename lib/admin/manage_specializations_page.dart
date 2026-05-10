@@ -5,6 +5,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/CreateSpecializationModel.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ManageSpecializationsPage extends StatefulWidget {
   const ManageSpecializationsPage({super.key});
@@ -147,6 +148,47 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
     );
   }
 
+  Future<void> _deleteSpecialization(SpecializationModel spec) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Delete Specialization", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text("Are you sure you want to delete '${spec.name}'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: context.subText)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      try {
+        final success = await _apiService.deleteSpecialization(spec.id);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Deleted successfully"), backgroundColor: Colors.green),
+          );
+          _fetchSpecializations();
+        }
+      } catch (e) {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -164,7 +206,87 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
         onRefresh: _fetchSpecializations,
         color: primaryColor,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: primaryColor))
+            ? Skeletonizer(
+                enabled: true,
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 90),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: 5,
+                  separatorBuilder: (context, index) => const SizedBox(height: 15),
+                  itemBuilder: (context, index) {
+                    final dummySpec = SpecializationModel(
+                      id: 0,
+                      name: "Loading Name",
+                      description: "Loading description text...",
+                    );
+                    return Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Icon(Icons.category_rounded, color: primaryColor, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  dummySpec.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    color: context.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  dummySpec.description,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: context.subText,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit_rounded, color: context.subText),
+                                onPressed: () {},
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                onPressed: () {},
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              )
             : _specializations.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -182,7 +304,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 90),
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: _specializations.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 15),
@@ -237,9 +359,18 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.edit_rounded, color: context.subText),
-                              onPressed: () => _showAddEditDialog(spec: spec),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit_rounded, color: context.subText),
+                                  onPressed: () => _showAddEditDialog(spec: spec),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                  onPressed: () => _deleteSpecialization(spec),
+                                ),
+                              ],
                             ),
                           ],
                         ),

@@ -7,6 +7,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:mediconnect/constants/api_constants.dart';
 import 'package:mediconnect/admin/edit_receptionist_management_page.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ManageReceptionistsPage extends StatefulWidget {
   const ManageReceptionistsPage({super.key});
@@ -41,7 +42,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 100);
+      final List<DoctorModel> doctors = await _apiService.getAllDoctorsForAdmin();
       List<ReceptionistProfileModel> receptionists = [];
       
       final List<ReceptionistProfileModel?> results = await Future.wait(
@@ -195,7 +196,23 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
           const SizedBox(height: 10),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      itemCount: 4,
+                      itemBuilder: (context, index) => _buildReceptionistCard(ReceptionistProfileModel(
+                        id: "dummy",
+                        firstName: "Loading",
+                        lastName: "Name",
+                        email: "loading@loading.com",
+                        phoneNumber: "0000000000",
+                        doctorId: "dummy",
+                        doctorName: "Loading Name",
+                        dateOfBirth: "2000-01-01",
+                      )),
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchData,
                     child: _filteredReceptionists.isEmpty

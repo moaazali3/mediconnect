@@ -7,6 +7,7 @@ import 'package:mediconnect/patient/screens/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;
@@ -51,73 +52,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    if (cleanNumber.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No phone number available")),
-      );
-      return;
-    }
-    final Uri url = Uri.parse('tel:$cleanNumber');
+    final Uri url = Uri.parse('tel:$phoneNumber');
     try {
       if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
+        await launchUrl(url);
       } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Could not open dialer for: $cleanNumber")),
-        );
+        await launchUrl(url); // Force attempt as fallback
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open phone dialer")),
+        );
+      }
     }
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    String phone = phoneNumber.trim();
+    if (phone.isEmpty) return;
 
-    // Normalize Egyptian numbers
-    if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
-      cleanNumber = '2$cleanNumber';
-    } else if (cleanNumber.startsWith('1') && cleanNumber.length == 10) {
-      cleanNumber = '20$cleanNumber';
-    } else if (!cleanNumber.startsWith('20') && cleanNumber.length == 11) {
-      cleanNumber = '2$cleanNumber';
+    if (phone.startsWith('0020')) {
+      phone = '+${phone.substring(2)}';
+    } else if (phone.startsWith('0')) {
+      phone = '+20${phone.substring(1)}';
+    } else if (phone.startsWith('20') && phone.length >= 12) {
+      phone = '+$phone';
+    } else if (!phone.startsWith('+')) {
+      phone = '+20$phone';
     }
 
-    if (cleanNumber.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No phone number available")),
-      );
-      return;
-    }
-
-    // Try WhatsApp app first, fall back to browser
-    final Uri whatsappApp = Uri.parse('whatsapp://send?phone=$cleanNumber');
-    final Uri whatsappWeb = Uri.parse('https://wa.me/$cleanNumber');
-
-    try {
-      if (await canLaunchUrl(whatsappApp)) {
-        await launchUrl(whatsappApp, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(whatsappWeb)) {
-        await launchUrl(whatsappWeb, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("WhatsApp is not installed")),
+    final Uri url = Uri.parse('https://wa.me/$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not launch WhatsApp")),
         );
       }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Could not open WhatsApp")),
-      );
     }
   }
 
   Future<void> _launchWhatsAppSupport() async {
-    const String phoneNumber = "201000000000";
+    const String phone = "+201000000000";
     const String message = "Hello MediConnect, I need help with my account.";
-    final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
+    final Uri whatsappUri = Uri.parse("https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
 
     if (await canLaunchUrl(whatsappUri)) {
       await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
@@ -144,7 +124,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            final dummyProfile = PatientProfileModel(
+              id: "dummy",
+              firstName: "Loading",
+              lastName: "Name",
+              email: "loading@loading.com",
+              phoneNumber: "0000000000",
+              bloodType: "O+",
+              dateOfBirth: "2000-01-01",
+              height: 170,
+              weight: 70,
+              emergencyContact: "0000000000",
+              gender: "Male",
+              address: "Loading address",
+            );
+            
+            return Skeletonizer(
+              enabled: true,
+              child: Column(
+                children: [
+                  if (!widget.readOnly) _buildFixedHeader(dummyProfile),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.readOnly) _buildReadOnlySimpleHeader(dummyProfile),
+                          if (widget.showMedicalHistory)
+                            SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: OutlinedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.history_rounded, color: primaryColor),
+                                label: const Text("View Medical History", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          if (widget.showMedicalHistory) const SizedBox(height: 30),
+                          _buildSectionTitle("Personal Information"),
+                          _buildProfileCard([
+                            _buildInfoRow(Icons.email_outlined, "Email", dummyProfile.email),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.phone_android_rounded, "Phone", dummyProfile.phoneNumber),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.location_on_outlined, "Address", dummyProfile.address ?? "No Address"),
+                          ]),
+                          const SizedBox(height: 25),
+                          _buildSectionTitle("Medical Background"),
+                          _buildProfileCard([
+                            _buildInfoRow(Icons.bloodtype_outlined, "Blood Type", dummyProfile.bloodType),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.cake_rounded, "Age", "20 Years"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.height_rounded, "Height", "${dummyProfile.height} cm"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.monitor_weight_outlined, "Weight", "${dummyProfile.weight} kg"),
+                            _buildDivider(),
+                            _buildInfoRow(Icons.contact_emergency_rounded, "Emergency Contact", dummyProfile.emergencyContact),
+                          ]),
+                          const SizedBox(height: 40),
+                          if (!widget.readOnly) _buildActionButtons(context, "dummy"),
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(

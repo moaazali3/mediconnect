@@ -185,19 +185,23 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       final specs = await _apiService.getAllSpecializations();
       final spec = specs.firstWhere((s) => s.name == latestProfile.specializationName);
 
-      final updateModel = UpdateDoctorModel.fromProfile(latestProfile, spec.id).copyWith(
+      final updateModel = DoctorProfileModel(
         firstName: fNameController.text.trim(),
         lastName: lNameController.text.trim(),
-        phoneNumber: phoneController.text.trim(),
-        gender: selectedGender,
+        email: latestProfile.email ?? '',
         dateOfBirth: dobController.text,
-        biography: bioController.text.trim(),
-        specializationId: _currentSpecializationId ?? spec.id,
-        consultationFee: _currentConsultationFee,
+        gender: selectedGender ?? '',
+        address: latestProfile.address,
+        phoneNumber: phoneController.text.trim(),
+        specializationName: latestProfile.specializationName,
         experienceYears: _currentExperienceYears,
+        consultationFee: _currentConsultationFee,
+        biography: bioController.text.trim(),
+        profilePictureUrl: latestProfile.profilePictureUrl,
+        doctorSchedules: latestProfile.doctorSchedules,
       );
 
-      final success = await _apiService.updateDoctor(targetId, updateModel);
+      final success = await _apiService.updateDoctorProfile(targetId, updateModel);
 
       if (mounted) {
         setState(() => isLoading = false);

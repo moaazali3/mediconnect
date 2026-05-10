@@ -7,6 +7,7 @@ import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TodayRevenuePage extends StatefulWidget {
   const TodayRevenuePage({super.key});
@@ -81,7 +82,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         print("Using direct Today Revenue endpoints from Server...");
         final results = await Future.wait([
           _apiService.getAllSpecializations(),
-          _apiService.getAllDoctors(pageSize: 2000),
+          _apiService.getAllDoctorsForAdmin(),
         ]);
 
         final allSpecs = results[0] as List<SpecializationModel>;
@@ -165,7 +166,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         print("Using memory-based appointment filtering for custom date...");
         final results = await Future.wait([
           _apiService.getAllAppointments(pageSize: 5000),
-          _apiService.getAllDoctors(pageSize: 2000),
+          _apiService.getAllDoctorsForAdmin(),
           _apiService.getAllSpecializations(),
         ]);
 
@@ -272,7 +273,36 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            return Skeletonizer(
+              enabled: true,
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildTotalHeader(1000),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(25, 10, 25, 15),
+                    child: Row(
+                      children: [
+                        Icon(Icons.analytics_outlined, size: 18, color: context.onSurface),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Breakdown by Specialty",
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...List.generate(3, (index) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildRevenueItem("Loading Specialization", 5, 500),
+                  )),
+                ],
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(

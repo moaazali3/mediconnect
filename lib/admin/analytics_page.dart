@@ -13,6 +13,7 @@ import 'package:mediconnect/admin/total_doctors_page.dart';
 import 'package:mediconnect/admin/total_appointments_page.dart';
 import 'package:mediconnect/admin/total_revenue_page.dart';
 import 'package:mediconnect/admin/total_patients_page.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class AnalyticsPage extends StatefulWidget {
   final String adminName;
@@ -52,7 +53,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
         _apiService.getAllAppointments(pageSize: 5000),
-        _apiService.getAllDoctors(pageSize: 2000),
+        _apiService.getAllDoctorsForAdmin(),
         _apiService.getAllSpecializations(),
       ]);
 
@@ -123,43 +124,62 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator(color: primaryColor));
     if (_error != null) return _buildErrorState();
 
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      color: primaryColor,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader("Overview Today"),
-                  const SizedBox(height: 15),
-                  _buildStatsGrid(_stats!),
-                  const SizedBox(height: 15),
-                  _buildTodayStatusesRow(_stats!),
-                  const SizedBox(height: 30),
-                  _buildSectionHeader("System Summary"),
-                  const SizedBox(height: 15),
-                  _buildOverallStatusCard(_stats!),
-                  const SizedBox(height: 20),
-                  _buildTopDoctorPerformanceCard(),
-                  const SizedBox(height: 20),
-                  _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
-                  const SizedBox(height: 20),
-                  _buildQuickStats(),
-                  const SizedBox(height: 30),
-                ],
+    final isSkeleton = _isLoading;
+    final displayStats = _stats ?? AdminDashboardModel(
+      totalAppointments: 100,
+      totalCompletedAppointments: 80,
+      totalPendingAppointments: 10,
+      totalCancelledAppointments: 10,
+      totalRevenue: 5000,
+      totalDoctors: 20,
+      totalPatients: 50,
+      totalDoctorsToday: 5,
+      totalAppointmentsToday: 20,
+      totalPendingAppointmentsToday: 5,
+      totalCompletedAppointmentsToday: 10,
+      totalCancelledAppointmentsToday: 5,
+      totalRevenueToday: 1000,
+    );
+
+    return Skeletonizer(
+      enabled: isSkeleton,
+      child: RefreshIndicator(
+        onRefresh: _loadData,
+        color: primaryColor,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader("Overview Today"),
+                    const SizedBox(height: 15),
+                    _buildStatsGrid(displayStats),
+                    const SizedBox(height: 15),
+                    _buildTodayStatusesRow(displayStats),
+                    const SizedBox(height: 30),
+                    _buildSectionHeader("System Summary"),
+                    const SizedBox(height: 15),
+                    _buildOverallStatusCard(displayStats),
+                    const SizedBox(height: 20),
+                    _buildTopDoctorPerformanceCard(isSkeleton),
+                    const SizedBox(height: 20),
+                    _buildSummaryCard("Bookings by Specialization", isSkeleton ? [const MapEntry("Specialization", 10)] : _topSpecializations, Icons.category_rounded),
+                    const SizedBox(height: 20),
+                    _buildQuickStats(displayStats, isSkeleton),
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -334,8 +354,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  Widget _buildTopDoctorPerformanceCard() {
-    if (_topDoctorName == null) return const SizedBox.shrink();
+  Widget _buildTopDoctorPerformanceCard(bool isSkeleton) {
+    if (!isSkeleton && _topDoctorName == null) return const SizedBox.shrink();
+
+    final name = isSkeleton ? "Loading Name" : _topDoctorName!;
+    final spec = isSkeleton ? "Specialization" : (_topDoctorSpec ?? "General");
+    final bookings = isSkeleton ? 100 : _topDoctorBookings;
 
     return Container(
       width: double.infinity,
@@ -404,7 +428,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _topDoctorName!,
+                          name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -421,7 +445,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            _topDoctorSpec ?? "General",
+                            spec,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -438,7 +462,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        "$_topDoctorBookings",
+                        "$bookings",
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -557,11 +581,12 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(AdminDashboardModel stats, bool isSkeleton) {
+    final patientsCount = isSkeleton ? 50 : _uniquePatientsCount;
     final items = [
-      _buildSmallStat("Patients", _uniquePatientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
-      _buildSmallStat("Total Doctors", _stats!.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
-      _buildSmallStat("Total Revenue", "${_stats!.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
+      _buildSmallStat("Patients", patientsCount.toString(), Icons.people_rounded, Colors.blue, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalPatientsPage()))),
+      _buildSmallStat("Total Doctors", stats.totalDoctors.toString(), Icons.medical_services_rounded, Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalDoctorsPage()))),
+      _buildSmallStat("Total Revenue", "${stats.totalRevenue.toStringAsFixed(0)} EGP", Icons.account_balance_wallet_rounded, Colors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TotalRevenuePage()))),
     ];
     return _buildDynamicGrid(items, spacing: 12, aspectRatio: 1.0);
   }

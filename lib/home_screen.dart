@@ -76,61 +76,64 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: currentIndex == 2 ? null : CommonAppBar(
         pageName: pageName,
         userName: userName ?? "Loading...",
-        onRefresh: () => setState(() { _loadUserName(); }),
-        onLogout: _signOut,
+        isRoot: true,
+        showDarkModeToggle: currentIndex == 0,
       ),
-      body: pages[currentIndex],
+      body: IndexedStack(
+        index: currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(
-                Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.1,
-              ),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(
+                    Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.1,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: BottomNavigationBar(
-            currentIndex: currentIndex,
-            selectedItemColor: primaryColor,
-            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            showSelectedLabels: true,
-            showUnselectedLabels: false,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Theme.of(context).cardColor,
-            elevation: 0,
-            onTap: (index) {
-              setState(() {
-                currentIndex = index;
-              });
-            },
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded),
-                activeIcon: Icon(Icons.home_rounded, size: 30),
-                label: "Home",
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BottomNavigationBar(
+                currentIndex: currentIndex,
+                selectedItemColor: primaryColor,
+                unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                showSelectedLabels: true,
+                showUnselectedLabels: false,
+                type: BottomNavigationBarType.fixed,
+                backgroundColor: Theme.of(context).cardColor,
+                elevation: 0,
+                onTap: (index) {
+                  setState(() {
+                    currentIndex = index;
+                  });
+                },
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_rounded),
+                    activeIcon: Icon(Icons.home_rounded, size: 30),
+                    label: "Home",
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.calendar_month_rounded),
+                    activeIcon: Icon(Icons.calendar_month_rounded, size: 30),
+                    label: "Schedule",
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person_rounded),
+                    activeIcon: Icon(Icons.person_rounded, size: 30),
+                    label: "Profile",
+                  ),
+                ],
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_month_rounded),
-                activeIcon: Icon(Icons.calendar_month_rounded, size: 30),
-                label: "Schedule",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_rounded),
-                activeIcon: Icon(Icons.person_rounded, size: 30),
-                label: "Profile",
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

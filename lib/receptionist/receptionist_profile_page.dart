@@ -7,6 +7,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mediconnect/receptionist/edit_receptionist_profile.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ReceptionistProfilePage extends StatefulWidget {
   final String? userId;
@@ -94,7 +95,115 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _profile == null) {
-      return Scaffold(backgroundColor: context.scaffoldBg, body: const Center(child: CircularProgressIndicator(color: primaryColor)));
+      final dummyProfile = ReceptionistProfileModel(
+        id: "dummy",
+        firstName: "Loading",
+        lastName: "Name",
+        email: "loading@loading.com",
+        phoneNumber: "0000000000",
+        doctorId: "dummy",
+        doctorName: "Loading Name",
+        dateOfBirth: "2000-01-01",
+      );
+
+      return Skeletonizer(
+        enabled: true,
+        child: Scaffold(
+          backgroundColor: context.scaffoldBg,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [primaryColor, Color(0xFF1E88E5)],
+                  ),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
+                ),
+                padding: const EdgeInsets.only(top: 60, bottom: 25, left: 20, right: 20),
+                child: SafeArea(
+                  top: true,
+                  bottom: false,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: CircleAvatar(
+                          radius: 40,
+                          backgroundColor: primaryColor.withOpacity(0.15),
+                          child: const Icon(Icons.person_rounded, size: 50, color: primaryColor),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "${dummyProfile.firstName} ${dummyProfile.lastName}",
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "Medical Receptionist",
+                              style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        _buildSectionTitle("Personal Information"),
+                        _buildProfileCard([
+                          _buildInfoRow(Icons.email_outlined, "Email", dummyProfile.email ?? "N/A"),
+                          _buildDivider(),
+                          _buildInfoRow(Icons.person_outline, "First Name", dummyProfile.firstName),
+                          _buildDivider(),
+                          _buildInfoRow(Icons.person_outline, "Last Name", dummyProfile.lastName),
+                          _buildDivider(),
+                          _buildInfoRow(Icons.cake_rounded, "Age", "20 Years"),
+                        ]),
+                        const SizedBox(height: 25),
+                        _buildSectionTitle("Work Details"),
+                        _buildProfileCard([
+                          _buildInfoRow(Icons.phone_android_rounded, "Phone Number", dummyProfile.phoneNumber),
+                          _buildDivider(),
+                          _buildInfoRow(Icons.medical_services_outlined, "Assigned Doctor", "Dr. ${dummyProfile.doctorName}"),
+                        ]),
+                        const SizedBox(height: 25),
+                        _buildSectionTitle("Doctor's Schedule"),
+                        _buildProfileCard([
+                          _buildInfoRow(Icons.access_time_filled_rounded, "Monday", "10:00 - 18:00"),
+                          _buildDivider(),
+                          _buildInfoRow(Icons.access_time_filled_rounded, "Tuesday", "10:00 - 18:00"),
+                        ]),
+                        const SizedBox(height: 40),
+                        _buildActionButtons(),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(

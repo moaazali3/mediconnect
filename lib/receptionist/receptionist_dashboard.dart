@@ -95,8 +95,8 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
           : CommonAppBar(
         pageName: pageTitle,
         userName: _receptionistName,
-        onRefresh: _fetchAndSetUserName, // بنعمل ريفريش للاسم لو داس على السهم المدور
-        onLogout: _signOut,
+        isRoot: true,
+        showDarkModeToggle: _currentIndex == 0,
       ),
       body: IndexedStack(
         index: _currentIndex,

@@ -8,6 +8,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ReceptionistPendingAppointmentsPage extends StatefulWidget {
   const ReceptionistPendingAppointmentsPage({super.key});
@@ -339,27 +340,27 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                         ),
                       ),
                     ),
-                  if (!alreadyPaid) const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
-                      label: Text(
-                        alreadyPaid ? "CONFIRM COMPLETION" : "CONFIRM WITHOUT PAYMENT",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await _confirmOnly(app);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
+                  if (alreadyPaid)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                        label: const Text(
+                          "CONFIRM COMPLETION",
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _confirmOnly(app);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -518,10 +519,29 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                   const SizedBox(height: 10),
 
                   if (_isLoading)
-                    const Center(child: Padding(
-                      padding: EdgeInsets.all(40.0),
-                      child: CircularProgressIndicator(color: primaryColor),
-                    ))
+                    Skeletonizer(
+                      enabled: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: List.generate(4, (index) => _buildAppointmentCard(
+                            AppointmentModel(
+                              appointmentId: "dummy",
+                              doctorId: "dummy",
+                              patientId: "dummy",
+                              patientName: "Loading Patient Name",
+                              doctorName: "Loading Doctor Name",
+                              appointmentDate: "2024-01-01",
+                              startTime: "10:00",
+                              endTime: "10:30",
+                              status: "pending",
+                              dayOfWeek: "Monday",
+                              queueNumber: 1,
+                            ),
+                          )),
+                        ),
+                      ),
+                    )
                   else if (_errorMessage != null)
                     Center(child: Column(
                       children: [
@@ -769,7 +789,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                   const SizedBox(height: 10),
                   // Payment Status Badge
                   FutureBuilder<PaymentModel?>(
-                    future: _apiService.getPaymentByAppointment(app.appointmentId),
+                    future: app.appointmentId == "dummy" ? Future.value(null) : _apiService.getPaymentByAppointment(app.appointmentId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const SizedBox(

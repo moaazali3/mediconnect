@@ -6,6 +6,7 @@ import 'package:mediconnect/models/DoctorFullModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorProfileViewScreen extends StatefulWidget {
   final String doctorId;
@@ -21,41 +22,34 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   final ApiService _apiService = ApiService();
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    if (cleanNumber.isEmpty) return;
-    final Uri url = Uri.parse('tel:$cleanNumber');
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Could not open dialer for: $cleanNumber")),
-        );
-      }
-    } catch (_) {}
+    final Uri url = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
-    if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
-      cleanNumber = '2$cleanNumber';
-    } else if (!cleanNumber.startsWith('20') && cleanNumber.length == 11) {
-      cleanNumber = '2$cleanNumber';
+    String phone = phoneNumber.trim();
+    if (phone.isEmpty) return;
+
+    if (phone.startsWith('0020')) {
+      phone = '+${phone.substring(2)}';
+    } else if (phone.startsWith('0')) {
+      phone = '+20${phone.substring(1)}';
+    } else if (phone.startsWith('20') && phone.length >= 12) {
+      phone = '+$phone';
+    } else if (!phone.startsWith('+')) {
+      phone = '+20$phone';
     }
-    if (cleanNumber.isEmpty) return;
-    final Uri whatsappApp = Uri.parse('whatsapp://send?phone=$cleanNumber');
-    final Uri whatsappWeb = Uri.parse('https://wa.me/$cleanNumber');
-    try {
-      if (await canLaunchUrl(whatsappApp)) {
-        await launchUrl(whatsappApp, mode: LaunchMode.externalApplication);
-      } else if (await canLaunchUrl(whatsappWeb)) {
-        await launchUrl(whatsappWeb, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("WhatsApp is not installed")),
-        );
+
+    final Uri url = Uri.parse('https://wa.me/$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch WhatsApp")));
       }
-    } catch (_) {}
+    }
   }
 
   Future<Map<String, dynamic>> _fetchDoctorAndReceptionist() async {
@@ -75,7 +69,58 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
       future: _fetchDoctorAndReceptionist(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator(color: primaryColor)));
+          final dummyDoctor = DoctorFullModel(
+            id: "dummy",
+            firstName: "Loading",
+            lastName: "Name",
+            specializationName: "Specialization",
+            experienceYears: 5,
+            biography: "Loading biography text goes here...",
+            consultationFee: 100,
+            dateOfBirth: "2000-01-01",
+            gender: "Male",
+            isAppleToAppointment: true,
+            phoneNumber: "000000000",
+            email: "loading@loading.com",
+            doctorSchedules: [
+              DoctorScheduleModel(scheduleId: "1", doctorId: "dummy", dayOfWeek: 1, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+              DoctorScheduleModel(scheduleId: "2", doctorId: "dummy", dayOfWeek: 2, startTime: "10:00:00", endTime: "18:00:00", isAvailable: true),
+            ],
+          );
+          return Skeletonizer(
+            enabled: true,
+            child: Scaffold(
+              backgroundColor: context.scaffoldBg,
+              appBar: AppBar(
+                backgroundColor: primaryColor,
+                elevation: 0,
+                title: const Text("Doctor Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                iconTheme: const IconThemeData(color: Colors.white),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIdentityCard(dummyDoctor, ""),
+                    const SizedBox(height: 25),
+                    _buildStatsRow(dummyDoctor),
+                    const SizedBox(height: 30),
+                    _buildSectionTitle("Biography"),
+                    _buildInfoCard(dummyDoctor.biography),
+                    const SizedBox(height: 25),
+                    _buildSectionTitle("Work Schedule"),
+                    _buildScheduleList(dummyDoctor.doctorSchedules),
+                    const SizedBox(height: 30),
+                  ],
+                ),
+              ),
+            ),
+          );
         }
 
         if (snapshot.hasError || !snapshot.hasData) {

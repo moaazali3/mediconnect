@@ -6,6 +6,7 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/patient/screens/profile.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorPendingAppointmentsPage extends StatefulWidget {
   final String? doctorId;
@@ -161,10 +162,28 @@ class DoctorPendingAppointmentsPageState extends State<DoctorPendingAppointments
               const SizedBox(height: 10),
 
               if (_isLoading)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: CircularProgressIndicator(color: primaryColor),
-                ))
+                Skeletonizer(
+                  enabled: true,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: List.generate(4, (index) => _buildAppointmentCard(
+                        DoctorAppointmentModel(
+                          appointmentId: "dummy",
+                          doctorId: "dummy",
+                          patientId: "dummy",
+                          patientName: "Loading Patient Name",
+                          appointmentDate: "2024-01-01",
+                          startTime: "10:00",
+                          endTime: "10:30",
+                          status: "pending",
+                          dayOfWeek: "Monday",
+                          queueNumber: 1,
+                        ),
+                      )),
+                    ),
+                  ),
+                )
               else if (_errorMessage != null)
                 Center(child: Column(
                   children: [

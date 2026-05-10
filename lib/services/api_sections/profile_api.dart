@@ -27,8 +27,15 @@ mixin ProfileApi {
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        String errorMessage = body['errors']?.toString() ?? "Failed to update profile";
+        String errorMessage = "Failed to update profile";
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map) {
+            errorMessage = body['errors']?.toString() ?? body['message'] ?? errorMessage;
+          }
+        } catch (_) {
+          if (response.body.isNotEmpty) errorMessage = response.body;
+        }
         throw errorMessage;
       }
     } catch (e) {
@@ -62,8 +69,15 @@ mixin ProfileApi {
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        String errorMessage = body['errors']?.toString() ?? "Failed to update doctor profile";
+        String errorMessage = "Failed to update doctor profile";
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map) {
+            errorMessage = body['errors']?.toString() ?? body['message'] ?? errorMessage;
+          }
+        } catch (_) {
+          if (response.body.isNotEmpty) errorMessage = response.body;
+        }
         throw errorMessage;
       }
     } catch (e) {
@@ -113,17 +127,38 @@ mixin ProfileApi {
       final response = await http.put(
         Uri.parse('${parent.baseUrl}/Profile/Receptionist/$id'),
         headers: parent._headers,
-        body: jsonEncode(profile.toJson()),
+        body: jsonEncode({
+          "firstName": profile.firstName.trim(),
+          "lastName": profile.lastName.trim(),
+          "dateOfBirth": profile.dateOfBirth,
+          "gender": profile.gender,
+          "address": profile.address?.trim(),
+          "phoneNumber": profile.phoneNumber.trim(),
+        }),
       );
       
+      print("=== UPDATE RECEPTIONIST PROFILE ===");
+      print("URL: ${parent.baseUrl}/Profile/Receptionist/$id");
+      print("Status Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+      print("===================================");
+
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        final body = jsonDecode(response.body);
-        String errorMessage = body['errors']?.toString() ?? "Failed to update receptionist profile";
+        String errorMessage = "Failed to update receptionist profile (${response.statusCode})";
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map) {
+            errorMessage = body['errors']?.toString() ?? body['message'] ?? body['title'] ?? errorMessage;
+          }
+        } catch (_) {
+          if (response.body.isNotEmpty) errorMessage = response.body;
+        }
         throw errorMessage;
       }
     } catch (e) {
+      print("=== UPDATE RECEPTIONIST ERROR: $e ===");
       throw parent.handleError(e);
     }
   }

@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TotalPatientsPage extends StatefulWidget {
   const TotalPatientsPage({super.key});
@@ -100,7 +101,85 @@ class _TotalPatientsPageState extends State<TotalPatientsPage> {
           _buildSearchHeader(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: 8,
+                      itemBuilder: (context, index) {
+                        final dummyPatient = PatientProfileModel(
+                          id: "dummy",
+                          firstName: "Loading",
+                          lastName: "Name",
+                          email: "loading@loading.com",
+                          phoneNumber: "0000000000",
+                          dateOfBirth: "2000-01-01",
+                          gender: "Male",
+                          bloodType: "O+",
+                          height: 170.0,
+                          weight: 70.0,
+                          emergencyContact: "0000000000",
+                        );
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: context.cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: context.dividerCol, width: 0.8),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: context.dividerCol, width: 0.8),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 28,
+                                    backgroundColor: primaryColor.withOpacity(0.15),
+                                    child: const Icon(Icons.person_rounded, color: primaryColor, size: 30),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "${dummyPatient.firstName} ${dummyPatient.lastName}",
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: context.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _loadData,
                     color: primaryColor,

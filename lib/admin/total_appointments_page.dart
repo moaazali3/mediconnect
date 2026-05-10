@@ -7,6 +7,7 @@ import 'package:mediconnect/models/DoctorModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TotalAppointmentsPage extends StatefulWidget {
   const TotalAppointmentsPage({super.key});
@@ -30,7 +31,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
     setState(() {
       _dataFuture = Future.wait([
         _apiService.getAllAppointments(pageSize: 5000),
-        _apiService.getAllDoctors(pageSize: 2000),
+        _apiService.getAllDoctorsForAdmin(),
         _apiService.getAllSpecializations(),
       ]).then((results) => {
         'list': results[0] as List<AppointmentModel>,
@@ -79,7 +80,53 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
         future: _dataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            return Skeletonizer(
+              enabled: true,
+              child: Column(
+                children: [
+                  _buildHeader(100),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: context.cardBg,
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(context.isDark ? 0.3 : 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                          ),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              leading: const Icon(Icons.category_rounded, color: primaryColor),
+                              title: const Text("Loading Specialization", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(color: primaryColor, borderRadius: BorderRadius.circular(10)),
+                                child: const Text("10", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              ),
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(color: context.inputFill, borderRadius: BorderRadius.circular(12)),
+                                  child: const ListTile(
+                                    title: Text("Loading Doctor", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                    subtitle: Text("10 Bookings", style: TextStyle(fontSize: 12)),
+                                    trailing: Icon(Icons.chevron_right, size: 18, color: primaryColor),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(
@@ -192,7 +239,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           leading: Icon(
-                            Icons.medical_services_rounded, 
+                            Icons.category_rounded, 
                             color: totalSpec > 0 ? primaryColor : context.subText
                           ),
                           title: Text(specName, style: TextStyle(

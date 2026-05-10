@@ -5,6 +5,7 @@ import 'package:mediconnect/widgets/password_strength_checker.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class EditReceptionistProfile extends StatefulWidget {
@@ -28,6 +29,13 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
   final doctorController = TextEditingController();
 
   ReceptionistProfileModel? _originalProfile;
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) return "Phone number is required";
+    if (value.length != 11) return "Phone must be exactly 11 digits";
+    if (!value.startsWith("01")) return "Phone must start with 01";
+    return null;
+  }
 
   @override
   void initState() {
@@ -184,7 +192,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
 
                     _buildSectionTitle("Work Details"),
                     _buildEditCard([
-                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
+                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone, maxLength: 11, inputFormatters: [FilteringTextInputFormatter.digitsOnly], validator: _validatePhone),
                       _buildDivider(),
                       _buildEditRow(label: "Assigned Doctor (Read Only)", controller: doctorController, icon: Icons.medical_services_outlined, isReadOnly: true),
                     ]),
@@ -291,7 +299,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
     );
   }
 
-  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap}) {
+  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap, int? maxLength, List<TextInputFormatter>? inputFormatters, String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: TextFormField(
@@ -299,11 +307,15 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
         readOnly: isReadOnly,
         onTap: onTap,
         keyboardType: keyboardType,
+        maxLength: maxLength,
+        inputFormatters: inputFormatters,
         style: TextStyle(color: isReadOnly && onTap == null ? context.subText : context.onSurface, fontWeight: FontWeight.w600, fontSize: 14),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: context.subText, fontSize: 12),
           prefixIcon: Icon(icon, color: primaryColor, size: 20),
+          counterText: maxLength == null ? "" : null,
+          errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -312,7 +324,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
           filled: false,
           isDense: true,
         ),
-        validator: isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
+        validator: validator ?? (isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null),
       ),
     );
   }

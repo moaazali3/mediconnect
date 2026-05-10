@@ -8,6 +8,7 @@ import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/patient/screens/profile.dart'; 
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:mediconnect/constants/api_constants.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ManageBookingsPage extends StatefulWidget {
   const ManageBookingsPage({super.key});
@@ -61,7 +62,10 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
   Future<void> _fetchDoctors() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await _apiService.getAllDoctors(specializationName: _selectedSpec);
+      var doctors = await _apiService.getAllDoctorsForAdmin();
+      if (_selectedSpec != "All") {
+        doctors = doctors.where((d) => d.specializationName == _selectedSpec).toList();
+      }
       setState(() {
         _allDoctors = doctors;
         _applySearch();
@@ -104,7 +108,37 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
           _buildFilterBar(),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      itemCount: 4,
+                      padding: const EdgeInsets.all(10),
+                      itemBuilder: (context, index) {
+                        return Card(
+                          color: context.cardBg,
+                          elevation: 3,
+                          margin: const EdgeInsets.only(bottom: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                              child: const Icon(Icons.male, color: Colors.blue, size: 25),
+                            ),
+                            title: const Text("Dr. Loading Name", style: TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.category_rounded, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                const Flexible(child: Text("Specialization")),
+                              ],
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                          ),
+                        );
+                      },
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchDoctors,
                     child: _filteredDoctors.isEmpty
@@ -143,9 +177,18 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(doctor.specializationName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
+                                  subtitle: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.category_rounded, size: 14, color: Colors.grey),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(doctor.specializationName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
+                                  ),
                                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                   onTap: () {
                                     Navigator.push(
@@ -298,7 +341,85 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
             future: _apiService.getDoctorAppointments(widget.doctor.id),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return Skeletonizer(
+                  enabled: true,
+                  child: ListView.builder(
+                    itemCount: 4,
+                    padding: const EdgeInsets.all(15),
+                    itemBuilder: (context, index) {
+                      return Card(
+                        color: context.cardBg,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      "Patient Loading Name",
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor)
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                                    child: const Text("Pending", style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text("Date: 2024-01-01", style: TextStyle(color: context.subText)),
+                                        Text("Time: 10:00 - 10:30", style: TextStyle(color: context.subText)),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                                    child: const Text("Queue: #1", style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: null,
+                                      style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                                      child: const Text("Cancel"),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: null,
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                                      child: const Text("Accept"),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                  ),
+                );
               }
               if (snapshot.hasError) {
                 return Center(child: Text("Error: ${snapshot.error}"));

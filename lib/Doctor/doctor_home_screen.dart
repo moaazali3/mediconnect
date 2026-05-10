@@ -87,7 +87,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         pageName: currentIndex == 0 ? "Completed" : (currentIndex == 1 ? "Pending" : "Profile"),
         userName: doctorName ?? "Loading...",
         onRefresh: _handleRefresh,
-        onLogout: _signOut,
+        isRoot: true,
+        showDarkModeToggle: currentIndex == 0,
       ),
       body: IndexedStack(
         index: currentIndex,

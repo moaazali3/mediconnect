@@ -7,6 +7,7 @@ import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/admin/edit_doctor_management_page.dart';
 import 'package:mediconnect/widgets/common_app_bar.dart';
 import 'package:mediconnect/constants/api_constants.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ManageDoctorsPage extends StatefulWidget {
   const ManageDoctorsPage({super.key});
@@ -238,7 +239,27 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
           const SizedBox(height: 10),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: primaryColor))
+                ? Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        return _buildDoctorCard(DoctorModel(
+                          id: "dummy",
+                          firstName: "Loading",
+                          lastName: "Name",
+                          specializationName: "Specialization",
+                          experienceYears: 5,
+                          biography: "",
+                          consultationFee: 100,
+                          dateOfBirth: "2000-01-01",
+                          gender: "Male",
+                          isAppleToAppointment: true,
+                        ));
+                      },
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _fetchDoctors,
                     child: _filteredDoctors.isEmpty
@@ -418,15 +439,23 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.subText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.category_rounded, size: 14, color: context.subText),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        doctor.specializationName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.subText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Row(

@@ -407,4 +407,56 @@ mixin AdminApi {
       throw parent.handleError(e);
     }
   }
+
+  Future<bool> updateReceptionistAsAdmin(String receptionistId, {
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+    required String gender,
+    required String dateOfBirth,
+    required String address,
+  }) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final body = jsonEncode({
+        "firstName": firstName.trim(),
+        "lastName": lastName.trim(),
+        "phoneNumber": phoneNumber.trim(),
+        "gender": gender,
+        "dateOfBirth": dateOfBirth,
+        "address": address.trim(),
+      });
+
+      final response = await http.put(
+        Uri.parse('${parent.baseUrl}/Receptionist/$receptionistId'),
+        headers: parent._headers,
+        body: body,
+      );
+
+      print("=== ADMIN UPDATE RECEPTIONIST ===");
+      print("URL: ${parent.baseUrl}/Receptionist/$receptionistId");
+      print("Body: $body");
+      print("Status: ${response.statusCode}");
+      print("Response: ${response.body}");
+      print("================================");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to update receptionist (${response.statusCode})";
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map) {
+            errorMessage = decoded['errors']?.toString() ?? decoded['message'] ?? decoded['title'] ?? errorMessage;
+          }
+        } catch (_) {
+          if (response.body.isNotEmpty) errorMessage = response.body;
+        }
+        throw errorMessage;
+      }
+    } catch (e) {
+      print("=== ADMIN UPDATE RECEPTIONIST ERROR: $e ===");
+      throw parent.handleError(e);
+    }
+  }
 }

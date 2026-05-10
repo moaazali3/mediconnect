@@ -78,9 +78,9 @@ class UpdateDoctorModel {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
-      "firstName": firstName,
-      "lastName": lastName,
-      "phoneNumber": phoneNumber,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "phoneNumber": phoneNumber.trim(),
       "gender": gender,
       "dateOfBirth": dateOfBirth,
       "experienceYears": experienceYears,
@@ -90,7 +90,7 @@ class UpdateDoctorModel {
     
     // إرسال الـ biography فقط إذا لم يكن null (سيستخدمه الدكتور ولا يستخدمه الأدمن)
     if (biography != null) {
-      data["biography"] = biography;
+      data["biography"] = biography!.trim();
     }
     
     return data;

@@ -77,6 +77,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         userName: _adminName,
         onLogout: _signOut,
         onRefresh: _handleRefresh,
+        isRoot: true,
+        showDarkModeToggle: _currentIndex == 0,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
@@ -217,7 +219,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         "Specialties",
         "Manage list",
         Icons.category_rounded,
-        Colors.amber.shade700,
+        primaryColor,
             () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageSpecializationsPage())),
       ),
     ];
@@ -273,9 +275,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withOpacity(isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),

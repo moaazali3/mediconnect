@@ -33,7 +33,7 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
 
     try {
       // هنجيب كل الدكاترة (عشان نضمن إننا جبناهم كلهم) ونفلترهم إحنا بالتخصص
-      final allDoctors = await _apiService.getAllDoctors(pageSize: 1000);
+      final allDoctors = await _apiService.getAllDoctorsForAdmin();
       final specializationDoctors = allDoctors.where((doc) {
         return doc.specializationName?.toLowerCase().trim() == widget.specializationName.toLowerCase().trim();
       }).toList();
@@ -139,9 +139,15 @@ class _SpecializationDetailPageState extends State<SpecializationDetailPage> {
                   "Dr. ${doctor.firstName} ${doctor.lastName}",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
                 ),
-                Text(
-                  widget.specializationName,
-                  style: TextStyle(color: context.subText, fontSize: 13),
+                Row(
+                  children: [
+                    Icon(Icons.category_rounded, size: 14, color: context.subText),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.specializationName,
+                      style: TextStyle(color: context.subText, fontSize: 13),
+                    ),
+                  ],
                 ),
               ],
             ),

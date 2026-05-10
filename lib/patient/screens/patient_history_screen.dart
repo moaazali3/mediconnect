@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/MedicalRecordModel.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/constants/api_constants.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class PatientHistoryScreen extends StatefulWidget {
   final String? userId; 
@@ -39,7 +40,25 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
         future: _apiService.getPatientMedicalHistory(idToFetch),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: primaryColor));
+            return Skeletonizer(
+              enabled: true,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: 4,
+                itemBuilder: (context, index) {
+                  return _buildHistoryCard(context, MedicalRecordModel(
+                    medicalRecordId: "dummy",
+                    appointmentId: "dummy",
+                    doctorId: "dummy",
+                    doctorName: "Dr. Loading Name",
+                    doctorSpecialty: "Loading Specialty",
+                    diagnosis: "Loading diagnosis text goes here",
+                    prescription: "Loading prescription text goes here",
+                    createdDate: "2024-01-01",
+                  ));
+                },
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(child: Padding(

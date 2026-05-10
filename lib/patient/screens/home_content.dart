@@ -189,7 +189,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget _buildModernHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
+      padding: const EdgeInsets.fromLTRB(20, 25, 20, 18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [primaryColor, Color(0xFF1E3A8A)],
@@ -212,11 +212,11 @@ class _HomeContentState extends State<HomeContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // شيلنا الإشعارات وغيرنا الكلمة لـ Doctor
-          const Text("Hello,", style: TextStyle(color: Colors.white70, fontSize: 16)),
-          const SizedBox(height: 5),
-          const Text("Find Your Doctor", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          const Text("Hello,", style: TextStyle(color: Colors.white70, fontSize: 13)),
+          const SizedBox(height: 3),
+          const Text("Find Your Doctor", style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
 
-          const SizedBox(height: 30),
+          const SizedBox(height: 14),
 
           // Search bar
           Container(
@@ -245,7 +245,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 prefixIcon: const Icon(Icons.search_rounded, color: primaryColor, size: 22),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
@@ -340,8 +340,7 @@ class _HomeContentState extends State<HomeContent> {
           setState(() => selectedSpecialization = title);
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+      child: Container(
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(

@@ -4,6 +4,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditPatientProfile extends StatefulWidget {
@@ -30,6 +31,13 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
   final dobController = TextEditingController();
   String? selectedBloodType;
   String? selectedGender;
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) return "Phone number is required";
+    if (value.length != 11) return "Phone must be exactly 11 digits";
+    if (!value.startsWith("01")) return "Phone must start with 01";
+    return null;
+  }
 
   @override
   void initState() {
@@ -173,7 +181,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                         ],
                       ),
                       _buildDivider(),
-                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded),
+                      _buildEditRow(label: "Phone", controller: phoneController, icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone, maxLength: 11, inputFormatters: [FilteringTextInputFormatter.digitsOnly], validator: _validatePhone),
                       _buildDivider(),
                       Row(
                         children: [
@@ -343,7 +351,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     );
   }
 
-  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap}) {
+  Widget _buildEditRow({required String label, required TextEditingController controller, required IconData icon, bool isReadOnly = false, TextInputType keyboardType = TextInputType.text, VoidCallback? onTap, int? maxLength, List<TextInputFormatter>? inputFormatters, String? Function(String?)? validator}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
       child: TextFormField(
@@ -351,11 +359,15 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
         readOnly: isReadOnly,
         onTap: onTap,
         keyboardType: keyboardType,
+        maxLength: maxLength,
+        inputFormatters: inputFormatters,
         style: TextStyle(color: isReadOnly && onTap == null ? context.subText : context.onSurface, fontWeight: FontWeight.w600, fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: context.subText, fontSize: 11),
           prefixIcon: Icon(icon, color: primaryColor, size: 18),
+          counterText: maxLength == null ? "" : null,
+          errorStyle: const TextStyle(fontSize: 11, height: 1.2),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -364,7 +376,7 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
           filled: false,
           isDense: true,
         ),
-        validator: isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null,
+        validator: validator ?? (isReadOnly && onTap == null ? null : (value) => (value == null || value.isEmpty) ? "Required" : null),
       ),
     );
   }
