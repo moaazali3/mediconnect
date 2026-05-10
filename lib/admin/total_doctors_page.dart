@@ -38,7 +38,7 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 1000);
+      final List<DoctorModel> doctors = await _apiService.getAllDoctorsForAdmin();
       
       // Sort by experience years (Descending)
       doctors.sort((a, b) => b.experienceYears.compareTo(a.experienceYears));
@@ -193,16 +193,52 @@ class _TotalDoctorsPageState extends State<TotalDoctorsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min, // Fix for overflow
               children: [
-                Text(
-                  "Dr. ${doctor.firstName} ${doctor.lastName}",
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Dr. ${doctor.firstName} ${doctor.lastName}",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.onSurface),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: doctor.isAppleToAppointment 
+                            ? Colors.green.withValues(alpha: 0.1) 
+                            : Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: doctor.isAppleToAppointment 
+                              ? Colors.green.withValues(alpha: 0.3) 
+                              : Colors.red.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        doctor.isAppleToAppointment ? "Active" : "Inactive",
+                        style: TextStyle(
+                          color: doctor.isAppleToAppointment ? Colors.green : Colors.red,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                Row(
+                  children: [
+                    const Icon(Icons.category_rounded, size: 14, color: primaryColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      doctor.specializationName,
+                      style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Row(

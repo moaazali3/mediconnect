@@ -51,7 +51,7 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
 
       // 2. جلب كل التخصصات والدكاترة
       final specializations = await _apiService.getAllSpecializations();
-      final doctors = await _apiService.getAllDoctors(pageSize: 1000);
+      final doctors = await _apiService.getAllDoctorsForAdmin();
 
       List<SpecRevenueData> finalSpecs = [];
 
@@ -311,18 +311,16 @@ class _TotalRevenuePageState extends State<TotalRevenuePage> {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           leading: Container(
-            padding: const EdgeInsets.all(10),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: primaryColor.withOpacity(context.isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(
-              spec.name.isNotEmpty ? spec.name[0].toUpperCase() : "",
-              style: const TextStyle(
-                color: primaryColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+            child: Icon(
+              Icons.category_rounded,
+              color: primaryColor,
+              size: 26,
             ),
           ),
           title: Row(

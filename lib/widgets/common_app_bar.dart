@@ -13,6 +13,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onBackTap;
   final VoidCallback? onRefresh;
   final VoidCallback? onLogout;
+  final bool isRoot;
 
   const CommonAppBar({
     super.key,
@@ -25,6 +26,7 @@ class CommonAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onBackTap,
     this.onRefresh,
     this.onLogout,
+    this.isRoot = false,
   });
 
   @override
@@ -101,7 +103,7 @@ class _CommonAppBarState extends State<CommonAppBar> {
           padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Row(
             children: [
-              if (widget.showBackButton || Navigator.canPop(context))
+              if (!widget.isRoot && (widget.showBackButton || Navigator.canPop(context)))
                 IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, color: primaryColor),
                   onPressed: widget.onBackTap ?? () => Navigator.pop(context),

@@ -30,7 +30,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
     setState(() {
       _dataFuture = Future.wait([
         _apiService.getAllAppointments(pageSize: 5000),
-        _apiService.getAllDoctors(pageSize: 2000),
+        _apiService.getAllDoctorsForAdmin(),
         _apiService.getAllSpecializations(),
       ]).then((results) => {
         'list': results[0] as List<AppointmentModel>,
@@ -192,7 +192,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           leading: Icon(
-                            Icons.medical_services_rounded, 
+                            Icons.category_rounded, 
                             color: totalSpec > 0 ? primaryColor : context.subText
                           ),
                           title: Text(specName, style: TextStyle(

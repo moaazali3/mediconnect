@@ -147,6 +147,47 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
     );
   }
 
+  Future<void> _deleteSpecialization(SpecializationModel spec) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Delete Specialization", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: Text("Are you sure you want to delete '${spec.name}'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel", style: TextStyle(color: context.subText)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      try {
+        final success = await _apiService.deleteSpecialization(spec.id);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Deleted successfully"), backgroundColor: Colors.green),
+          );
+          _fetchSpecializations();
+        }
+      } catch (e) {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,7 +223,7 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 90),
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: _specializations.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 15),
@@ -237,9 +278,18 @@ class _ManageSpecializationsPageState extends State<ManageSpecializationsPage> {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: Icon(Icons.edit_rounded, color: context.subText),
-                              onPressed: () => _showAddEditDialog(spec: spec),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit_rounded, color: context.subText),
+                                  onPressed: () => _showAddEditDialog(spec: spec),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                  onPressed: () => _deleteSpecialization(spec),
+                                ),
+                              ],
                             ),
                           ],
                         ),

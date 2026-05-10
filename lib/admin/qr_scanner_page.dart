@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // حزمة تثبيت اتجاه الشاشة
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mediconnect/constants/colors.dart';
+import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/services/api_service.dart';
 
 class QRScannerPage extends StatefulWidget {
@@ -169,12 +170,12 @@ class _QRScannerPageState extends State<QRScannerPage> {
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? primaryColor
-                                          : Colors.grey.shade100,
+                                          : context.filterChipBg,
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
                                         color: isSelected
                                             ? primaryColor
-                                            : Colors.grey.shade300,
+                                            : context.filterChipBorder,
                                       ),
                                     ),
                                     child: Text(
@@ -182,7 +183,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
                                       style: TextStyle(
                                         color: isSelected
                                             ? Colors.white
-                                            : Colors.black87,
+                                            : context.onSurface,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
@@ -198,7 +199,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
                   const SizedBox(height: 25),
 
-                  // ── Action buttons ───────────────────────────────
                   if (!alreadyPaid)
                     SizedBox(
                       width: double.infinity,
@@ -224,28 +224,28 @@ class _QRScannerPageState extends State<QRScannerPage> {
                         ),
                       ),
                     ),
-                  if (!alreadyPaid) const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_rounded, size: 18),
-                      label: const Text(
-                        "CONFIRM ATTENDANCE ONLY",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        _confirmAttendance(appointmentId);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
+                  if (alreadyPaid)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_rounded, size: 18),
+                        label: const Text(
+                          "CONFIRM ATTENDANCE",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          _confirmAttendance(appointmentId);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,

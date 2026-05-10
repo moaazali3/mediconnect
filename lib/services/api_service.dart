@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -86,9 +87,40 @@ class ApiService with AuthApi, AdminApi, ProfileApi, AppointmentApi, DoctorApi, 
 
   // Static token to be used in headers
   static String? _token;
+  static Timer? _refreshTokenTimer;
 
   static void setToken(String? token) {
     _token = token;
+    if (token != null) {
+      _startRefreshTokenTimer();
+    } else {
+      _cancelRefreshTokenTimer();
+    }
+  }
+
+  static void _startRefreshTokenTimer() {
+    _cancelRefreshTokenTimer();
+    // Auto-refresh token every 19 minutes (token expires in 20)
+    _refreshTokenTimer = Timer.periodic(const Duration(minutes: 19), (timer) async {
+      print("[ApiService] Auto-refreshing token...");
+      try {
+        final response = await ApiService().refreshToken();
+        if (!response.success) {
+          print("[ApiService] Auto-refresh failed. Triggering global logout.");
+          await logout();
+        } else {
+          print("[ApiService] Auto-refresh successful.");
+        }
+      } catch (e) {
+        print("[ApiService] Auto-refresh error: $e");
+        await logout();
+      }
+    });
+  }
+
+  static void _cancelRefreshTokenTimer() {
+    _refreshTokenTimer?.cancel();
+    _refreshTokenTimer = null;
   }
 
   // Headers with Authorization token

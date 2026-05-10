@@ -418,15 +418,23 @@ class _ManageDoctorsPageState extends State<ManageDoctorsPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  doctor.specializationName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.subText,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.category_rounded, size: 14, color: context.subText),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        doctor.specializationName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.subText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Row(

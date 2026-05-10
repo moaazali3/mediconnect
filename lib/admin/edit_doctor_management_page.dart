@@ -8,7 +8,6 @@ import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/SpecializationModel.dart';
 import 'package:mediconnect/models/UpdateDoctorModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditDoctorManagementPage extends StatefulWidget {
   final String doctorId;
@@ -33,9 +32,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
   final _expController = TextEditingController();
   final _dobController = TextEditingController();
   final _specializationController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  bool _passwordObscured = true;
 
   String _gender = 'Male';
   DoctorProfileModel? _currentProfile;
@@ -60,7 +56,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
     _expController.dispose();
     _dobController.dispose();
     _specializationController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -243,21 +238,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
-      final pass = _passwordController.text;
-      if (pass.isNotEmpty) {
-        final ok = pass.length >= 8 &&
-            RegExp(r'[A-Z]').hasMatch(pass) &&
-            RegExp(r'[a-z]').hasMatch(pass) &&
-            RegExp(r'[0-9]').hasMatch(pass) &&
-            RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(pass);
-        if (!ok) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Please meet all password requirements"),
-            backgroundColor: Colors.red,
-          ));
-          return;
-        }
-      }
       setState(() => _currentStep = 2);
     }
   }
@@ -427,20 +407,6 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
                 }
               },
             ),
-            const SizedBox(height: 15),
-            _buildLoginField(
-              controller: _passwordController,
-              label: "New Password (optional)",
-              icon: Icons.lock_reset_rounded,
-              isPassword: true,
-              isObscured: _passwordObscured,
-              onToggle: () => setState(() => _passwordObscured = !_passwordObscured),
-              onChanged: (v) => setLocalState(() {}),
-            ),
-            if (_passwordController.text.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              PasswordStrengthChecker(password: _passwordController.text),
-            ],
           ],
         );
       },

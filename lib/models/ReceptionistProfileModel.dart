@@ -46,17 +46,17 @@ class ReceptionistProfileModel {
 
   Map<String, dynamic> toJson() {
     return {
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
-      "phoneNumber": phoneNumber,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "email": email?.trim(),
+      "phoneNumber": phoneNumber.trim(),
       "gender": gender,
       "dateOfBirth": dateOfBirth,
-      "address": address,
+      "address": address?.trim(),
       "shift": shift,
       "profilePictureUrl": profilePictureUrl,
       "doctorId": doctorId,
-      "doctorName": doctorName,
+      "doctorName": doctorName?.trim(),
     };
   }
 }

@@ -340,8 +340,7 @@ class _HomeContentState extends State<HomeContent> {
           setState(() => selectedSpecialization = title);
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+      child: Container(
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(

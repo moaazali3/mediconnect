@@ -52,21 +52,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri url = Uri.parse('tel:$phoneNumber');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        await launchUrl(url); // Force attempt as fallback
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not open phone dialer")),
+        );
+      }
     }
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    String phone = phoneNumber.trim();
+    if (phone.isEmpty) return;
 
-    if (cleanNumber.startsWith('01') && cleanNumber.length == 11) {
-      cleanNumber = '2$cleanNumber';
-    } else if (cleanNumber.startsWith('1') && cleanNumber.length == 10) {
-      cleanNumber = '20$cleanNumber';
+    if (phone.startsWith('0020')) {
+      phone = '+${phone.substring(2)}';
+    } else if (phone.startsWith('0')) {
+      phone = '+20${phone.substring(1)}';
+    } else if (phone.startsWith('20') && phone.length >= 12) {
+      phone = '+$phone';
+    } else if (!phone.startsWith('+')) {
+      phone = '+20$phone';
     }
 
-    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
+    final Uri url = Uri.parse('https://wa.me/$phone');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
@@ -79,9 +94,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _launchWhatsAppSupport() async {
-    const String phoneNumber = "201000000000";
+    const String phone = "+201000000000";
     const String message = "Hello MediConnect, I need help with my account.";
-    final Uri whatsappUri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}");
+    final Uri whatsappUri = Uri.parse("https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
 
     if (await canLaunchUrl(whatsappUri)) {
       await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);

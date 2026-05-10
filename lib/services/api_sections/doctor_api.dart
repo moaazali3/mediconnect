@@ -292,4 +292,29 @@ mixin DoctorApi {
       throw e.toString();
     }
   }
+
+  Future<bool> deleteSpecialization(int id) async {
+    final ApiService parent = this as ApiService;
+    try {
+      final response = await http.delete(
+        Uri.parse('${parent.baseUrl}/Specialization/$id'),
+        headers: parent._headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        String errorMessage = "Failed to delete specialization";
+        try {
+          final errorBody = jsonDecode(response.body);
+          if (errorBody is Map) {
+            errorMessage = errorBody['message'] ?? errorBody['errors']?.toString() ?? errorBody['title'] ?? errorMessage;
+          }
+        } catch (_) {}
+        throw errorMessage;
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
 }

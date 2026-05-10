@@ -28,10 +28,26 @@ class _DoctorProfileViewScreenState extends State<DoctorProfileViewScreen> {
   }
 
   Future<void> _openWhatsApp(String phoneNumber) async {
-    final String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
-    final Uri url = Uri.parse('https://wa.me/$cleanNumber');
+    String phone = phoneNumber.trim();
+    if (phone.isEmpty) return;
+
+    if (phone.startsWith('0020')) {
+      phone = '+${phone.substring(2)}';
+    } else if (phone.startsWith('0')) {
+      phone = '+20${phone.substring(1)}';
+    } else if (phone.startsWith('20') && phone.length >= 12) {
+      phone = '+$phone';
+    } else if (!phone.startsWith('+')) {
+      phone = '+20$phone';
+    }
+
+    final Uri url = Uri.parse('https://wa.me/$phone');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not launch WhatsApp")));
+      }
     }
   }
 

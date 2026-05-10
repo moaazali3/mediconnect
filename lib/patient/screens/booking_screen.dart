@@ -319,7 +319,7 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(widget.doctorName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.onSurface)),
                 Text(widget.specialty, style: const TextStyle(color: Colors.grey, fontSize: 14)),
               ],
             ),

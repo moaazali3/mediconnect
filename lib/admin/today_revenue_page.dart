@@ -81,7 +81,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         print("Using direct Today Revenue endpoints from Server...");
         final results = await Future.wait([
           _apiService.getAllSpecializations(),
-          _apiService.getAllDoctors(pageSize: 2000),
+          _apiService.getAllDoctorsForAdmin(),
         ]);
 
         final allSpecs = results[0] as List<SpecializationModel>;
@@ -165,7 +165,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         print("Using memory-based appointment filtering for custom date...");
         final results = await Future.wait([
           _apiService.getAllAppointments(pageSize: 5000),
-          _apiService.getAllDoctors(pageSize: 2000),
+          _apiService.getAllDoctorsForAdmin(),
           _apiService.getAllSpecializations(),
         ]);
 

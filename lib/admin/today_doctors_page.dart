@@ -89,7 +89,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
     final int targetWeekday = _selectedDate.weekday;
 
     try {
-      final List<DoctorModel> allDoctors = await _apiService.getAllDoctors();
+      final List<DoctorModel> allDoctors = await _apiService.getAllDoctorsForAdmin();
       List<DoctorModel> doctorsWithSchedules = [];
 
       await Future.wait(allDoctors.map((doctor) async {
@@ -322,15 +322,23 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    doctor.specializationName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: primaryColor.withValues(alpha: 0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.category_rounded, size: 14, color: primaryColor.withValues(alpha: 0.8)),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          doctor.specializationName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: primaryColor.withValues(alpha: 0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Row(

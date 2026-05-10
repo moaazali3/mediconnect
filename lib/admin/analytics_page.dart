@@ -52,7 +52,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         _apiService.getDoctorsWorkingToday(),
         _apiService.getAllPatients(),
         _apiService.getAllAppointments(pageSize: 5000),
-        _apiService.getAllDoctors(pageSize: 2000),
+        _apiService.getAllDoctorsForAdmin(),
         _apiService.getAllSpecializations(),
       ]);
 
@@ -152,7 +152,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                   const SizedBox(height: 20),
                   _buildTopDoctorPerformanceCard(),
                   const SizedBox(height: 20),
-                  _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.medical_services_rounded),
+                  _buildSummaryCard("Bookings by Specialization", _topSpecializations, Icons.category_rounded),
                   const SizedBox(height: 20),
                   _buildQuickStats(),
                   const SizedBox(height: 30),

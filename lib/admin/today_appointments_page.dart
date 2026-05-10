@@ -33,7 +33,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
         _hasUserSelectedDate 
             ? _apiService.getAllAppointments(pageSize: 5000) 
             : _apiService.getTodayAppointments(),
-        _apiService.getAllDoctors(pageSize: 2000),
+        _apiService.getAllDoctorsForAdmin(),
         _apiService.getAllSpecializations(),
       ]).then((results) => {
         'appointments': results[0] as List<AppointmentModel>,
@@ -201,7 +201,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                         child: ExpansionTile(
                           leading: Icon(
-                            specName == "Uncategorized" ? Icons.help_outline : Icons.medical_services_rounded,
+                            specName == "Uncategorized" ? Icons.help_outline : Icons.category_rounded,
                             color: totalSpec > 0 ? primaryColor : context.subText
                           ),
                           title: Text(specName, style: TextStyle(

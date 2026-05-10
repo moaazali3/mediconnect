@@ -70,17 +70,17 @@ class PatientProfileModel {
   Map<String, dynamic> toJson() {
     return {
       "id": id,
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "email": email.trim(),
       "dateOfBirth": dateOfBirth,
       "gender": gender,
-      "address": address,
+      "address": address?.trim(),
       "bloodType": bloodType,
       "height": height,
       "weight": weight,
-      "emergencyContact": emergencyContact,
-      "phoneNumber": phoneNumber,
+      "emergencyContact": emergencyContact.trim(),
+      "phoneNumber": phoneNumber.trim(),
     };
   }
 }

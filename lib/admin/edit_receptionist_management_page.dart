@@ -5,7 +5,6 @@ import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/services/api_service.dart';
-import 'package:mediconnect/widgets/password_strength_checker.dart';
 
 class EditReceptionistManagementPage extends StatefulWidget {
   final String receptionistId;
@@ -29,9 +28,6 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
   final _emailController = TextEditingController();
   final _addressController = TextEditingController();
   final _doctorController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  bool _passwordObscured = true;
 
   String _gender = 'Male';
   String? _selectedDoctorId;
@@ -39,6 +35,7 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
   List<Map<String, dynamic>> _doctors = [];
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _changeDoctor = false;
 
   @override
   void initState() {
@@ -55,7 +52,6 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
     _emailController.dispose();
     _addressController.dispose();
     _doctorController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -202,23 +198,19 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
     setState(() => _isSaving = true);
     try {
-      final updatedProfile = ReceptionistProfileModel(
-        id: widget.receptionistId,
+      final success = await _apiService.updateReceptionistAsAdmin(
+        widget.receptionistId,
         firstName: _fNameController.text,
         lastName: _lNameController.text,
         phoneNumber: _phoneController.text,
-        email: _emailController.text,
         gender: _gender,
         dateOfBirth: _dobController.text,
         address: _addressController.text,
-        doctorId: _selectedDoctorId,
       );
-
-      final success = await _apiService.updateReceptionistProfile(widget.receptionistId, updatedProfile);
 
       if (mounted) {
         if (success) {
-          if (_selectedDoctorId != _initialDoctorId && _selectedDoctorId != null) {
+          if (_changeDoctor && _selectedDoctorId != null && _selectedDoctorId != _initialDoctorId) {
             await _apiService.changeReceptionistDoctor(widget.receptionistId, _selectedDoctorId!);
           }
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Receptionist profile updated!"), backgroundColor: Colors.green));
@@ -236,21 +228,6 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
 
   void _nextStep() {
     if (_formKey.currentState!.validate()) {
-      final pass = _passwordController.text;
-      if (pass.isNotEmpty) {
-        final ok = pass.length >= 8 &&
-            RegExp(r'[A-Z]').hasMatch(pass) &&
-            RegExp(r'[a-z]').hasMatch(pass) &&
-            RegExp(r'[0-9]').hasMatch(pass) &&
-            RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(pass);
-        if (!ok) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Please meet all password requirements"),
-            backgroundColor: Colors.red,
-          ));
-          return;
-        }
-      }
       setState(() => _currentStep = 2);
     }
   }
@@ -395,22 +372,6 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
             _buildLoginField(controller: _lNameController, label: "Last Name", icon: Icons.person_outline),
             const SizedBox(height: 15),
             _buildLoginField(controller: _phoneController, label: "Phone Number", icon: Icons.phone_android_rounded, keyboardType: TextInputType.phone),
-            const SizedBox(height: 15),
-            _buildLoginField(controller: _emailController, label: "Email Address", icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
-            const SizedBox(height: 15),
-            _buildLoginField(
-              controller: _passwordController,
-              label: "New Password (optional)",
-              icon: Icons.lock_reset_rounded,
-              isPassword: true,
-              isObscured: _passwordObscured,
-              onToggle: () => setState(() => _passwordObscured = !_passwordObscured),
-              onChanged: (v) => setLocalState(() {}),
-            ),
-            if (_passwordController.text.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              PasswordStrengthChecker(password: _passwordController.text),
-            ],
           ],
         );
       },
@@ -450,13 +411,35 @@ class _EditReceptionistManagementPageState extends State<EditReceptionistManagem
         const SizedBox(height: 15),
         _buildLoginField(controller: _addressController, label: "Address", icon: Icons.location_on_outlined),
         const SizedBox(height: 15),
-        _buildLoginField(
-          controller: _doctorController,
-          label: "Assigned Doctor",
-          icon: Icons.medical_services_outlined,
-          readOnly: true,
-          onTap: _showDoctorSearchSheet,
+        Container(
+          decoration: BoxDecoration(
+            color: context.inputFill,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: SwitchListTile(
+            title: const Text("Change Assigned Doctor?", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            value: _changeDoctor,
+            activeColor: primaryColor,
+            onChanged: (val) {
+              setState(() {
+                _changeDoctor = val;
+                if (!val) {
+                  _selectedDoctorId = _initialDoctorId;
+                }
+              });
+            },
+          ),
         ),
+        if (_changeDoctor) ...[
+          const SizedBox(height: 15),
+          _buildLoginField(
+            controller: _doctorController,
+            label: "Select New Doctor",
+            icon: Icons.medical_services_outlined,
+            readOnly: true,
+            onTap: _showDoctorSearchSheet,
+          ),
+        ],
       ],
     );
   }

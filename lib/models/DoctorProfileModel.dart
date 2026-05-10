@@ -56,14 +56,14 @@ class DoctorProfileModel {
 
   Map<String, dynamic> toJson() {
     return {
-      "firstName": firstName,
-      "lastName": lastName,
-      "email": email,
+      "firstName": firstName.trim(),
+      "lastName": lastName.trim(),
+      "email": email.trim(),
       "dateOfBirth": dateOfBirth,
       "gender": gender,
-      "address": address,
-      "phoneNumber": phoneNumber,
-      "biography": biography,
+      "address": address?.trim(),
+      "phoneNumber": phoneNumber.trim(),
+      "biography": biography.trim(),
       "profilePictureUrl": profilePictureUrl,
       "doctorSchedules": doctorSchedules.map((s) => s.toJson()).toList(),
     };

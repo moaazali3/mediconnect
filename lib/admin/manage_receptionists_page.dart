@@ -41,7 +41,7 @@ class _ManageReceptionistsPageState extends State<ManageReceptionistsPage> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final List<DoctorModel> doctors = await _apiService.getAllDoctors(pageSize: 100);
+      final List<DoctorModel> doctors = await _apiService.getAllDoctorsForAdmin();
       List<ReceptionistProfileModel> receptionists = [];
       
       final List<ReceptionistProfileModel?> results = await Future.wait(

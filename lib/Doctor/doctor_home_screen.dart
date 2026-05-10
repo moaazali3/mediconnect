@@ -88,6 +88,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         userName: doctorName ?? "Loading...",
         onRefresh: _handleRefresh,
         onLogout: _signOut,
+        isRoot: true,
       ),
       body: IndexedStack(
         index: currentIndex,

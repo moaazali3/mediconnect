@@ -61,7 +61,10 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
   Future<void> _fetchDoctors() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await _apiService.getAllDoctors(specializationName: _selectedSpec);
+      var doctors = await _apiService.getAllDoctorsForAdmin();
+      if (_selectedSpec != "All") {
+        doctors = doctors.where((d) => d.specializationName == _selectedSpec).toList();
+      }
       setState(() {
         _allDoctors = doctors;
         _applySearch();
@@ -143,9 +146,18 @@ class _ManageBookingsPageState extends State<ManageBookingsPage> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(doctor.specializationName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
+                                  subtitle: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.category_rounded, size: 14, color: Colors.grey),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(doctor.specializationName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      ),
+                                    ],
+                                  ),
                                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                   onTap: () {
                                     Navigator.push(

@@ -339,27 +339,27 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                         ),
                       ),
                     ),
-                  if (!alreadyPaid) const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
-                      label: Text(
-                        alreadyPaid ? "CONFIRM COMPLETION" : "CONFIRM WITHOUT PAYMENT",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      onPressed: () async {
-                        Navigator.pop(context);
-                        await _confirmOnly(app);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
+                  if (alreadyPaid)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                        label: const Text(
+                          "CONFIRM COMPLETION",
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _confirmOnly(app);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                        ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: 20),
                 ],
               ),
