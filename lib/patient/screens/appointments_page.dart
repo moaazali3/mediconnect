@@ -8,6 +8,7 @@ import 'package:mediconnect/constants/api_constants.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 class AppointmentsPage extends StatefulWidget {
   final String? userId;
   const AppointmentsPage({super.key, this.userId});
@@ -316,7 +317,7 @@ class _AppointmentCardState extends State<AppointmentCard> {
         phone = '+20$phone';
       }
 
-      final Uri uri = isWhatsApp 
+      final Uri uri = isWhatsApp
           ? Uri.parse("https://wa.me/$phone")
           : Uri.parse("tel:$phone");
 
@@ -497,13 +498,13 @@ class _AppointmentCardState extends State<AppointmentCard> {
   Widget _buildAppointmentStatusBadge() {
     bool isCompleted = widget.status.toLowerCase() == 'completed';
     bool isCancelled = widget.status.toLowerCase() == 'cancelled';
-    
-    Color color = isCompleted 
-        ? Colors.green.shade600 
+
+    Color color = isCompleted
+        ? Colors.green.shade600
         : (isCancelled ? Colors.red.shade600 : Colors.blue.shade600);
-        
-    IconData icon = isCompleted 
-        ? Icons.check_circle_rounded 
+
+    IconData icon = isCompleted
+        ? Icons.check_circle_rounded
         : (isCancelled ? Icons.cancel_rounded : Icons.info_outline_rounded);
 
     return _buildPaymentBadge(
