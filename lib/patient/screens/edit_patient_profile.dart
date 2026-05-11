@@ -39,6 +39,22 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
     return null;
   }
 
+  String? _validateHeight(String? value) {
+    if (value == null || value.isEmpty) return "Height is required";
+    final h = double.tryParse(value);
+    if (h == null) return "Enter a valid number";
+    if (h < 50 || h > 250) return "Height must be 50–250 cm";
+    return null;
+  }
+
+  String? _validateWeight(String? value) {
+    if (value == null || value.isEmpty) return "Weight is required";
+    final w = double.tryParse(value);
+    if (w == null) return "Enter a valid number";
+    if (w < 10 || w > 500) return "Weight must be 10–500 kg";
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -224,8 +240,22 @@ class _EditPatientProfileState extends State<EditPatientProfile> {
                     _buildEditCard([
                       Row(
                         children: [
-                          Expanded(child: _buildEditRow(label: "Height (cm)", controller: heightController, icon: Icons.height_rounded, keyboardType: TextInputType.number)),
-                          Expanded(child: _buildEditRow(label: "Weight (kg)", controller: weightController, icon: Icons.monitor_weight_outlined, keyboardType: TextInputType.number)),
+                          Expanded(child: _buildEditRow(
+                            label: "Height (cm)",
+                            controller: heightController,
+                            icon: Icons.height_rounded,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                            validator: _validateHeight,
+                          )),
+                          Expanded(child: _buildEditRow(
+                            label: "Weight (kg)",
+                            controller: weightController,
+                            icon: Icons.monitor_weight_outlined,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                            validator: _validateWeight,
+                          )),
                         ],
                       ),
                       _buildDivider(),

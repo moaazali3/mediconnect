@@ -103,7 +103,7 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
         children: _pages,
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        margin: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(30),
@@ -140,6 +140,9 @@ class _ReceptionistDashboardState extends State<ReceptionistDashboard> {
                 setState(() {
                   _currentIndex = index;
                 });
+                if (index == 0) {
+                  _fetchAndSetUserName();
+                }
               }
             },
             items: const [

@@ -169,28 +169,6 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
   }
 
   Future<void> _showCompletionSheet(AppointmentModel app) async {
-    // Show a loading indicator while fetching the payment status
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: primaryColor),
-      ),
-    );
-
-    PaymentModel? payment;
-    try {
-      payment = await _apiService.getPaymentByAppointment(app.appointmentId);
-    } catch (_) {
-      // Payment not found or error, leave as null
-    }
-
-    if (!mounted) return;
-    Navigator.pop(context); // Close the loading indicator
-
-    final bool alreadyPaid = payment != null && payment.paymentStatus.toLowerCase() == 'completed';
-    final String paymentMethod = payment?.paymentMethod ?? "Cash";
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -199,11 +177,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       builder: (context) {
-        String selectedMethod = 'Cash';
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
+        return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
                 left: 25,
@@ -235,138 +209,33 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                   _buildDetailRow("Queue", "#${app.queueNumber}"),
 
                   const Divider(height: 25),
-
-                  // ── Payment section ──────────────────────────────
-                  if (alreadyPaid)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Payment Status", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.green.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.check_circle_rounded, size: 14, color: Colors.green),
-                              const SizedBox(width: 6),
-                              Text(
-                                "Paid · $paymentMethod",
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Collect Payment",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: ['Cash', 'Card', 'Wallet'].map((method) {
-                            final isSelected = selectedMethod == method;
-                            return GestureDetector(
-                              onTap: () => setModalState(() => selectedMethod = method),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? primaryColor
-                                      : context.isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? primaryColor
-                                        : context.isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                                  ),
-                                ),
-                                child: Text(
-                                  method,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : context.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 10),
 
                   // ── Action buttons ───────────────────────────────
-                  if (!alreadyPaid)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.payment_rounded, size: 18, color: Colors.white),
-                        label: const Text(
-                          "COLLECT PAYMENT & COMPLETE",
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _collectPayment(
-                            app: app,
-                            paymentMethod: selectedMethod,
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
-                        ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
+                      label: const Text(
+                        "CONFIRM COMPLETION",
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await _confirmOnly(app);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15)),
                       ),
                     ),
-                  if (alreadyPaid)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.white),
-                        label: const Text(
-                          "CONFIRM COMPLETION",
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _confirmOnly(app);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
-                        ),
-                      ),
-                    ),
+                  ),
                   const SizedBox(height: 20),
                 ],
               ),
             );
-          },
-        );
       },
     );
   }
@@ -392,62 +261,15 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
     );
   }
 
-  Future<void> _collectPayment({
-    required AppointmentModel app,
-    required String paymentMethod,
-  }) async {
-    setState(() => _isProcessing = true);
 
-    try {
-      // 1. Create payment
-      final paymentOk = await _apiService.createPaymentByAppointment(
-        appointmentId: app.appointmentId,
-        paymentMethod: paymentMethod,
-      );
-
-      // 2. Mark appointment as completed
-      final attendanceOk = await _apiService.completeAppointmentStatus(app.appointmentId);
-
-      if (mounted) {
-        if (paymentOk && attendanceOk) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Payment collected ($paymentMethod) & appointment completed!"),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else if (paymentOk) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Payment collected. Status update failed."),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Payment failed. Please try again."),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        _fetchData();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
-  }
 
   Future<void> _confirmOnly(AppointmentModel app) async {
     setState(() => _isProcessing = true);
     try {
+      debugPrint("--- [CONFIRM ONLY PROCESS] ---");
+      debugPrint("Updating appointment ID ${app.appointmentId} to completed...");
       final success = await _apiService.completeAppointmentStatus(app.appointmentId);
+      debugPrint("Status update result: $success");
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -587,7 +409,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Expanded(
             child: Text(
@@ -596,11 +418,19 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
               softWrap: true,
             ),
           ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Text("${_allAppointments.length} Pending", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: primaryColor),
+                onPressed: _fetchData,
+                tooltip: 'Refresh',
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Text("${_allAppointments.length} Pending", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
         ],
       ),
@@ -700,6 +530,11 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
   }
 
   Widget _buildAppointmentCard(AppointmentModel app) {
+    DateTime apptDateRaw = DateTime.parse(app.appointmentDate.split('T')[0]);
+    DateTime today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    DateTime apptDate = DateTime(apptDateRaw.year, apptDateRaw.month, apptDateRaw.day);
+    bool isValidDate = !apptDate.isAfter(today); // True if today or in the past
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -838,9 +673,21 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: _isProcessing ? null : () => _showCompletionSheet(app),
+                          onPressed: _isProcessing ? null : () {
+                            if (!isValidDate) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Cannot complete an appointment that is scheduled for the future!"),
+                                  backgroundColor: Colors.red,
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                              return;
+                            }
+                            _showCompletionSheet(app);
+                          },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: isValidDate ? Colors.green : Colors.grey.shade400,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             elevation: 0,
@@ -858,6 +705,7 @@ class _ReceptionistPendingAppointmentsPageState extends State<ReceptionistPendin
       ),
     );
   }
+
 
   Widget _buildPaymentBadge({
     required IconData icon,

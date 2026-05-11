@@ -128,6 +128,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               setState(() {
                 currentIndex = index;
               });
+              if (index == 0 || index == 1) {
+                _loadDoctorName();
+              }
             },
             items: const [
               BottomNavigationBarItem(

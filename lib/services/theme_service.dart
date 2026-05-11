@@ -20,9 +20,11 @@ class ThemeService extends ChangeNotifier {
     if (hasUserChoice) {
       final isDark = prefs.getBool('is_dark_mode') ?? false;
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+      debugPrint("[ThemeService] Initialized with saved choice: ${_themeMode.name}");
     } else {
       // First launch — follow system brightness
       _themeMode = ThemeMode.system;
+      debugPrint("[ThemeService] Initialized with system default.");
     }
     // No notifyListeners() here; called before the widget tree exists.
   }
@@ -36,6 +38,8 @@ class ThemeService extends ChangeNotifier {
     } else {
       _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     }
+    
+    debugPrint("[ThemeService] Theme toggled to: ${_themeMode.name}");
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_dark_mode', _themeMode == ThemeMode.dark);
     notifyListeners();

@@ -89,15 +89,17 @@ mixin AppointmentApi {
     throw "Error fetching receptionist appointments";
   }
 
-  Future<int> getExpectedNumber(String doctorId, String appointmentDate) async {
+  Future<Map<String, dynamic>> getExpectedNumber(String doctorId, String appointmentDate) async {
     final ApiService parent = this as ApiService;
     final response = await http.get(
       Uri.parse('${parent.baseUrl}/Appointment/expected-number?doctorId=$doctorId&appointmentDate=$appointmentDate'),
       headers: parent._headers,
     );
 
+    debugPrint("EXPECTED NUMBER SERVER RESPONSE: ${response.body}");
+
     if (response.statusCode == 200) {
-      return int.tryParse(response.body) ?? 0;
+      return jsonDecode(response.body);
     } else {
       final body = jsonDecode(response.body);
       String errorMessage = body['errors']?.toString() ?? "Failed to fetch expected number";
@@ -112,6 +114,8 @@ mixin AppointmentApi {
       headers: parent._headers,
     );
     
+    debugPrint("[completeAppointmentStatus] Server Response: ${response.body}");
+
     if (response.statusCode == 200) {
       return true;
     } else {
@@ -128,6 +132,8 @@ mixin AppointmentApi {
       headers: parent._headers,
     );
     
+    debugPrint("[cancelAppointmentStatus] Server Response: ${response.body}");
+
     if (response.statusCode == 200) {
       return true;
     } else {
@@ -157,89 +163,106 @@ mixin AppointmentApi {
     final ApiService parent = this as ApiService;
     
     try {
-      final results = await Future.wait([
-        http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers),
-        http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers),
-        parent.getDoctorNames(),
-      ]);
+      // Fetch records and appointments in parallel; getAllDoctors is used for enrichment
+      final recordResFuture = http.get(Uri.parse('${parent.baseUrl}/MedicalRecord/patient/$patientId'), headers: parent._headers);
+      final apptResFuture = http.get(Uri.parse('${parent.baseUrl}/Appointment/patient/$patientId'), headers: parent._headers);
+      final allDoctorsFuture = parent.getAllDoctors().catchError((_) => <DoctorModel>[]);
 
-      final recordRes = results[0] as http_original.Response;
-      final apptRes = results[1] as http_original.Response;
-      final doctorNamesList = results[2] as List<Map<String, dynamic>>;
+      final recordRes = await recordResFuture;
 
-      if (recordRes.statusCode == 200 && apptRes.statusCode == 200) {
-        List<dynamic> recordBody = jsonDecode(recordRes.body);
-        List<dynamic> apptBody = jsonDecode(apptRes.body);
-        
-        List<MedicalRecordModel> records = recordBody.map((item) => MedicalRecordModel.fromJson(item)).toList();
-        List<PatientAppointmentModel> appointments = apptBody.map((item) => PatientAppointmentModel.fromJson(item)).toList();
-        
-        Map<String, PatientAppointmentModel> apptMap = {
-          for (var a in appointments) a.appointmentId: a
-        };
-
-        // Name to ID lookup for fallback
-        Map<String, String> nameToIdMap = {};
-        for (var doc in doctorNamesList) {
-          String rawName = (doc['name'] ?? doc['fullName'] ?? doc['firstName'] ?? '').toString().toLowerCase();
-          String cleanName = rawName.replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
-          String id = (doc['id'] ?? doc['doctorId'] ?? '').toString();
-          if (cleanName.isNotEmpty && id.isNotEmpty) {
-            nameToIdMap[cleanName] = id;
-          }
-        }
-
-        // 1. Resolve Doctor IDs for each record
-        Set<String> resolvedDoctorIds = {};
-        for (var record in records) {
-          if (apptMap.containsKey(record.appointmentId)) {
-            final appt = apptMap[record.appointmentId]!;
-            
-            String? docId;
-            // Prefer doctorId from appointment if it exists and is not 'null'
-            if (appt.doctorId.isNotEmpty && appt.doctorId.toLowerCase() != "null") {
-              docId = appt.doctorId;
-            } else {
-              // Fallback to name lookup
-              String cleanName = appt.doctorName.toLowerCase().replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
-              docId = nameToIdMap[cleanName];
-            }
-
-            if (docId != null && docId.isNotEmpty) {
-              record.doctorId = docId;
-              resolvedDoctorIds.add(docId);
-            }
-          }
-        }
-
-        // 2. Fetch detailed doctor profiles in parallel
-        Map<String, DoctorFullModel> doctorCache = {};
-        await Future.wait(resolvedDoctorIds.map((id) async {
-          try {
-            final details = await parent.getDoctorDetails(id, patientId);
-            doctorCache[id] = details;
-          } catch (_) {}
-        }));
-
-        // 3. Map details back to records
-        for (var record in records) {
-          if (record.doctorId.isNotEmpty && doctorCache.containsKey(record.doctorId)) {
-            final doc = doctorCache[record.doctorId]!;
-            record.doctorName = "Dr. ${doc.firstName} ${doc.lastName}";
-            record.doctorSpecialty = doc.specializationName;
-            record.doctorImageUrl = doc.profilePictureUrl;
-          } else if (apptMap.containsKey(record.appointmentId)) {
-            final appt = apptMap[record.appointmentId]!;
-            record.doctorName = appt.doctorName;
-            record.doctorSpecialty = 'Medical Specialist';
-          }
-        }
-        return records;
+      // If medical records can't be fetched at all, throw
+      if (recordRes.statusCode != 200) {
+        throw "Error fetching medical records (${recordRes.statusCode})";
       }
+
+      List<dynamic> recordBody = jsonDecode(recordRes.body);
+      List<MedicalRecordModel> records = recordBody.map((item) => MedicalRecordModel.fromJson(item)).toList();
+
+      if (records.isEmpty) return records;
+
+      // Try to enrich with appointments
+      try {
+        final apptRes = await apptResFuture;
+        final allDoctorsList = await allDoctorsFuture;
+
+        if (apptRes.statusCode == 200) {
+          List<dynamic> apptBody = jsonDecode(apptRes.body);
+          List<PatientAppointmentModel> appointments = apptBody.map((item) => PatientAppointmentModel.fromJson(item)).toList();
+
+          Map<String, PatientAppointmentModel> apptMap = {
+            for (var a in appointments) a.appointmentId: a
+          };
+
+          // Name to ID lookup for fallback
+          Map<String, String> nameToIdMap = {};
+          for (var doc in allDoctorsList) {
+
+            String cleanFirstName = doc.firstName.toLowerCase().trim();
+            String cleanLastName = doc.lastName.toLowerCase().trim();
+            String fullName = "$cleanFirstName $cleanLastName";
+            if (doc.id.isNotEmpty) {
+              nameToIdMap[fullName] = doc.id;
+              // Also map individual names as fallback
+
+              if (cleanFirstName.isNotEmpty) nameToIdMap[cleanFirstName] = doc.id;
+              print(nameToIdMap);
+            }
+          }
+
+          // 1. Resolve Doctor IDs for each record
+          Set<String> resolvedDoctorIds = {};
+          for (var record in records) {
+            if (apptMap.containsKey(record.appointmentId)) {
+              final appt = apptMap[record.appointmentId]!;
+              String? docId;
+              if (appt.doctorId.isNotEmpty && appt.doctorId.toLowerCase() != "null") {
+                docId = appt.doctorId;
+              } else {
+                String cleanName = appt.doctorName.toLowerCase().replaceAll(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
+                docId = nameToIdMap[cleanName];
+              }
+              if (docId != null && docId.isNotEmpty) {
+                record.doctorId = docId;
+                resolvedDoctorIds.add(docId);
+              }
+            }
+          }
+
+          // 2. Fetch detailed doctor profiles in parallel (ignore individual failures)
+          Map<String, DoctorFullModel> doctorCache = {};
+          await Future.wait(resolvedDoctorIds.map((id) async {
+            try {
+              final details = await parent.getDoctorDetails(id, null);
+
+              doctorCache[id] = details;
+            } catch (_) {}
+          }));
+
+          // 3. Map details back to records
+          for (var record in records) {
+            print(record.doctorName.toString());
+            if (record.doctorId.isNotEmpty && doctorCache.containsKey(record.doctorId)) {
+              final doc = doctorCache[record.doctorId]!;
+              record.doctorName = "Dr. ${doc.firstName} ${doc.lastName}";
+              record.doctorSpecialty = doc.specializationName;
+              record.doctorImageUrl = doc.profilePictureUrl;
+            } else if (apptMap.containsKey(record.appointmentId)) {
+              final appt = apptMap[record.appointmentId]!;
+              record.doctorName = appt.doctorName;
+              record.doctorSpecialty = 'Medical Specialist';
+            }
+          }
+        }
+      } catch (enrichmentError) {
+        debugPrint("[getPatientMedicalHistory] Enrichment failed: $enrichmentError");
+      }
+
+      return records;
+
     } catch (e) {
-      // Error handling
+      debugPrint("[getPatientMedicalHistory] Error: $e");
+      throw "Error fetching medical history";
     }
-    throw "Error fetching medical history";
   }
 
   Future<MedicalRecordModel?> getMedicalRecordByAppointment(String appointmentId) async {

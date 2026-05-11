@@ -55,6 +55,76 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _performLogin() async {
+    if (formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus(); // Dismiss the keyboard properly
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
+      );
+
+      var response = await ApiService().login(
+        emailController.text, 
+        passwordController.text,
+        rememberMe: rememberMe,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); 
+
+      if (response.success && response.data != null) {
+        String token = response.data['token'];
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+        
+        String userId = decodedToken['userId'] ?? 
+                       decodedToken['id'] ?? 
+                       decodedToken['nameid'] ?? 
+                       decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? 
+                       "";
+
+        String role = (decodedToken['role'] ?? 
+                      decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
+                      "").toString().toLowerCase();
+
+        await _saveSession(token, role, userId);
+
+        if (mounted) {
+          if (role == "admin") {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
+          } else if (role == "doctor") {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
+          } else if (role == "receptionist") {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
+          } else {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
+          }
+        }
+      } else {
+        if (response.message == "Email is not confirmed!") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RegisterScreen(
+                initialEmail: emailController.text,
+                showOtpDialog: true,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message), 
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     emailController.dispose();
@@ -136,6 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 label: "Email Address",
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
                                 validator: (value) => (value == null || !value.contains("@")) ? "Valid email required" : null,
                               ),
                               const SizedBox(height: 20),
@@ -147,6 +218,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 isPassword: true,
                                 isPasswordHidden: isPasswordHidden,
                                 onTogglePassword: () => setState(() => isPasswordHidden = !isPasswordHidden),
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (value) => _performLogin(),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) return "Password is required";
                                   if (value.length < 6) return "Min 6 characters";
@@ -175,73 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 width: double.infinity,
                                 height: 55,
                                 child: ElevatedButton(
-                                  onPressed: () async {
-                                    if (formKey.currentState!.validate()) {
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (context) => const Center(child: CircularProgressIndicator(color: primaryColor)),
-                                      );
-
-                                      var response = await ApiService().login(
-                                        emailController.text, 
-                                        passwordController.text,
-                                        rememberMe: rememberMe,
-                                      );
-
-                                      if (!mounted) return;
-                                      Navigator.pop(context); 
-
-                                      if (response.success && response.data != null) {
-                                        String token = response.data['token'];
-                                        Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-                                        
-                                        String userId = decodedToken['userId'] ?? 
-                                                       decodedToken['id'] ?? 
-                                                       decodedToken['nameid'] ?? 
-                                                       decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ?? 
-                                                       "";
-
-                                        String role = (decodedToken['role'] ?? 
-                                                      decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? 
-                                                      "").toString().toLowerCase();
-
-                                        await _saveSession(token, role, userId);
-
-                                        if (mounted) {
-                                          if (role == "admin") {
-                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const AdminDashboard()));
-                                          } else if (role == "doctor") {
-                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DoctorHomeScreen(userId: userId)));
-                                          } else if (role == "receptionist") {
-                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ReceptionistDashboard()));
-                                          } else {
-                                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userId: userId, userRole: role)));
-                                          }
-                                        }
-                                      } else {
-                                        if (response.message == "Email is not confirmed!") {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => RegisterScreen(
-                                                initialEmail: emailController.text,
-                                                showOtpDialog: true,
-                                              ),
-                                            ),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(response.message), 
-                                              backgroundColor: Colors.red,
-                                              duration: const Duration(seconds: 5),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
+                                  onPressed: _performLogin,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     foregroundColor: Colors.white,
@@ -288,12 +295,16 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isPasswordHidden = false,
     VoidCallback? onTogglePassword,
     TextInputType keyboardType = TextInputType.text,
+    TextInputAction? textInputAction,
+    Function(String)? onFieldSubmitted,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: isPassword && isPasswordHidden,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       autocorrect: false,
       enableSuggestions: false,
       cursorColor: primaryColor,

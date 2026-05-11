@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/patient/screens/edit_patient_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:mediconnect/models/PatientProfileModel.dart';
 import 'package:mediconnect/patient/screens/patient_history_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -40,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadProfile() {
     final String targetId = (widget.userId == null || widget.userId!.isEmpty) ? "1" : widget.userId!;
-    _profileFuture = _apiService.getPatientProfile(targetId);
+      _profileFuture = _apiService.getPatientProfile(targetId);
   }
 
   Future<void> _loadUserData() async {
@@ -178,6 +179,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _buildDivider(),
                             _buildInfoRow(Icons.cake_rounded, "Age", "20 Years"),
                             _buildDivider(),
+                            _buildInfoRow(Icons.wc_rounded, "Gender", dummyProfile.gender),
+                            _buildDivider(),
                             _buildInfoRow(Icons.height_rounded, "Height", "${dummyProfile.height} cm"),
                             _buildDivider(),
                             _buildInfoRow(Icons.monitor_weight_outlined, "Weight", "${dummyProfile.weight} kg"),
@@ -293,6 +296,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildInfoRow(Icons.bloodtype_outlined, "Blood Type", profile.bloodType),
                         _buildDivider(),
                         _buildInfoRow(Icons.cake_rounded, "Age", "${_calculateAge(profile.dateOfBirth)} Years"),
+                        _buildDivider(),
+                        _buildInfoRow(Icons.wc_rounded, "Gender", profile.gender),
                         _buildDivider(),
                         _buildInfoRow(Icons.height_rounded, "Height", "${profile.height} cm"),
                         _buildDivider(),
@@ -479,11 +484,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: double.infinity,
           height: 55,
           child: OutlinedButton.icon(
-            onPressed: () {
+            onPressed: () async {
+              await SecureStorage.deleteAllData();
+              ApiService.setToken(null);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (!context.mounted) return;
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    (route) => false,
+                (route) => false,
               );
             },
             icon: const Icon(Icons.power_settings_new_rounded),

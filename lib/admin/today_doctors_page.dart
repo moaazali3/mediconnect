@@ -59,13 +59,13 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: context.isDark 
-                ? const ColorScheme.dark(
-                    primary: primaryColor,
+                ? ColorScheme.dark(
+                    primary: Theme.of(context).colorScheme.primary,
                     onPrimary: Colors.white,
                     onSurface: Colors.white,
                   )
-                : const ColorScheme.light(
-                    primary: primaryColor,
+                : ColorScheme.light(
+                    primary: Theme.of(context).colorScheme.primary,
                     onPrimary: Colors.white,
                     onSurface: Colors.black,
                   ),
@@ -165,7 +165,7 @@ class _TodayDoctorsPageState extends State<TodayDoctorsPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
         ],

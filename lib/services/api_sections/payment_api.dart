@@ -60,6 +60,7 @@ mixin PaymentApi {
         headers: parent._headers,
       );
       if (response.statusCode == 200) {
+        debugPrint("[getPaymentByAppointment] Server Response: ${response.body}");
         final data = jsonDecode(response.body);
         if (data is List) {
           if (data.isEmpty) return null;
@@ -88,6 +89,7 @@ mixin PaymentApi {
         headers: parent._headers,
         body: jsonEncode({'paymentMethod': backendMethod}),
       );
+      debugPrint("[createPaymentByAppointment] Server Response: ${response.body}");
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       return false;

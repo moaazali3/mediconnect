@@ -4,9 +4,11 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/auth/screens/login_screen.dart';
 import 'package:mediconnect/Doctor/edit_doctor_profile.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
 import 'package:mediconnect/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
@@ -178,6 +180,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         _buildDivider(),
                         _buildInfoRow(Icons.calendar_month_rounded, "Age", "${_calculateAge(doctor.dateOfBirth)} Years"),
                         _buildDivider(),
+                        _buildInfoRow(Icons.wc_rounded, "Gender", doctor.gender.isNotEmpty ? doctor.gender : "N/A"),
+                        _buildDivider(),
                         _buildInfoRow(Icons.location_on_outlined, "Clinic Address", doctor.address ?? "No Address"),
                       ]),
 
@@ -215,11 +219,16 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         width: double.infinity,
                         height: 55,
                         child: OutlinedButton.icon(
-                          onPressed: () {
+                          onPressed: () async {
+                            await SecureStorage.deleteAllData();
+                            ApiService.setToken(null);
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.clear();
+                            if (!context.mounted) return;
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(builder: (context) => const LoginScreen()),
-                                  (route) => false,
+                              (route) => false,
                             );
                           },
                           icon: const Icon(Icons.power_settings_new_rounded),

@@ -113,6 +113,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   setState(() {
                     currentIndex = index;
                   });
+                  if (index == 0 || index == 1) {
+                    _loadUserName();
+                  }
                 },
                 items: const [
                   BottomNavigationBarItem(

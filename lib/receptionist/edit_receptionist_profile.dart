@@ -96,6 +96,7 @@ class _EditReceptionistProfileState extends State<EditReceptionistProfile> {
 
       if (mounted) {
         if (success) {
+          await prefs.setString('user_name', "${updatedProfile.firstName} ${updatedProfile.lastName}");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile Updated Successfully!'), backgroundColor: Colors.green),
           );

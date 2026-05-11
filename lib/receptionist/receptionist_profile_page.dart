@@ -5,6 +5,7 @@ import 'package:mediconnect/constants/theme_ext.dart';
 import 'package:mediconnect/models/ReceptionistProfileModel.dart';
 import 'package:mediconnect/models/DoctorScheduleModel.dart';
 import 'package:mediconnect/services/api_service.dart';
+import 'package:mediconnect/services/secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mediconnect/receptionist/edit_receptionist_profile.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -82,6 +83,8 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
   }
 
   Future<void> _signOut() async {
+    await SecureStorage.deleteAllData();
+    ApiService.setToken(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (!mounted) return;
@@ -176,6 +179,8 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
                           _buildDivider(),
                           _buildInfoRow(Icons.person_outline, "Last Name", dummyProfile.lastName),
                           _buildDivider(),
+                          _buildInfoRow(Icons.wc_rounded, "Gender", dummyProfile.gender ?? "N/A"),
+                          _buildDivider(),
                           _buildInfoRow(Icons.cake_rounded, "Age", "20 Years"),
                         ]),
                         const SizedBox(height: 25),
@@ -229,6 +234,8 @@ class _ReceptionistProfilePageState extends State<ReceptionistProfilePage> {
                       _buildInfoRow(Icons.person_outline, "First Name", _profile?.firstName ?? "N/A"),
                       _buildDivider(),
                       _buildInfoRow(Icons.person_outline, "Last Name", _profile?.lastName ?? "N/A"),
+                      _buildDivider(),
+                      _buildInfoRow(Icons.wc_rounded, "Gender", _profile?.gender ?? "N/A"),
                       _buildDivider(),
                       _buildInfoRow(Icons.cake_rounded, "Age", _calculateAge(_profile?.dateOfBirth)),
                     ]),

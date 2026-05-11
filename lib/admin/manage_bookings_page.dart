@@ -505,7 +505,7 @@ class _DoctorBookingsDetailState extends State<DoctorBookingsDetail> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text("Date: ${app.appointmentDate}", style: TextStyle(color: context.subText)),
-                                    Text("Time: ${app.startTime} - ${app.endTime}", style: TextStyle(color: context.subText)),
+                                    Text("Time: ${app.startTime.substring(0, 5)} - ${app.endTime.substring(0, 5)}", style: TextStyle(color: context.subText)),
                                   ],
                                 ),
                               ),

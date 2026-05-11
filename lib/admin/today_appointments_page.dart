@@ -72,12 +72,12 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
           if (_hasUserSelectedDate)
             IconButton(
-              icon: const Icon(Icons.today, color: Colors.white),
+              icon: Icon(Icons.today, color: Theme.of(context).colorScheme.primary),
               onPressed: () {
                 setState(() {
                   _selectedDate = DateTime.now();
@@ -348,7 +348,7 @@ class _TodayAppointmentsPageState extends State<TodayAppointmentsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(appt.patientName, style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
-                              Text("${appt.startTime} - ${appt.endTime}", style: TextStyle(color: context.subText, fontSize: 13)),
+                              Text("${appt.startTime.substring(0, 5)} - ${appt.endTime.substring(0, 5)}", style: TextStyle(color: context.subText, fontSize: 13)),
                             ],
                           ),
                         ),

@@ -45,6 +45,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _doctorImageUrl;
   bool _isFetchingSchedule = true;
   int? _expectedTurn;
+  String? _expectedTime;
   bool _isFetchingTurn = false;
 
   @override
@@ -85,10 +86,12 @@ class _BookingScreenState extends State<BookingScreen> {
     setState(() => _isFetchingTurn = true);
     try {
       final String formattedDate = DateFormat('yyyy-MM-dd').format(date);
-      final turn = await _apiService.getExpectedNumber(widget.doctorId, formattedDate);
+      final turnData = await _apiService.getExpectedNumber(widget.doctorId, formattedDate);
+      debugPrint("FETCHED TURN DATA IN BOOKING: $turnData");
       if (mounted) {
         setState(() {
-          _expectedTurn = turn;
+          _expectedTurn = turnData['expectedNumber'];
+          _expectedTime = turnData['expectedTime'];
           _isFetchingTurn = false;
         });
       }
@@ -96,6 +99,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (mounted) {
         setState(() {
           _expectedTurn = null;
+          _expectedTime = null;
           _isFetchingTurn = false;
         });
       }
@@ -104,14 +108,28 @@ class _BookingScreenState extends State<BookingScreen> {
 
   List<DateTime> getAvailableDates() {
     if (_doctorSchedule.isEmpty) return [];
-    List<String> availableDays = _doctorSchedule.map((s) => s.getDayName()).toList();
+    List<String> availableDays = _doctorSchedule.map((s) => s.getDayName().toLowerCase()).toList();
     List<DateTime> dates = [];
     DateTime now = DateTime.now();
     for (int i = 0; i < 30; i++) {
       DateTime date = now.add(Duration(days: i));
-      String dayName = DateFormat('EEEE').format(date);
+      String dayName = DateFormat('EEEE').format(date).toLowerCase();
       if (availableDays.contains(dayName)) {
-        dates.add(date);
+        if (i == 0) { // If it's today, check if the shift has ended
+          try {
+            var schedule = _doctorSchedule.firstWhere((s) => s.getDayName().toLowerCase() == dayName);
+            List<String> parts = schedule.endTime.split(':');
+            DateTime endTimeToday = DateTime(date.year, date.month, date.day, int.parse(parts[0]), int.parse(parts[1]));
+            // Only add today if the current time + 30 mins buffer is before the doctor's shift end time
+            if (now.add(const Duration(minutes: 30)).isBefore(endTimeToday)) {
+              dates.add(date);
+            }
+          } catch (e) {
+            dates.add(date);
+          }
+        } else {
+          dates.add(date);
+        }
       }
     }
     return dates;
@@ -125,7 +143,24 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
-    final String patientId = (widget.patientId != null && widget.patientId != "") ? widget.patientId! : "1";
+    if (widget.patientId == null || widget.patientId!.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Authentication Error"),
+          content: const Text("Could not verify your identity. Please log in again."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            )
+          ],
+        ),
+      );
+      return;
+    }
+
+    final String patientId = widget.patientId!;
 
     setState(() => isLoading = true);
     Navigator.pop(context); // Close payment sheet
@@ -421,28 +456,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildAppointmentInfoCard() {
-    String estimatedTime = "TBD";
-
-    if (_expectedTurn != null && selectedDate != null && _doctorSchedule.isNotEmpty) {
-      String dayName = DateFormat('EEEE').format(selectedDate!);
-      try {
-        var schedule = _doctorSchedule.firstWhere(
-              (s) => s.getDayName().toLowerCase() == dayName.toLowerCase(),
-          orElse: () => _doctorSchedule.first,
-        );
-
-        List<String> parts = schedule.startTime.split(':');
-        DateTime baseTime = DateTime(
-            selectedDate!.year, selectedDate!.month, selectedDate!.day,
-            int.parse(parts[0]), int.parse(parts[1])
-        );
-
-        DateTime myTime = baseTime.add(Duration(minutes: (_expectedTurn! - 1) * 30));
-        estimatedTime = DateFormat('hh:mm a').format(myTime);
-      } catch (e) {
-        estimatedTime = "Check at Hospital";
-      }
-    }
+    String estimatedTime = _expectedTime ?? "TBD";
 
     return Container(
       width: double.infinity,

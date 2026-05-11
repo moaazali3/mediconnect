@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mediconnect/widgets/password_strength_checker.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:mediconnect/constants/colors.dart';
 import 'package:mediconnect/services/api_service.dart';
 import 'package:mediconnect/models/DoctorProfileModel.dart';
@@ -28,6 +29,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   bool isLoading = true;
   bool isUploadingImage = false;
   bool _isModified = false;
+  bool _isPickerActive = false;
 
   final fNameController = TextEditingController();
   final lNameController = TextEditingController();
@@ -105,48 +107,63 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   }
 
   Future<void> _pickAndUploadImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image == null) return;
-
-    final int fileSize = await image.length();
-    if (fileSize > 2 * 1024 * 1024) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Image size is too large (Maximum 2MB)"),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-      return;
-    }
-
+    if (_isPickerActive) return;
+    setState(() => _isPickerActive = true);
     try {
-      final bytes = await image.readAsBytes();
-      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
-      final ui.FrameInfo fi = await codec.getNextFrame();
-      final ui.Image decodedImage = fi.image;
+      // 1. Pick Image with initial compression
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1500,
+        maxHeight: 1500,
+      );
+      if (image == null) return;
 
-      if (decodedImage.width > 1024 || decodedImage.height > 1024) {
+      // 2. Crop Image
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 80,
+        maxWidth: 1000,
+        maxHeight: 1000,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Profile Picture',
+            toolbarColor: primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Profile Picture',
+            doneButtonTitle: 'Done',
+            cancelButtonTitle: 'Cancel',
+          ),
+        ],
+      );
+
+      if (croppedFile == null) return;
+
+      // 3. Final validation for size (just in case)
+      final File finalFile = File(croppedFile.path);
+      final int fileSize = await finalFile.length();
+      if (fileSize > 2 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Image dimensions are too large (Maximum 1024x1024)"),
+              content: Text("Image size is still too large (Maximum 2MB)"),
               backgroundColor: Colors.orange,
             ),
           );
         }
         return;
       }
-    } catch (e) {
-      debugPrint("Error checking image dimensions: $e");
-    }
 
-    setState(() => isUploadingImage = true);
-    final String targetId = widget.doctorId ?? "1";
+      setState(() => isUploadingImage = true);
+      final String targetId = widget.doctorId ?? "1";
 
-    try {
-      final success = await _apiService.uploadProfilePicture(targetId, image.path);
+      // 4. Upload
+      final success = await _apiService.uploadProfilePicture(targetId, finalFile.path);
       if (success) {
         _isModified = true;
         final doctor = await _apiService.getDoctorProfile(targetId);
@@ -164,13 +181,18 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     } catch (e) {
       if (mounted) {
         String msg = e.toString().replaceAll("Exception: ", "").trim();
-        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error uploading image: $msg";
+        String finalMsg = msg.toLowerCase().contains("error") ? msg : "Error updating image: $msg";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(finalMsg), backgroundColor: Colors.red),
         );
       }
     } finally {
-      setState(() => isUploadingImage = false);
+      if (mounted) {
+        setState(() {
+          isUploadingImage = false;
+          _isPickerActive = false;
+        });
+      }
     }
   }
 

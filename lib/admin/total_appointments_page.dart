@@ -65,12 +65,12 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
           if (_selectedDate != null)
             IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white),
+              icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.primary),
               onPressed: () => setState(() => _selectedDate = null),
             ),
         ],
@@ -330,7 +330,7 @@ class _TotalAppointmentsPageState extends State<TotalAppointmentsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(appt.patientName, style: TextStyle(fontWeight: FontWeight.bold, color: context.onSurface)),
-                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime}", style: TextStyle(color: context.subText, fontSize: 12)),
+                              Text("${appt.appointmentDate.split('T')[0]} | ${appt.startTime.substring(0, 5)}", style: TextStyle(color: context.subText, fontSize: 12)),
                             ],
                           ),
                         ),

@@ -531,7 +531,7 @@ class _EditDoctorManagementPageState extends State<EditDoctorManagementPage> {
             const SizedBox(width: 10),
             Text(s.getDayName(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const Spacer(),
-            Text("${s.startTime} - ${s.endTime}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
+            Text("${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)}", style: const TextStyle(color: primaryColor, fontWeight: FontWeight.w600, fontSize: 13)),
           ],
         ),
       )).toList(),

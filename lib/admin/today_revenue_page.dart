@@ -43,13 +43,13 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: context.isDark 
-                ? const ColorScheme.dark(
-                    primary: primaryColor,
+                ? ColorScheme.dark(
+                    primary: Theme.of(context).colorScheme.primary,
                     onPrimary: Colors.white,
                     onSurface: Colors.white,
                   )
-                : const ColorScheme.light(
-                    primary: primaryColor,
+                : ColorScheme.light(
+                    primary: Theme.of(context).colorScheme.primary,
                     onPrimary: Colors.white,
                     onSurface: Colors.black,
                   ),
@@ -263,7 +263,7 @@ class _TodayRevenuePageState extends State<TodayRevenuePage> {
         showBackButton: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.calendar_month, color: primaryColor),
+            icon: Icon(Icons.calendar_month, color: Theme.of(context).colorScheme.primary),
             onPressed: () => _selectDate(context),
           ),
         ],
