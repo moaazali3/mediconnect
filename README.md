@@ -3,9 +3,9 @@
 The frontend mobile application for the Mediconnect healthcare platform, designed to bridge the gap between patients and doctors with a seamless user experience.
 
 ## 📱 Mobile Tech Stack
-* **Framework:** Flutter
-* **Language:** Dart
-* **API Integration:** RESTful APIs (http)
+* **Framework:** Flutter.
+* **Language:** Dart.
+* **API Integration:** RESTful APIs (http).
 
 ## 🛠️ UI Features & Modules
 * Secure Patient and Doctor Registration Interfaces.
